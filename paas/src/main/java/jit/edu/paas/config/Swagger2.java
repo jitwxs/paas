@@ -35,7 +35,7 @@ public class Swagger2 {
 
         return new Docket(DocumentationType.SWAGGER_2)
                 .select()
-                .apis(RequestHandlerSelectors.basePackage("jit.edu.paas"))
+                .apis(RequestHandlerSelectors.basePackage("jit.edu.paas.controller"))
                 .paths(PathSelectors.any())
                 .build()
                 .globalOperationParameters(pars)

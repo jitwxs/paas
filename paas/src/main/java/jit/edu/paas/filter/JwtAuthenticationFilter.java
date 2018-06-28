@@ -97,6 +97,9 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
         if(pathMatcher.match("/docs.html", request.getServletPath())) {
             return true;
         }
+        if(pathMatcher.match("/auth/**", request.getServletPath())) {
+            return true;
+        }
         return false;
     }
 }

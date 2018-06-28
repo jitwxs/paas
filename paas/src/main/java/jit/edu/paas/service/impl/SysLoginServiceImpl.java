@@ -8,11 +8,11 @@ import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.util.CollectionUtils;
 import jit.edu.paas.util.JsonUtils;
 import jit.edu.paas.util.jedis.JedisClient;
-import jit.edu.paas.util.PasswordUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -77,6 +77,6 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
         if (login == null) {
             return false;
         }
-        return PasswordUtils.validatePassword(password, login.getPassword());
+        return new BCryptPasswordEncoder().matches(password, login.getPassword());
     }
 }
