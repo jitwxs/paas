@@ -1,4 +1,4 @@
-package jit.edu.paas.util;
+package jit.edu.paas.commons.util;
 
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;

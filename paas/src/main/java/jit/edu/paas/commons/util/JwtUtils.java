@@ -1,4 +1,4 @@
-package jit.edu.paas.util;
+package jit.edu.paas.commons.util;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;

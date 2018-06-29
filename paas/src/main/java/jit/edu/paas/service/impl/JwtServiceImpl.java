@@ -4,7 +4,7 @@ import jit.edu.paas.domain.entity.SysLogin;
 import jit.edu.paas.domain.vo.UserVO;
 import jit.edu.paas.service.JwtService;
 import jit.edu.paas.service.SysLoginService;
-import jit.edu.paas.util.JwtUtils;
+import jit.edu.paas.commons.util.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

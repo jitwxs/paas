@@ -36,19 +36,19 @@ public class SysImage implements Serializable {
      */
     private String tag;
     /**
-     * 来源仓库
-     */
-    private Integer repository;
-    /**
      * 所占大小
      */
     private String size;
     /**
-     * 如果用户上传镜像，指明用户ID
+     * 镜像类型【1：本地公共镜像；2：本地用户镜像】
+     */
+    private Integer type;
+    /**
+     * 如果是用户镜像，指明用户ID
      */
     private String userId;
     /**
-     * 如果用户上传镜像，是否公开
+     * 如果是用户镜像，是否公开
      */
     private Boolean hasOpen;
     /**

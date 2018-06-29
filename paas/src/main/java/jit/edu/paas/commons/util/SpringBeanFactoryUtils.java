@@ -1,4 +1,4 @@
-package jit.edu.paas.util;
+package jit.edu.paas.commons.util;
 
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;

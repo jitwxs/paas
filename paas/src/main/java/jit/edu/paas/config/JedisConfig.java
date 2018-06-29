@@ -1,6 +1,6 @@
 package jit.edu.paas.config;
 
-import jit.edu.paas.util.jedis.JedisClientPool;
+import jit.edu.paas.commons.util.jedis.JedisClientPool;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;

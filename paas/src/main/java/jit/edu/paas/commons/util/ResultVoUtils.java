@@ -1,4 +1,4 @@
-package jit.edu.paas.util;
+package jit.edu.paas.commons.util;
 
 
 import jit.edu.paas.domain.enums.ResultEnum;

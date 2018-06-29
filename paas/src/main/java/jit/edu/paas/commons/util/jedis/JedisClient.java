@@ -1,4 +1,4 @@
-package jit.edu.paas.util.jedis;
+package jit.edu.paas.commons.util.jedis;
 
 import java.util.List;
 import java.util.Set;

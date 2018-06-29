@@ -1,10 +1,12 @@
 package jit.edu.paas.filter;
 
+import jit.edu.paas.domain.entity.SysLogin;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.service.JwtService;
-import jit.edu.paas.util.JsonUtils;
-import jit.edu.paas.util.ResultVoUtils;
-import jit.edu.paas.util.SpringBeanFactoryUtils;
+import jit.edu.paas.service.SysLoginService;
+import jit.edu.paas.commons.util.JsonUtils;
+import jit.edu.paas.commons.util.ResultVoUtils;
+import jit.edu.paas.commons.util.SpringBeanFactoryUtils;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -42,9 +44,10 @@ public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter {
     public Authentication attemptAuthentication(HttpServletRequest req, HttpServletResponse res) throws AuthenticationException {
         String username = req.getParameter("username");
         String password = req.getParameter("password");
-
         try {
             // 将用户信息放入authenticationManager
+            password = getEncryPassword(username, password);
+
             return authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             username,
@@ -77,8 +80,25 @@ public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter {
 
         // 将token放入响应头中
         response.addHeader("Authorization", token);
+        response.setHeader("Access-Control-Expose-Headers","Authorization");
 
         response.setContentType("text/html;charset=utf-8");
         response.getWriter().write(JsonUtils.objectToJson(ResultVoUtils.success()));
+    }
+
+    /**
+     * 获取加密的密码
+     * 如果用户身份验证失败，返回原密码
+     * @author jitwxs
+     * @since 2018/6/28 15:33
+     */
+    private String getEncryPassword(String username, String password) {
+        SysLoginService loginService = SpringBeanFactoryUtils.getBean(SysLoginService.class);
+        if(loginService.checkPassword(username, password)) {
+            SysLogin sysLogin = loginService.getByUsername(username);
+            return sysLogin.getPassword();
+        } else {
+            return password;
+        }
     }
 }

@@ -1,6 +1,8 @@
 package jit.edu.paas.domain.entity;
 
 import com.baomidou.mybatisplus.annotations.TableField;
+import com.baomidou.mybatisplus.annotations.TableId;
+import com.baomidou.mybatisplus.enums.IdType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
@@ -20,6 +22,7 @@ public class UserProject implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    @TableId(type = IdType.UUID)
     private String id;
     /**
      * 用户ID

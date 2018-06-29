@@ -1,4 +1,4 @@
-package jit.edu.paas.util;
+package jit.edu.paas.commons.util;
 
 import org.apache.http.*;
 import org.apache.http.client.ClientProtocolException;
@@ -136,6 +136,7 @@ public class HttpClientUtils {
         if (null != param) {
             reqURL += "?" + param;
         }
+        System.out.println("reqUrl=" + reqURL);
         String respContent = RESP_CONTENT; // 响应内容
         // reqURL = URLDecoder.decode(reqURL, ENCODE_CHARSET);
         HttpGet httpget = new HttpGet(reqURL);
@@ -259,12 +260,10 @@ public class HttpClientUtils {
 
             @Override
             public void checkClientTrusted(X509Certificate[] arg0, String authType) throws CertificateException {
-                // TODO Auto-generated method stub
             }
 
             @Override
             public void checkServerTrusted(X509Certificate[] arg0, String authType) throws CertificateException {
-                // TODO Auto-generated method stub
             }
         };
         SSLContext sslContext;

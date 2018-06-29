@@ -21,7 +21,7 @@ public class SysLog implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    @TableId(type = IdType.ID_WORKER_STR)
+    @TableId(type = IdType.UUID)
     private String id;
     /**
      * 操作用户ID

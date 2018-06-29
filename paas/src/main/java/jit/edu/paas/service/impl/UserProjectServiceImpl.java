@@ -4,6 +4,7 @@ import jit.edu.paas.domain.entity.UserProject;
 import jit.edu.paas.mapper.UserProjectMapper;
 import jit.edu.paas.service.UserProjectService;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -16,5 +17,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserProject> implements UserProjectService {
+    @Autowired
+    private UserProjectMapper projectMapper;
 
 }

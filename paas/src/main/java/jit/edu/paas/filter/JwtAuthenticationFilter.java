@@ -1,8 +1,8 @@
 package jit.edu.paas.filter;
 
 import jit.edu.paas.service.SysRoleService;
-import jit.edu.paas.util.JwtUtils;
-import jit.edu.paas.util.SpringBeanFactoryUtils;
+import jit.edu.paas.commons.util.JwtUtils;
+import jit.edu.paas.commons.util.SpringBeanFactoryUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
