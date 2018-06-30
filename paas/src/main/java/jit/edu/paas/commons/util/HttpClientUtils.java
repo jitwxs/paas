@@ -1,5 +1,7 @@
 package jit.edu.paas.commons.util;
 
+import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.*;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpRequestRetryHandler;
@@ -31,8 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.*;
-import java.io.IOException;
-import java.io.InterruptedIOException;
+import javax.servlet.http.HttpServletRequest;
+import java.io.*;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
@@ -41,6 +43,8 @@ import java.security.cert.X509Certificate;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /*
  <dependency>
@@ -332,5 +336,76 @@ public class HttpClientUtils {
             }
         }
         return map;
+    }
+
+
+    /**
+     * 缩略字符串（不区分中英文字符）
+     *
+     * @param str    目标字符串
+     * @param length 截取长度
+     * @return
+     */
+    public static String abbr(String str, int length) {
+        if (str == null) {
+            return "";
+        }
+        try {
+            StringBuilder sb = new StringBuilder();
+            int currentLength = 0;
+            for (char c : replaceHtml(StringEscapeUtils.unescapeHtml4(str)).toCharArray()) {
+                currentLength += String.valueOf(c).getBytes("GBK").length;
+                if (currentLength <= length - 3) {
+                    sb.append(c);
+                } else {
+                    sb.append("...");
+                    break;
+                }
+            }
+            return sb.toString();
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    /**
+     * 替换掉HTML标签方法
+     */
+    public static String replaceHtml(String html) {
+        if (StringUtils.isBlank(html)) {
+            return "";
+        }
+        String regEx = "<.+?>";
+        Pattern p = Pattern.compile(regEx);
+        Matcher m = p.matcher(html);
+        return m.replaceAll("");
+    }
+
+    /**
+     * 获得用户远程地址
+     */
+    public static String getRemoteAddr(HttpServletRequest request) {
+        String remoteAddr = request.getHeader("X-Real-IP");
+        if (!StringUtils.isBlank(remoteAddr)) {
+            remoteAddr = request.getHeader("X-Forwarded-For");
+        } else if (!StringUtils.isBlank(remoteAddr)) {
+            remoteAddr = request.getHeader("Proxy-Client-IP");
+        } else if (!StringUtils.isBlank(remoteAddr)) {
+            remoteAddr = request.getHeader("WL-Proxy-Client-IP");
+        }
+        return remoteAddr != null ? remoteAddr : request.getRemoteAddr();
+    }
+
+    /**
+     * 将ErrorStack转化为String.
+     */
+    public static String getStackTraceAsString(Throwable e) {
+        if (e == null) {
+            return "";
+        }
+        StringWriter stringWriter = new StringWriter();
+        e.printStackTrace(new PrintWriter(stringWriter));
+        return stringWriter.toString();
     }
 }

@@ -3,10 +3,13 @@ package jit.edu.paas.domain.entity;
 import com.baomidou.mybatisplus.annotations.TableId;
 import com.baomidou.mybatisplus.enums.IdType;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import jit.edu.paas.commons.util.HttpClientUtils;
 import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * <p>
@@ -26,7 +29,11 @@ public class SysLog implements Serializable {
     /**
      * 操作用户ID
      */
-    private Integer userId;
+    private String userId;
+    /**
+     * 日志类型
+     */
+    private Integer type;
     /**
      * 请求Url
      */
@@ -56,4 +63,19 @@ public class SysLog implements Serializable {
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date createDate;
+
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public void setParam(Map paramMap){
+        if (paramMap == null){
+            return;
+        }
+        StringBuilder params = new StringBuilder();
+        for (Map.Entry<String, String[]> param : ((Map<String, String[]>)paramMap).entrySet()){
+            params.append(("".equals(params.toString()) ? "" : "&") + param.getKey() + "=");
+            String paramValue = (param.getValue() != null && param.getValue().length > 0 ? param.getValue()[0] : "");
+            // 忽略密码参数
+            params.append(HttpClientUtils.abbr(StringUtils.endsWithIgnoreCase(param.getKey(), "password") ? "" : paramValue, 100));
+        }
+        this.param = params.toString();
+    }
 }

@@ -23,7 +23,7 @@ public class WrapperComponent {
         EntityWrapper<UserProject> wrapper = new EntityWrapper<>();
 
         if(StringUtils.isNotBlank(select.getName())) {
-            wrapper.eq("name", select.getName());
+            wrapper.like("name", select.getName());
         }
         if(StringUtils.isNotBlank(select.getUserId())) {
             wrapper.eq("user_id", select.getUserId());

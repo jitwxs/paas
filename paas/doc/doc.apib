@@ -1,0 +1,484 @@
+﻿FORMAT: 1A
+
+# 无道PaaS系统
+
+<!-- aglio -i doc.apib --theme-template triple -o doc.html -->
+
+# Group 鉴权管理
+
+## 用户登陆  [POST /login]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+
+	+ Body
+
+	        {
+				"username": user,
+				"password": 123
+			}
+
+	+ Schema
+
+            {
+                "username": "用户名，字符串，必填",
+				"password": "密码，字符串，必填"
+            }
+
++ Response 200 (application/json)
+
+	+ Headers
+	
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+    
+    + Body
+
+	        {
+	        	"code":0,
+	        	"message":"成功",
+	        	"data":null
+	        }
+
+## 用户注册  [POST /auth/register]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+
+	+ Body
+
+	        {
+				"username": user,
+				"password": 123,
+				"email": 752046686@qq.com
+			}
+
+	+ Schema
+
+            {
+                "username": "用户名，字符串，必填",
+				"password": "密码，字符串，必填",
+				"email": "邮箱，字符串，必填"
+            }		
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": "已经发送验证邮件"
+			}
+
+## 邮箱验证  [GET /auth/email{?token}]
+
++ Parameters
+
+    + token (string, required) - token
+
++ Response 200 (text/plain)
+    
+    + Body
+
+	        跳转注册成功页面
+
+## 密码校验  [POST /auth/password/check]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+
+	+ Body
+
+	        {
+				"username": user,
+				"password": 123
+			}
+
+	+ Schema
+
+            {
+                "username": "用户名，字符串，必填",
+				"password": "密码，字符串，必填"
+            }
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
+
+# Group Token管理
+
+## 获取用户信息  [POST /token]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "userId": "1",
+			    "username": "sys",
+			    "email": null,
+			    "roleId": 2
+			  }
+			}
+
+	+ Schema
+
+	        {
+			  "code": "状态码",
+			  "message": "消息",
+			  "data": {
+			    "userId": "用户ID",
+			    "username": "用户名",
+			    "email": "用户邮箱",
+			    "roleId": "用户角色ID"
+			  }
+			}		
+
+# Group 项目管理
+
+## 项目列表（管理员） [GET /project/list{?name,userId,current,size,orderByField,asc}]
+
++ Parameters
+
+    + name (string, optional) - 项目名
+    + userId (string, optional) - 用户ID
+    + current (number, optional) - 页码，默认为1
+    + size (number, optional) - 页面容量，默认为10
+    + orderByField (string, optional) - 排序字段
+    + asc (boolean, optional) - 升序：true；降序：false
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /project/list?name=项目&userId=4151361367131&current=1&size=5&orderByField=createDate&asc=false
+
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "total": 2,
+			    "size": 5,
+			    "pages": 1,
+			    "current": 1,
+			    "records": [
+			      {
+			        "id": "afaowrwfvxz4e1",
+			        "userId": "4151361367131",
+			        "name": "测试项目2",
+			        "description": "测试项目2的描述",
+			        "createDate": "2018-06-30 10:14:57",
+			        "updateDate": null
+			      },
+			      {
+			        "id": "ablaiawru1321",
+			        "userId": "4151361367131",
+			        "name": "测试项目1",
+			        "description": "测试项目1的描述",
+			        "createDate": "2018-06-30 10:14:43",
+			        "updateDate": null
+			      }
+			    ]
+			  }
+			}
+
+## 项目列表（用户）  [GET /project/self/list{?name,current,size,orderByField,asc}]
+
++ Parameters
+
+    + name (string, optional) - 项目名
+    + current (number, optional) - 页码，默认为1
+    + size (number, optional) - 页面容量，默认为10
+    + orderByField (string, optional) - 排序字段
+    + asc (boolean, optional) - 升序：true；降序：false
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /project/self/list?name=项目&current=1&size=5&orderByField=createDate&asc=false
+
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "total": 2,
+			    "size": 5,
+			    "pages": 1,
+			    "current": 1,
+			    "records": [
+			      {
+			        "id": "afaowrwfvxz4e1",
+			        "userId": "4151361367131",
+			        "name": "测试项目2",
+			        "description": "测试项目2的描述",
+			        "createDate": "2018-06-30 10:14:57",
+			        "updateDate": null
+			      },
+			      {
+			        "id": "ablaiawru1321",
+			        "userId": "4151361367131",
+			        "name": "测试项目1",
+			        "description": "测试项目1的描述",
+			        "createDate": "2018-06-30 10:14:43",
+			        "updateDate": null
+			      }
+			    ]
+			  }
+			}
+
+## 项目信息 [GET /project/{id}]
+
++ Parameters
+
+    + id (number, required) - 项目ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "id": "afaowrwfvxz4e1",
+			    "userId": "4151361367131",
+			    "name": "测试项目2",
+			    "description": "测试项目2的描述",
+			    "createDate": "2018-06-30 10:14:57",
+			    "updateDate": null
+			  }
+			}
+
+## 创建项目（用户） [POST /project/create]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Body
+
+	        {
+				"name": Java Web01,
+				"description": 第一个JavaWeb环境
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
+
+## 更新项目（用户） [PUT /project/update]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Body
+
+	        {
+				"id": 49719f86013348eb866ba431a23050f7,
+				"name": Java Web,
+				"description": JavaWeb环境
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
+
+## 删除项目（用户） [DELETE /project/delete/{id}]
+
++ Parameters
+
+    + id (number, required) - 项目ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
+
+# Group 仓储管理
+
+## 仓储列表（管理员）  [GET /repository/list{?type,current,size,orderByField,asc}]
+
++ Parameters
+
+    + type (number, optional) - 仓储类型
+    + current (number, optional) - 页码，默认为1
+    + size (number, optional) - 页面容量，默认为10
+    + orderByField (string, optional) - 排序字段
+    + asc (boolean, optional) - 升序：true；降序：false
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /repository/list?type=1&current=1&size=5&orderByField=createDate&asc=false
+
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "total": 1,
+			    "size": 10,
+			    "pages": 1,
+			    "current": 1,
+			    "records": [
+			      {
+			        "id": 1,
+			        "type": 1,
+			        "address": "192.168.30.171"
+			      }
+			    ]
+			  }
+			}
+
+## 创建仓储（管理员） [POST /repository/create]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Body
+
+	        {
+				"address": 127.0.0.1,
+				"type": 1
+			}
+
+	+ Schema
+
+            {
+				"address": "仓储地址，字符串，必填",
+				"type": "仓储类型，数字，必填"
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
+
+## 删除仓储（用户） [DELETE /repository/delete/{id}]
+
++ Parameters
+
+    + id (number, required) - 仓储ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
+
+# Group 用户管理
+

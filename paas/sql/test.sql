@@ -11,7 +11,7 @@
  Target Server Version : 50719
  File Encoding         : 65001
 
- Date: 28/06/2018 10:55:16
+ Date: 29/06/2018 18:08:10
 */
 
 SET NAMES utf8mb4;
@@ -37,14 +37,21 @@ CREATE TABLE `sys_image`  (
   `id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '镜像ID',
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NOT NULL COMMENT '镜像名',
   `tag` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'TAG',
-  `repository` tinyint(1) NULL DEFAULT NULL COMMENT '来源仓库',
   `size` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '所占大小',
-  `user_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '如果用户上传镜像，指明用户ID',
-  `has_open` tinyint(1) NULL DEFAULT NULL COMMENT '如果用户上传镜像，是否公开',
+  `type` tinyint(1) NULL DEFAULT NULL COMMENT '镜像类型【1：公共镜像；2：用户镜像】',
+  `user_id` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '如果是用户镜像，指明用户ID',
+  `has_open` tinyint(1) NULL DEFAULT NULL COMMENT '如果是用户镜像，是否公开',
   `create_date` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_date` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;
+
+-- ----------------------------
+-- Records of sys_image
+-- ----------------------------
+INSERT INTO `sys_image` VALUES ('11', '111', '1', NULL, 2, '1', 1, '2018-06-28 16:36:53', NULL);
+INSERT INTO `sys_image` VALUES ('12', '12', '2', NULL, 2, '1', 0, '2018-06-28 16:37:04', NULL);
+INSERT INTO `sys_image` VALUES ('21', '333', '2', NULL, 1, NULL, NULL, '2018-06-28 16:37:12', NULL);
 
 -- ----------------------------
 -- Table structure for sys_log
@@ -72,7 +79,7 @@ CREATE TABLE `sys_login`  (
   `username` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '用户名',
   `password` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NOT NULL COMMENT '密码',
   `email` varchar(64) CHARACTER SET utf8 COLLATE utf8_general_ci NULL DEFAULT NULL COMMENT '邮箱',
-  `has_freeze` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否冻结，默认0',
+  `has_freeze` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否冻结，默认false',
   `role_id` int(11) NULL DEFAULT NULL COMMENT '权限id',
   `create_date` datetime(0) NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_date` datetime(0) NULL DEFAULT NULL COMMENT '更新时间',
@@ -84,7 +91,9 @@ CREATE TABLE `sys_login`  (
 -- ----------------------------
 -- Records of sys_login
 -- ----------------------------
-INSERT INTO `sys_login` VALUES ('1', 'demo', '$2a$10$ip/m/nYFDXM70j2Ky4wWZu9FdmT6RPy1cg7IO/h4rkOSqV7JFYmUa', NULL, 0, 2, '2018-06-27 16:29:56', NULL);
+INSERT INTO `sys_login` VALUES ('0f58acf341d144748533a5c85f4c70f9', 'demo', '$2a$10$MEyRz/UEhAR7WenyGDBaWuIY2WEdaqb6lSJAeWlsuYESA8e.Fj/xG', '752046686@qq.com', 0, 1, '2018-06-29 17:47:20', '2018-06-29 17:47:32');
+INSERT INTO `sys_login` VALUES ('1', 'sys', '$2a$10$ip/m/nYFDXM70j2Ky4wWZu9FdmT6RPy1cg7IO/h4rkOSqV7JFYmUa', NULL, 0, 2, '2018-06-27 16:29:56', NULL);
+INSERT INTO `sys_login` VALUES ('5b827bb7ca0a4f1a844130a1c26ef0a7', 'user', '$2a$10$tj2Ehs75tdIil2SHoaBb6u54wKUgQwjenO3RuaWXBEOsQZ8bupe3q', 'jitwxs@foxmail.com', 0, 1, '2018-06-29 17:01:43', '2018-06-29 17:06:33');
 
 -- ----------------------------
 -- Table structure for sys_repository
@@ -92,7 +101,7 @@ INSERT INTO `sys_login` VALUES ('1', 'demo', '$2a$10$ip/m/nYFDXM70j2Ky4wWZu9FdmT
 DROP TABLE IF EXISTS `sys_repository`;
 CREATE TABLE `sys_repository`  (
   `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓储名',
+  `type` int(11) NULL DEFAULT NULL COMMENT '仓储类型【1：Docker容器；2：Docker Hub】',
   `address` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '仓储地址',
   PRIMARY KEY (`id`) USING BTREE
 ) ENGINE = InnoDB AUTO_INCREMENT = 1 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci ROW_FORMAT = Dynamic;

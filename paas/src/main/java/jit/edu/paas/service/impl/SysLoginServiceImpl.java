@@ -77,7 +77,7 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
         try {
             String res = jedisClient.hget(key, field);
             if (StringUtils.isNotBlank(res)) {
-                return JsonUtils.jsonToPojo(res, SysLogin.class);
+                return JsonUtils.jsonToObject(res, SysLogin.class);
             }
         } catch (Exception e) {
             log.error("缓存读取异常，错误位置：SysLoginServiceImpl.getById()");
@@ -114,7 +114,7 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
         try {
             String res = jedisClient.hget(key, field);
             if (StringUtils.isNotBlank(res)) {
-                return JsonUtils.jsonToPojo(res, SysLogin.class);
+                return JsonUtils.jsonToObject(res, SysLogin.class);
             }
         } catch (Exception e) {
             log.error("缓存读取异常，错误位置：SysLoginServiceImpl.getByUsername()");
@@ -153,7 +153,7 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
         try {
             String res = jedisClient.hget(key, field);
             if (StringUtils.isNotBlank(res)) {
-                return JsonUtils.jsonToPojo(res, SysLogin.class);
+                return JsonUtils.jsonToObject(res, SysLogin.class);
             }
         } catch (Exception e) {
             log.error("缓存读取异常，错误位置：SysLoginServiceImpl.getByEmail()");

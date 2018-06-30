@@ -1,12 +1,14 @@
 package jit.edu.paas.filter;
 
-import jit.edu.paas.domain.entity.SysLogin;
-import jit.edu.paas.domain.enums.ResultEnum;
-import jit.edu.paas.service.JwtService;
-import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.commons.util.JsonUtils;
 import jit.edu.paas.commons.util.ResultVoUtils;
 import jit.edu.paas.commons.util.SpringBeanFactoryUtils;
+import jit.edu.paas.domain.entity.SysLogin;
+import jit.edu.paas.domain.enums.LogTypeEnum;
+import jit.edu.paas.domain.enums.ResultEnum;
+import jit.edu.paas.service.JwtService;
+import jit.edu.paas.service.SysLogService;
+import jit.edu.paas.service.SysLoginService;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -77,6 +79,10 @@ public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter {
         JwtService jwtService = SpringBeanFactoryUtils.getBean(JwtService.class);
 
         String token = jwtService.genToken(username);
+
+        // 写入登录日志
+        SysLogService logService = SpringBeanFactoryUtils.getBean(SysLogService.class);
+        logService.saveLog(request, LogTypeEnum.USER_LOGIN.getCode());
 
         // 将token放入响应头中
         response.addHeader("Authorization", token);

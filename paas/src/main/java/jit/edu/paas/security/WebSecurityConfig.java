@@ -56,6 +56,6 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     public void configure(WebSecurity web) throws Exception {
         // 对静态资源放行
-        web.ignoring().antMatchers("/docs.html","/webjars/**","/v2/**","/swagger-resources/**");
+        web.ignoring().antMatchers( "/doc.html");
     }
 }

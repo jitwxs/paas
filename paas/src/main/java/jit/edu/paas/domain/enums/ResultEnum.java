@@ -9,6 +9,7 @@ import lombok.Getter;
  */
 @Getter
 public enum ResultEnum {
+    OK("成功",0),
     OTHER_ERROR("其他错误", 10),
     LOGIN_ERROR("用户名或密码错误", 11),
     AUTHORITY_ERROR("鉴权错误", 12),
@@ -16,7 +17,8 @@ public enum ResultEnum {
     PARAM_ERROR("参数错误", 14),
     REGISTER_ERROR("注册错误，用户名或邮件已注册",15),
     EMAIL_SEND_ERROR("邮件发送错误",16),
-    EMAIL_ERROR("邮件验证错误，用户已注册或验证时间已过期",17);
+    EMAIL_ERROR("邮件验证错误，用户已注册或验证时间已过期",17),
+    REPOSITORY_EXIST("仓储已经存在",18);
 
     private String message;
     private int code;

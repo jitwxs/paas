@@ -94,7 +94,7 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
      * @since 2018/6/28 9:32
      */
     private boolean disProtectedUrl(HttpServletRequest request) {
-        if(pathMatcher.match("/docs.html", request.getServletPath())) {
+        if(pathMatcher.match("/doc.html", request.getServletPath())) {
             return true;
         }
         if(pathMatcher.match("/auth/**", request.getServletPath())) {

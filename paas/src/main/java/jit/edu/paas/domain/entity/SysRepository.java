@@ -3,6 +3,7 @@ package jit.edu.paas.domain.entity;
 import com.baomidou.mybatisplus.enums.IdType;
 import com.baomidou.mybatisplus.annotations.TableId;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 
@@ -15,6 +16,7 @@ import java.io.Serializable;
  * @since 2018-06-27
  */
 @Data
+@NoArgsConstructor
 public class SysRepository implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -29,4 +31,9 @@ public class SysRepository implements Serializable {
      * 仓储地址
      */
     private String address;
+
+    public SysRepository(Integer type, String address) {
+        this.type = type;
+        this.address = address;
+    }
 }

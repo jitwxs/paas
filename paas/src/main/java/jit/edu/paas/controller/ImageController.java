@@ -1,7 +1,6 @@
 package jit.edu.paas.controller;
 
 import com.baomidou.mybatisplus.plugins.Page;
-import io.swagger.annotations.Api;
 import jit.edu.paas.commons.util.ResultVoUtils;
 import jit.edu.paas.domain.entity.SysImage;
 import jit.edu.paas.domain.enums.ImageTypeEnum;
@@ -23,7 +22,6 @@ import javax.validation.constraints.NotNull;
  */
 @RestController
 @RequestMapping("/image")
-@Api(tags={"镜像Controller"})
 public class ImageController {
     @Autowired
     private SysImageService imageService;

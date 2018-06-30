@@ -10,11 +10,11 @@ import jit.edu.paas.domain.vo.ResultVo;
  */
 public class ResultVoUtils {
     public static ResultVo success(Object data) {
-        return new ResultVo(0,"成功", data);
+        return new ResultVo(ResultEnum.OK.getCode(),ResultEnum.OK.getMessage(), data);
     }
 
     public static ResultVo success() {
-        return new ResultVo(0,"成功", null);
+        return success(null);
     }
 
     public static ResultVo error(Integer code, String message) {

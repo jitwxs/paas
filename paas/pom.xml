@@ -119,22 +119,6 @@
             <artifactId>hk2-api</artifactId>
             <version>2.2.0-b10</version>
         </dependency>
-        <!-- Swagger -->
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger2</artifactId>
-            <version>2.6.1</version>
-        </dependency>
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger-ui</artifactId>
-            <version>2.6.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.caspar-chen</groupId>
-            <artifactId>swagger-ui-layer</artifactId>
-            <version>0.0.3</version>
-        </dependency>
         <!-- 模板 -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

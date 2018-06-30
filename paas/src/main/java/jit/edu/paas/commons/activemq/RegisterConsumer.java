@@ -23,7 +23,7 @@ public class RegisterConsumer {
     @JmsListener(destination = "MQ_QUEUE_REGISTER")
     public void receiveQueue(String text) {
         if(StringUtils.isNotBlank(text)){
-            Task task = JsonUtils.jsonToPojo(text, Task.class);
+            Task task = JsonUtils.jsonToObject(text, Task.class);
 
             Map<String, Object> map = task.getData();
             String email = (String) map.get("email");

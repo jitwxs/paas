@@ -35,7 +35,7 @@ public class JsonUtils {
      * @author jitwxs
      * @version 创建时间：2018年4月17日 下午3:39:45
      */
-    public static <T> T jsonToPojo(String jsonData, Class<T> beanType) {
+    public static <T> T jsonToObject(String jsonData, Class<T> beanType) {
         try {
             return MAPPER.readValue(jsonData, beanType);
         } catch (Exception e) {
