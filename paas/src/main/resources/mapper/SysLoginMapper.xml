@@ -2,4 +2,14 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="jit.edu.paas.mapper.SysLoginMapper">
 
+    <select id="getRoleName" resultType="java.lang.String">
+        SELECT
+            r.`name`
+        FROM
+            `sys_login` AS l,
+            `sys_role` AS r
+        WHERE
+            l.role_id = r.role_id
+            AND l.id = #{userId}
+    </select>
 </mapper>

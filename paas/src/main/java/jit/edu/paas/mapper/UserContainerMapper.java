@@ -1,7 +1,9 @@
 package jit.edu.paas.mapper;
 
-import jit.edu.paas.domain.entity.UserContainer;
 import com.baomidou.mybatisplus.mapper.BaseMapper;
+import jit.edu.paas.domain.entity.UserContainer;
+
+import java.util.List;
 
 /**
  * <p>
@@ -12,5 +14,5 @@ import com.baomidou.mybatisplus.mapper.BaseMapper;
  * @since 2018-06-27
  */
 public interface UserContainerMapper extends BaseMapper<UserContainer> {
-
+    List<UserContainer> listContainerById(String userId);
 }

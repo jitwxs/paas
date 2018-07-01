@@ -147,7 +147,7 @@ public class FileUtils extends org.apache.commons.io.FileUtils {
      * @author jitwxs
      * @version 创建时间：2018年4月17日 下午4:05:26
      */
-    public String upload(HttpServletRequest request) throws Exception {
+    public static String upload(HttpServletRequest request) throws Exception {
         StandardMultipartHttpServletRequest req = (StandardMultipartHttpServletRequest) request;
 
         // 遍历普通参数（即formData的fileName和fileSize）
@@ -160,6 +160,10 @@ public class FileUtils extends org.apache.commons.io.FileUtils {
 
         // 遍历文件参数（即formData的file）
         Iterator<String> iterator = req.getFileNames();
+        if (iterator == null){
+            return "未选择文件";
+        }
+        String result = "";
         while (iterator.hasNext()) {
             MultipartFile file = req.getFile(iterator.next());
             String fileNames = file.getOriginalFilename();
@@ -175,9 +179,17 @@ public class FileUtils extends org.apache.commons.io.FileUtils {
             // 文件内容
             byte[] content = file.getBytes();
 
-            FileUtils.writeByteArrayToFile(new File(fileNames), content);
+            File file1 = new File("D:\\test\\"+fileNames);
+
+            FileUtils.writeByteArrayToFile(file1, content);
+
+            FileOutputStream fos = new FileOutputStream(file1);
+            fos.write(content);
+            fos.flush();
+            result = result + fileNames + ":" + content.length;
+            System.out.println("write success");
         }
-        return "返回给前台的消息";
+        return result;
     }
 
     /**

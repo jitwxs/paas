@@ -58,7 +58,7 @@ public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter {
             );
         } catch (Exception e) {
             try {
-                req.setAttribute("ERR_MSG", ResultEnum.LOGIN_ERROR.getMessage());
+                req.setAttribute("ERR_MSG", ResultEnum.LOGIN_ERROR);
                 req.getRequestDispatcher("/auth/error").forward(req, res);
             } catch (Exception e1) {
                 e1.printStackTrace();
@@ -76,8 +76,16 @@ public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter {
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication auth) throws IOException, ServletException {
         String username = ((User)auth.getPrincipal()).getUsername();
-        JwtService jwtService = SpringBeanFactoryUtils.getBean(JwtService.class);
 
+        // 判断用户是否被冻结
+        SysLoginService loginService = SpringBeanFactoryUtils.getBean(SysLoginService.class);
+        if(loginService.hasFreeze(username)) {
+            request.setAttribute("ERR_MSG", ResultEnum.LOGIN_FREEZE);
+            request.getRequestDispatcher("/auth/error").forward(request,response);
+        }
+
+        // 生成Token
+        JwtService jwtService = SpringBeanFactoryUtils.getBean(JwtService.class);
         String token = jwtService.genToken(username);
 
         // 写入登录日志

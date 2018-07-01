@@ -8,7 +8,7 @@ import lombok.Data;
  * @since 2018/6/6 9:56
  */
 @Data
-public class CustomException extends RuntimeException {
+public class CustomException extends Exception {
     private Integer code;
 
     public CustomException(ResultEnum resultEnum) {

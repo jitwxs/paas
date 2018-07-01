@@ -71,7 +71,7 @@ public class SysRoleServiceImpl extends ServiceImpl<SysRoleMapper, SysRole> impl
         }
 
         List<SysRole> list = roleMapper.selectList(new EntityWrapper<SysRole>().eq("name", name));
-        SysRole sysRole = CollectionUtils.getFirst(list);
+        SysRole sysRole = CollectionUtils.getListFirst(list);
         if(sysRole == null) {
             return null;
         }

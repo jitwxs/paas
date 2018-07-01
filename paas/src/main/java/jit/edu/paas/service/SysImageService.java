@@ -3,6 +3,9 @@ package jit.edu.paas.service;
 import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.IService;
 import jit.edu.paas.domain.entity.SysImage;
+import org.springframework.web.bind.annotation.RequestParam;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * <p>
@@ -34,4 +37,10 @@ public interface SysImageService extends IService<SysImage> {
      * @since 2018/6/28 16:15
      */
     Page<SysImage> listHubImage(String name, Page<SysImage> page);
+
+    /**
+     * 为用户导入本地的镜像
+     * @author sya
+     */
+    String uploadImages(@RequestParam HttpServletRequest req);
 }

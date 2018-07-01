@@ -2,8 +2,6 @@
 
 # 无道PaaS系统
 
-<!-- aglio -i doc.apib --theme-template triple -o doc.html -->
-
 # Group 鉴权管理
 
 ## 用户登陆  [POST /login]
@@ -108,6 +106,37 @@
             {
                 "username": "用户名，字符串，必填",
 				"password": "密码，字符串，必填"
+            }
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
+## 注册校验  [POST /auth/register/check]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+
+	+ Body
+
+	        {
+				"username": user,
+				"email": jitwxs@foxmail.com
+			}
+
+	+ Schema
+
+            {
+                "username": "用户名，字符串，必填",
+				"email": "邮箱，字符串，必填"
             }
 
 + Response 200 (application/json)
@@ -482,3 +511,204 @@
 
 # Group 用户管理
 
+## 用户列表（管理员）  [GET /user/list{?id,username,email,hasFreeze,startDate,endDate,current,size,orderByField,asc}]
+
++ Parameters
+
+    + id (string, optional) - 用户ID
+    + username (string, optional) - 用户名
+    + email (string, optional) - 邮箱
+    + hasFreeze (string, optional) - 冻结true；活跃：false
+    + startDate (string, optional) - 注册开始时间
+    + endDate (string, optional) - 注册截至时间
+    + current (number, optional) - 页码，默认为1
+    + size (number, optional) - 页面容量，默认为10
+    + orderByField (string, optional) - 排序字段
+    + asc (boolean, optional) - 升序：true；降序：false
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /user/list?email=qq&hasFreeze=true
+
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "total": 2,
+			    "size": 10,
+			    "pages": 1,
+			    "current": 1,
+			    "records": [
+			      {
+			        "id": "3241513613121",
+			        "username": "666",
+			        "password": "$2a$10$dIvHWSbeUqUiQDyNoSpOAes.Zl9zCLXSJbYejXkPTbUVlLxlgsNFa",
+			        "email": "2212557736@qq.com",
+			        "hasFreeze": true,
+			        "roleId": 2,
+			        "createDate": "2018-06-30 01:25:11",
+			        "updateDate": "2018-06-30 16:42:40"
+			      },
+			      {
+			        "id": "4151361367131",
+			        "username": "18083764688",
+			        "password": "123456",
+			        "email": "827622690@qq.com",
+			        "hasFreeze": true,
+			        "roleId": 1,
+			        "createDate": "2018-06-30 09:43:29",
+			        "updateDate": "2018-06-30 16:42:40"
+			      }
+			    ]
+			  }
+			}
+
+## 冻结用户（管理员） [POST /user/freeze]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Body
+
+	        {
+				"ids": 4151361367131,3241513613121
+			}
+
+	+ Schema
+
+            {
+				"ids": "用户数组，字符串，至少一个",
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": 2
+			}
+
+	+ Schema
+
+            {
+			  "code": "状态码",
+			  "message": "消息",
+			  "data": "成功影响用户数"
+			}
+
+# Group 枚举管理
+
+## 状态码列表 [GET /enums/result]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "0": "成功",
+			    "1": "其他错误",
+			    "2": "用户名或密码错误",
+			    "3": "鉴权错误",
+			    "4": "权限错误",
+			    "5": "参数错误",
+			    "6": "注册错误，用户名或邮件已注册",
+			    "7": "邮件发送错误",
+			    "8": "邮件验证错误，用户已注册或验证时间已过期",
+			    "9": "仓储已经存在"
+			  }
+			}
+
+## 日志类型列表 [GET /enums/log]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "0": "用户登录",
+			    "1": "删除项目"
+			  }
+			}
+
+## 仓储类型列表 [GET /enums/repository]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "0": "Docker容器",
+			    "1": "Docker HUB"
+			  }
+			}
+
+## 镜像类型列表 [GET /enums/image]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "0": "本地公共镜像",
+			    "1": "本地用户镜像",
+			    "2": "Docker Hub镜像"
+			  }
+			}

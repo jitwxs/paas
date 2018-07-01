@@ -1,4 +1,4 @@
-package jit.edu.paas.commons;
+package jit.edu.paas.commons.util;
 
 /**
  * 字符串工具类

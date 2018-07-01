@@ -13,10 +13,12 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.constraints.NotNull;
 
 /**
  * 镜像Controller
+ *
  * @author jitwxs
  * @since 2018/6/28 14:27
  */
@@ -28,6 +30,7 @@ public class ImageController {
 
     /**
      * 获取镜像列表
+     *
      * @author jitwxs
      * @since 2018/6/28 14:43
      */
@@ -37,15 +40,26 @@ public class ImageController {
         Page<SysImage> images;
 
         if (type == ImageTypeEnum.LOCAL_PUBLIC_IMAGE.getCode()) {
-            images = imageService.listLocalPublicImage(name,page);
-        } else if (type == ImageTypeEnum.LOCAL_USER_IMAGE.getCode()){
-            images = imageService.listLocalUserImage(name,page);
-        } else if (type == ImageTypeEnum.CLOUD_HUB_IMAGE.getCode()){
+            images = imageService.listLocalPublicImage(name, page);
+        } else if (type == ImageTypeEnum.LOCAL_USER_IMAGE.getCode()) {
+            images = imageService.listLocalUserImage(name, page);
+        } else if (type == ImageTypeEnum.CLOUD_HUB_IMAGE.getCode()) {
             images = imageService.listHubImage(name, page);
         } else {
             return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
         }
 
         return ResultVoUtils.success(images);
+    }
+
+    /**
+     * 上传镜像
+     *
+     * @author sya
+     */
+    @PostMapping("/imageupload")
+    public ResultVo imageUpLoad(HttpServletRequest hs) {
+        String message = imageService.uploadImages(hs);
+        return ResultVoUtils.success();
     }
 }

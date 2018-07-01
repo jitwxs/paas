@@ -2,4 +2,13 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="jit.edu.paas.mapper.UserProjectMapper">
 
+    <select id="hasBelong" resultType="java.lang.Boolean">
+      SELECT
+            COUNT( * )
+        FROM
+            `user_project` AS p
+        WHERE
+            p.id = #{projectId}
+            AND p.user_id = #{userId}
+    </select>
 </mapper>

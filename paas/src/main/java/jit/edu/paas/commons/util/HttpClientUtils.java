@@ -83,6 +83,7 @@ public class HttpClientUtils {
         RequestConfig requestConfig = RequestConfig.custom().setConnectionRequestTimeout(REQUESTCONNECT_TIMEOUT)
                 .setConnectTimeout(CONNECT_TIMEOUT).setSocketTimeout(SOCKET_TIMEOUT).build();
         HttpRequestRetryHandler httpRequestRetryHandler = new HttpRequestRetryHandler() {
+            @Override
             public boolean retryRequest(IOException exception, int executionCount, HttpContext context) {
                 if (executionCount >= 3) {// 如果已经重试了3次，就放弃
                     return false;
@@ -169,8 +170,9 @@ public class HttpClientUtils {
             logger.error("请求通信[" + reqURL + "]时偶遇异常,堆栈轨迹如下", e);
         } finally {
             try {
-                if (response != null)
+                if (response != null) {
                     response.close();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -240,8 +242,9 @@ public class HttpClientUtils {
             logger.error("请求通信[" + reqURL + "]时偶遇异常,堆栈轨迹如下", e);
         } finally {
             try {
-                if (response != null)
+                if (response != null) {
                     response.close();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }

@@ -40,7 +40,6 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
         log.setIp(HttpClientUtils.getRemoteAddr(request));
         log.setUserAgent(request.getHeader("user-agent"));
         log.setParam(request.getParameterMap());
-        log.setCreateDate(new Date());
         log.setException(HttpClientUtils.getStackTraceAsString(ex));
 
         logMapper.insert(log);

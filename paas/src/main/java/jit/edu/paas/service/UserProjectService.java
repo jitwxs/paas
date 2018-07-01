@@ -43,4 +43,11 @@ public interface UserProjectService extends IService<UserProject> {
     ResultVo deleteProject(String id, String userId);
 
     ResultVo updateProject(String userId, String id, String name, String description);
+
+    /**
+     * 项目是否属于用户
+     * @author jitwxs
+     * @since 2018/7/1 15:34
+     */
+    Boolean hasBelong(String projectId, String userId);
 }

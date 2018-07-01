@@ -2,14 +2,13 @@ package jit.edu.paas.service.impl;
 
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
-import jit.edu.paas.commons.StringUtils;
+import jit.edu.paas.commons.util.*;
 import jit.edu.paas.commons.activemq.MQProducer;
 import jit.edu.paas.commons.activemq.Task;
-import jit.edu.paas.commons.util.CollectionUtils;
-import jit.edu.paas.commons.util.JsonUtils;
-import jit.edu.paas.commons.util.JwtUtils;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.entity.SysLogin;
+import jit.edu.paas.domain.enums.ResultEnum;
+import jit.edu.paas.domain.vo.ResultVo;
 import jit.edu.paas.mapper.SysLoginMapper;
 import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.service.SysRoleService;
@@ -28,7 +27,6 @@ import org.thymeleaf.context.Context;
 import javax.jms.Destination;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -121,7 +119,7 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
         }
 
         List<SysLogin> list = loginMapper.selectList(new EntityWrapper<SysLogin>().eq("username", username));
-        SysLogin first = CollectionUtils.getFirst(list);
+        SysLogin first = CollectionUtils.getListFirst(list);
 
         // 如果用户不存在，跳过缓存
         if (first == null) {
@@ -160,7 +158,7 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
         }
 
         List<SysLogin> list = loginMapper.selectList(new EntityWrapper<SysLogin>().eq("email", email));
-        SysLogin first = CollectionUtils.getFirst(list);
+        SysLogin first = CollectionUtils.getListFirst(list);
 
         // 如果用户不存在，跳过缓存
         if (first == null) {
@@ -174,23 +172,6 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
         }
 
         return first;
-    }
-
-    /**
-     * 获取角色ID
-     *
-     * @author jitwxs
-     * @since 2018/6/29 15:38
-     */
-    @Override
-    public Integer getRoleId(String username) {
-        SysLogin login = getByUsername(username);
-
-        if (login == null) {
-            return null;
-        }
-
-        return login.getRoleId();
     }
 
     /**
@@ -214,8 +195,6 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
         if(StringUtils.isNotBlank(sysLogin.getPassword())) {
             sysLogin.setPassword(new BCryptPasswordEncoder().encode(sysLogin.getPassword()));
         }
-        // 设置注册时间
-        sysLogin.setCreateDate(new Date());
         // 用户角色默认为User
         sysLogin.setRoleId(roleService.getId("ROLE_USER"));
         Integer i = loginMapper.insert(sysLogin);
@@ -336,7 +315,7 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
     @Override
     public void deleteByUsername(String username) {
         List<SysLogin> list = loginMapper.selectList(new EntityWrapper<SysLogin>().eq("username", username));
-        SysLogin first = CollectionUtils.getFirst(list);
+        SysLogin first = CollectionUtils.getListFirst(list);
         if (first != null) {
             loginMapper.delete(new EntityWrapper<SysLogin>().eq("username", username));
             // 清理缓存
@@ -366,5 +345,51 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
         } catch (Exception e) {
             log.error("缓存删除异常，错误位置：SysLoginServiceImpl.cleanLoginCache()");
         }
+    }
+
+    @Override
+    public boolean hasFreeze(String username) {
+        SysLogin login = getByUsername(username);
+
+        if(login != null) {
+            return login.getHasFreeze();
+        }
+        return false;
+    }
+
+    @Override
+    public int freezeUser(String[] ids) {
+        int count = 0;
+        for(String id : ids) {
+            SysLogin login = getById(id);
+
+            if(login != null && !login.getHasFreeze()) {
+                login.setHasFreeze(true);
+                // 更新数据
+                update(login);
+
+                count++;
+            }
+        }
+        return count;
+    }
+
+    @Override
+    public ResultVo registerCheck(String username, String email) {
+        if(StringUtils.isBlank(username, email)) {
+            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+        }
+        if(getByUsername(username) != null) {
+            return ResultVoUtils.error(ResultEnum.REGISTER_USERNAME_ERROR);
+        }
+        if(getByEmail(email) != null) {
+            return ResultVoUtils.error(ResultEnum.REGISTER_EMAIL_ERROR);
+        }
+        return ResultVoUtils.success();
+    }
+
+    @Override
+    public String getRoleName(String userId) {
+        return loginMapper.getRoleName(userId);
     }
 }

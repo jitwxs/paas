@@ -14,7 +14,7 @@ public class CollectionUtils {
      * @author jitwxs
      * @since 2018/6/27 14:44
      */
-    public static <T> T getFirst(List<T> list) {
+    public static <T> T getListFirst(List<T> list) {
         if(list == null || list.size() == 0) {
             return null;
         } else {

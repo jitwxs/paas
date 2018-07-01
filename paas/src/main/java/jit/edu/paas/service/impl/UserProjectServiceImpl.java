@@ -1,7 +1,7 @@
 package jit.edu.paas.service.impl;
 
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
-import jit.edu.paas.commons.StringUtils;
+import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.commons.util.JsonUtils;
 import jit.edu.paas.commons.util.ResultVoUtils;
 import jit.edu.paas.commons.util.jedis.JedisClient;
@@ -9,14 +9,11 @@ import jit.edu.paas.domain.entity.UserProject;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.vo.ResultVo;
 import jit.edu.paas.mapper.UserProjectMapper;
-import jit.edu.paas.service.SysLogService;
 import jit.edu.paas.service.UserProjectService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-
-import java.util.Date;
 
 /**
  * <p>
@@ -96,7 +93,6 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
         if(StringUtils.isNotBlank(description)) {
             project.setDescription(description);
         }
-        project.setCreateDate(new Date());
 
         projectMapper.insert(project);
 
@@ -141,5 +137,10 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
         }
 
         return ResultVoUtils.success();
+    }
+
+    @Override
+    public Boolean hasBelong(String projectId, String userId) {
+        return projectMapper.hasBelong(projectId, userId);
     }
 }

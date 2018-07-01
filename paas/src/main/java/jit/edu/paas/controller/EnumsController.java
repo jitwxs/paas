@@ -1,5 +1,10 @@
 package jit.edu.paas.controller;
 
+import jit.edu.paas.commons.util.ResultVoUtils;
+import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.service.EnumsService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -11,13 +16,46 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/enums")
 public class EnumsController {
+    @Autowired
+    private EnumsService enumsService;
 
     /**
-     * 获取所有错误码
+     * 获取所有状态码
      * @author jitwxs
      * @since 2018/6/30 14:46
      */
-//    public ResultVoUtils listErrorCode() {
-//
-//    }
+    @GetMapping("/result")
+    public ResultVo listErrorCode() {
+        return ResultVoUtils.success(enumsService.listResultCode());
+    }
+
+    /**
+     * 获取所有日志类型
+     * @author jitwxs
+     * @since 2018/6/30 14:46
+     */
+    @GetMapping("/log")
+    public ResultVo listLogType() {
+        return ResultVoUtils.success(enumsService.listLogType());
+    }
+
+    /**
+     * 获取所有仓储类型
+     * @author jitwxs
+     * @since 2018/6/30 14:46
+     */
+    @GetMapping("/repository")
+    public ResultVo listRepositoryType() {
+        return ResultVoUtils.success(enumsService.listRepositoryType());
+    }
+
+    /**
+     * 获取所有镜像类型
+     * @author jitwxs
+     * @since 2018/6/30 14:46
+     */
+    @GetMapping("/image")
+    public ResultVo listImageType() {
+        return ResultVoUtils.success(enumsService.listImageType());
+    }
 }

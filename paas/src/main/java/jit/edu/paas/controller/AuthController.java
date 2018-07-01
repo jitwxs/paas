@@ -1,6 +1,6 @@
 package jit.edu.paas.controller;
 
-import jit.edu.paas.commons.StringUtils;
+import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.commons.util.ResultVoUtils;
 import jit.edu.paas.domain.entity.SysLogin;
 import jit.edu.paas.domain.enums.ResultEnum;
@@ -45,6 +45,16 @@ public class AuthController {
     }
 
     /**
+     * 注册校验
+     * @author jitwxs
+     * @since 2018/7/1 8:40
+     */
+    @PostMapping("/register/check")
+    public ResultVo checkRegister(String username, String email) {
+        return loginService.registerCheck(username, email);
+    }
+
+    /**
      * 用户注册
      * @author hf
      * @since 2018/6/28 9:17
@@ -55,9 +65,10 @@ public class AuthController {
             return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
         }
 
-        // 1、确认用户不存在
-        if(loginService.getByUsername(username) != null || loginService.getByEmail(email) != null) {
-            return ResultVoUtils.error(ResultEnum.REGISTER_ERROR);
+        // 1、校验用户名、密码
+        ResultVo resultVo = loginService.registerCheck(username, email);
+        if(resultVo.getCode() != ResultEnum.OK.getCode()) {
+            return resultVo;
         }
 
         // 2、生成用户
@@ -82,7 +93,7 @@ public class AuthController {
 
         String subject = b ? "注册成功" : "注册失败";
         String content = b ? "欢迎注册无道PASS平台，点击此处进入" : "用户已注册或邮件验证已过期，请重新注册";
-        String imgUrl = nginxServer + "/registerCallback.jpg";
+        String imgUrl = nginxServer + "/img/registerCallback.jpg";
         try {
             response.setContentType("text/html;charset=utf-8");
             response.getWriter().write("<!DOCTYPE html>\n" +
@@ -116,13 +127,11 @@ public class AuthController {
                 (AuthenticationException)request.getSession().getAttribute("SPRING_SECURITY_LAST_EXCEPTION");
 
         // 如果Spring Security中没有异常，则从request中取
-        String info;
         if(exception == null) {
-            info = (String)request.getAttribute("ERR_MSG");
+            ResultEnum resultEnum = (ResultEnum) request.getAttribute("ERR_MSG");
+            return ResultVoUtils.error(resultEnum);
         } else {
-            info = exception.toString();
+            return ResultVoUtils.error(ResultEnum.AUTHORITY_ERROR.getCode(), exception.toString());
         }
-
-        return ResultVoUtils.error(ResultEnum.AUTHORITY_ERROR.getCode(), info);
     }
 }

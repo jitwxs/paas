@@ -1,7 +1,7 @@
 package jit.edu.paas.service.impl;
 
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
-import jit.edu.paas.commons.StringUtils;
+import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.commons.util.CollectionUtils;
 import jit.edu.paas.commons.util.ResultVoUtils;
 import jit.edu.paas.domain.entity.SysRepository;
@@ -54,7 +54,7 @@ public class SysRepositoryServiceImpl extends ServiceImpl<SysRepositoryMapper, S
                 .eq("address", address)
                 .eq("type", type));
 
-        return CollectionUtils.getFirst(list) != null;
+        return CollectionUtils.getListFirst(list) != null;
     }
 
     @Override
