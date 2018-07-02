@@ -22,7 +22,9 @@ public enum ResultEnum {
     EMAIL_ERROR("邮件验证错误，用户已注册或验证时间已过期",19),
     REPOSITORY_EXIST("仓储已经存在",20),
     DOCKER_TIMEOUT("Docker超时",21),
-    DOCKER_EXCEPTION("Docker异常",22);
+    DOCKER_EXCEPTION("Docker异常",22),
+    IMAGE_EXCEPTION("镜像异常",23),
+    SERVER_EXCEPTION("服务器异常",23);
 
     private String message;
     private int code;

@@ -1,4 +1,4 @@
-package jit.edu.paas.component;
+package jit.edu.paas.commons.component;
 
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import jit.edu.paas.domain.entity.SysLogin;

@@ -2,6 +2,7 @@ package jit.edu.paas.service;
 
 import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.IService;
+import com.google.common.collect.ImmutableSet;
 import jit.edu.paas.domain.entity.SysImage;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -43,4 +44,11 @@ public interface SysImageService extends IService<SysImage> {
      * @author sya
      */
     String uploadImages(@RequestParam HttpServletRequest req);
+
+    /**
+     * 获取一个镜像的所有暴露接口
+     * @author jitwxs
+     * @since 2018/7/2 8:42
+     */
+    ImmutableSet<String> listExportPorts(String imageName);
 }

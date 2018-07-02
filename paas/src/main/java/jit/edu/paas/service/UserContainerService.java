@@ -1,7 +1,9 @@
 package jit.edu.paas.service;
 
 import com.baomidou.mybatisplus.service.IService;
+import com.google.common.collect.ImmutableSet;
 import jit.edu.paas.domain.entity.UserContainer;
+import jit.edu.paas.domain.enums.ContainerStatusEnum;
 import jit.edu.paas.domain.vo.ResultVo;
 
 /**
@@ -22,10 +24,12 @@ public interface UserContainerService extends IService<UserContainer> {
 
     /**
      * 创建容器
+     * @param exportPorts 镜像暴露的接口
      * @author jitwxs
      * @since 2018/7/1 16:00
      */
-    ResultVo createContainer(String imageName,String[] cmd,String[] ports,String containerName,String projectId);
+    ResultVo createContainer(String userId, String imageName, String[] cmd, ImmutableSet<String> exportPorts,
+                             String containerName, String projectId);
 
     /**
      * 停止容器
@@ -70,4 +74,11 @@ public interface UserContainerService extends IService<UserContainer> {
     ResultVo topContainer(String userId, String containerId);
 
     ResultVo checkPermission(String userId, String containerId);
+
+    /**
+     * 获取容器状态
+     * @author jitwxs
+     * @since 2018/7/1 16:44
+     */
+    ContainerStatusEnum getStatus(String containerId);
 }

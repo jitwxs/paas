@@ -62,4 +62,13 @@ public class ImageController {
         String message = imageService.uploadImages(hs);
         return ResultVoUtils.success();
     }
+
+//    @GetMapping("/exportPots/{imageName}")
+//    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+//    public ResultVo getImageExportPorts(@PathVariable String imageName) {
+//        Set<String> set = imageService.listExportPorts(imageName);
+//
+//        return Res
+//    }
+
 }

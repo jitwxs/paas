@@ -35,4 +35,11 @@ public interface EnumsService {
      * @since 2018/6/30 15:56
      */
     Map<Integer, String > listImageType();
+
+    /**
+     * 容器状态列表
+     * @author jitwxs
+     * @since 2018/7/1 20:02
+     */
+    Map<Integer, String > listContainerStatus();
 }

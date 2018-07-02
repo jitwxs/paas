@@ -2,7 +2,9 @@ package jit.edu.paas.service.impl;
 
 import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
+import com.google.common.collect.ImmutableSet;
 import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.docker.client.messages.ImageSearchResult;
 import jit.edu.paas.commons.util.FileUtils;
 import jit.edu.paas.domain.entity.SysImage;
@@ -18,7 +20,7 @@ import java.util.*;
 
 /**
  * <p>
- *  服务实现类
+ *  Image服务实现类
  * </p>
  *
  * @author jitwxs
@@ -65,7 +67,7 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         try {
             String result = FileUtils.upload(request);
             String length = result.substring(result.lastIndexOf(":")+1,result.length());
-            if (request.equals("未选择文件")){
+            if ("未选择文件".equals(request)){
                 return result;
             }
             StandardMultipartHttpServletRequest req = (StandardMultipartHttpServletRequest) request;
@@ -76,7 +78,6 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             while (names.hasMoreElements()) {
                 String key = names.nextElement();
                 String val = req.getParameter(key);
-//                System.out.println("FormField：k=" + key + "v=" + val);
                 map.put(key,val);
             }
 
@@ -98,6 +99,18 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             return result;
         } catch (Exception e) {
             e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Override
+    public ImmutableSet<String> listExportPorts(String imageName) {
+        try {
+            ImageInfo info = dockerClient.inspectImage(imageName);
+            return info.containerConfig().exposedPorts();
+        } catch (Exception e) {
+            log.error("获取镜像暴露端口错误，出错位置：{}，出错镜像名：{}，错误信息：{}",
+                    "SysImageServiceImpl.listExportPorts()", imageName, e.getMessage());
             return null;
         }
     }

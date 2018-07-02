@@ -3,7 +3,7 @@ package jit.edu.paas.controller;
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.plugins.Page;
 import jit.edu.paas.commons.util.ResultVoUtils;
-import jit.edu.paas.component.WrapperComponent;
+import jit.edu.paas.commons.component.WrapperComponent;
 import jit.edu.paas.domain.entity.SysLogin;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.select.UserSelect;

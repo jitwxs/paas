@@ -2,11 +2,13 @@ package jit.edu.paas.controller;
 
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.plugins.Page;
+import com.google.common.collect.ImmutableSet;
 import jit.edu.paas.commons.util.ResultVoUtils;
 import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.domain.entity.UserContainer;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.service.SysImageService;
 import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.service.UserContainerService;
 import jit.edu.paas.service.UserProjectService;
@@ -30,6 +32,8 @@ public class ContainerController {
     private UserContainerService userContainerService;
     @Autowired
     private SysLoginService loginService;
+    @Autowired
+    private SysImageService imageService;
     @Autowired
     private UserProjectService projectService;
 
@@ -82,17 +86,28 @@ public class ContainerController {
     /**
      * 创建容器
      * @param imageName 镜像名
-     * @param cmd 执行命令
-     * @param ports
+     * @param cmd 执行命令，如若为空，使用默认的命令
      * @param containerName 容器名
      * @param projectId 所属项目
      * @author jitwxs
      * @since 2018/7/1 15:52
      */
     @PostMapping("/create")
-    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo createContainer(String imageName,String[] cmd,String[] ports,String containerName,String projectId){
-        return userContainerService.createContainer(imageName,cmd,ports,containerName,projectId);
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResultVo createContainer(@RequestAttribute String uid, String imageName, String[] cmd,
+                                    String containerName,String projectId){
+        // 1、输入验证
+        if(StringUtils.isBlank(imageName,containerName,projectId)) {
+            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+        }
+
+        // 2、获取暴露接口
+        ImmutableSet<String> exportPorts = imageService.listExportPorts(imageName);
+        if(exportPorts == null) {
+            return ResultVoUtils.error(ResultEnum.IMAGE_EXCEPTION);
+        }
+
+        return userContainerService.createContainer(uid, imageName, cmd, exportPorts, containerName, projectId);
     }
 
     /**

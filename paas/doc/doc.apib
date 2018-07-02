@@ -407,6 +407,32 @@
 			  "data": null
 			}
 
+# Group 容器管理
+
+## 容器列表  [GET /container/list/{projectId}]
+
++ Parameters
+
+    + projectId (string, required) - 项目ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /container/list/
+
+
++ Response 200 (application/json)
+    
+    + Body
+
+
+
 # Group 仓储管理
 
 ## 仓储列表（管理员）  [GET /repository/list{?type,current,size,orderByField,asc}]

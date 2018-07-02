@@ -1,9 +1,6 @@
 package jit.edu.paas.service.impl;
 
-import jit.edu.paas.domain.enums.ImageTypeEnum;
-import jit.edu.paas.domain.enums.LogTypeEnum;
-import jit.edu.paas.domain.enums.RepositoryTypeEnum;
-import jit.edu.paas.domain.enums.ResultEnum;
+import jit.edu.paas.domain.enums.*;
 import jit.edu.paas.service.EnumsService;
 import org.springframework.stereotype.Service;
 
@@ -48,6 +45,15 @@ public class EnumsServiceImpl implements EnumsService {
     public Map<Integer, String> listImageType() {
         Map<Integer, String> map = new TreeMap<>(Integer::compareTo);
         for (ImageTypeEnum s : ImageTypeEnum.values()) {
+            map.put(s.ordinal(), s.getMessage());
+        }
+        return map;
+    }
+
+    @Override
+    public Map<Integer, String> listContainerStatus() {
+        Map<Integer, String> map = new TreeMap<>(Integer::compareTo);
+        for (ContainerStatusEnum s : ContainerStatusEnum.values()) {
             map.put(s.ordinal(), s.getMessage());
         }
         return map;

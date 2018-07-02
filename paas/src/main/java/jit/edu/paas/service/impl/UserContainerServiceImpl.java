@@ -1,29 +1,29 @@
 package jit.edu.paas.service.impl;
 
-import com.baomidou.mybatisplus.mapper.EntityWrapper;
-import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.UnmodifiableIterator;
 import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.docker.client.messages.*;
-import jit.edu.paas.commons.util.CollectionUtils;
+import jit.edu.paas.commons.util.JsonUtils;
+import jit.edu.paas.commons.util.RandomUtils;
 import jit.edu.paas.commons.util.ResultVoUtils;
 import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.domain.entity.UserContainer;
+import jit.edu.paas.domain.enums.ContainerStatusEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.mapper.SysLoginMapper;
 import jit.edu.paas.mapper.UserContainerMapper;
 import jit.edu.paas.mapper.UserProjectMapper;
+import jit.edu.paas.service.PortService;
 import jit.edu.paas.service.UserContainerService;
-import jit.edu.paas.service.UserProjectService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.xml.transform.Result;
-import java.lang.reflect.Array;
 import java.util.*;
 
 
@@ -40,6 +40,8 @@ import java.util.*;
 public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, UserContainer> implements UserContainerService {
     @Autowired
     private DockerClient dockerClient;
+    @Autowired
+    private PortService portService;
     @Autowired
     private SysLoginMapper loginMapper;
     @Autowired
@@ -59,8 +61,8 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
         // 2、开启容器
         try {
             dockerClient.startContainer(containerId);
-            // TODO 查询容器状态，并更新
-            return ResultVoUtils.success();
+            // 查询并修改状态
+            return changeStatus(containerId);
         } catch (Exception e) {
             log.error("开启容器出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.startContainer()",e.getMessage());
             e.printStackTrace();
@@ -70,25 +72,42 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ResultVo createContainer(String imageName, String[] cmd, String[] ports, String containerName, String projectId) {
-        Map<String, List<PortBinding>> portBindings = new HashMap<>(16);
-
-        for (String port : ports) {
-            List<PortBinding> hostPorts = new ArrayList<>();
-            hostPorts.add(PortBinding.of("0.0.0.0", port));
-            portBindings.put(port, hostPorts);
+    public ResultVo createContainer(String userId, String imageName, String[] cmd, ImmutableSet<String> exportPorts, String containerName, String projectId) {
+        // Project鉴权
+        Boolean b = projectMapper.hasBelong(projectId, userId);
+        if(!b) {
+            return ResultVoUtils.error(ResultEnum.PERMISSION_ERROR.getCode(), "项目不存在或权限错误");
         }
 
-        List<PortBinding> randomPort = new ArrayList<>();
-        randomPort.add(PortBinding.randomPort("0.0.0.0"));
-        portBindings.put("443", randomPort);
+        // TODO 设置cmd,如果参数为空。使用Image默认
+
+        // 宿主机端口与暴露端口绑定
+        Map<String, List<PortBinding>> portBindings = new HashMap<>(16);
+        UnmodifiableIterator<String> iterator = exportPorts.iterator();
+
+        // 去除/tcp后的端口集合
+        Set<String> realExportPorts = new HashSet<>();
+        while(iterator.hasNext()) {
+            // 取出暴露端口号,形如：80/tcp
+            String exportPort = iterator.next();
+            // 取出去除/tcp后的端口号
+            String tmp = exportPort.trim().split("/")[0];
+            realExportPorts.add(tmp);
+
+            // 捆绑端口
+            List<PortBinding> hostPorts = new ArrayList<>();
+            // 随机分配主机端口
+            Integer hostPort = portService.randomPort();
+            hostPorts.add(PortBinding.of("0.0.0.0", hostPort));
+            portBindings.put(exportPort, hostPorts);
+        }
 
         HostConfig hostConfig = HostConfig.builder().portBindings(portBindings).build();
 
         ContainerConfig containerConfig = ContainerConfig.builder()
                 .hostConfig(hostConfig)
-                .image(imageName).exposedPorts(ports)
-                .cmd(cmd)
+                .image(imageName).exposedPorts(realExportPorts)
+//                .cmd(cmd)
                 .build();
 
         try {
@@ -96,12 +115,19 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
 
             UserContainer uc = new UserContainer();
             uc.setId(creation.id());
+            // 仅存在于数据库，不代表实际容器名
             uc.setName(containerName);
             uc.setCommand(Arrays.toString(cmd));
             uc.setProjectId(projectId);
-            uc.setPort(Arrays.toString(ports));
-            // TODO 容器状态修改为API获取
-            uc.setStatus("0");
+            uc.setPort(JsonUtils.objectToJson(portBindings));
+            uc.setImage(imageName);
+            // 设置状态
+            ContainerStatusEnum status = getStatus(creation.id());
+            if(status == null) {
+                throw new CustomException(ResultEnum.DOCKER_EXCEPTION.getCode(), "读取容器状态异常");
+            }
+            uc.setStatus(status.getCode());
+
             userContainerMapper.insert(uc);
 
             return ResultVoUtils.success();
@@ -124,13 +150,8 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
         try {
             dockerClient.stopContainer(containerId, 5);
 
-            // TODO 修改为根据API更新容器状态
-            List<UserContainer> list = userContainerMapper.selectList(new EntityWrapper<UserContainer>().eq("id", containerId));
-            UserContainer uc = CollectionUtils.getListFirst(list);
-            uc.setStatus("0");
-            userContainerMapper.updateById(uc);
-
-            return ResultVoUtils.success();
+            // 查询并修改状态
+            return changeStatus(containerId);
         } catch (Exception e) {
             e.printStackTrace();
             log.error("停止容器出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.stopContainer()",e.getMessage());
@@ -149,14 +170,8 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
 
         try {
             dockerClient.killContainer(containerId);
-
-            // TODO 修改为根据API更新容器状态
-            List<UserContainer> list = userContainerMapper.selectList(new EntityWrapper<UserContainer>().eq("id", containerId));
-            UserContainer uc = CollectionUtils.getListFirst(list);
-            uc.setStatus("0");
-            userContainerMapper.updateById(uc);
-
-            return ResultVoUtils.success();
+            // 查询并修改状态
+            return changeStatus(containerId);
         } catch (Exception e) {
             e.printStackTrace();
             log.error("强制停止容器出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.killContainer()",e.getMessage());
@@ -175,10 +190,8 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
 
         try {
             dockerClient.removeContainer(containerId);
-            // TODO 修改为根据API决定删除记录
-            userContainerMapper.deleteById(containerId);
-
-            return ResultVoUtils.success();
+            // 查询并修改状态
+            return changeStatus(containerId);
         } catch (Exception e) {
             e.printStackTrace();
             log.error("删除容器出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.removeContainer()",e.getMessage());
@@ -198,13 +211,8 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
         try {
             dockerClient.pauseContainer(containerId);
 
-            // TODO 修改为根据API决定暂定
-            List<UserContainer> list = userContainerMapper.selectList(new EntityWrapper<UserContainer>().eq("id", containerId));
-            UserContainer uc = CollectionUtils.getListFirst(list);
-            uc.setStatus("2");
-            userContainerMapper.updateById(uc);
-
-            return ResultVoUtils.success();
+            // 查询并修改状态
+            return changeStatus(containerId);
         } catch (Exception e) {
             e.printStackTrace();
             log.error("暂停容器出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.pauseContainer()",e.getMessage());
@@ -222,14 +230,8 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
 
         try {
             dockerClient.unpauseContainer(containerId);
-
-            // TODO 修改为根据API决定继续
-            List<UserContainer> list = userContainerMapper.selectList(new EntityWrapper<UserContainer>().eq("id", containerId));
-            UserContainer uc = CollectionUtils.getListFirst(list);
-            uc.setStatus("1");
-            userContainerMapper.updateById(uc);
-
-            return ResultVoUtils.success();
+            // 查询并修改状态
+            return changeStatus(containerId);
         } catch (Exception e) {
             e.printStackTrace();
             log.error("继续容器出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.continueContainer()",e.getMessage());
@@ -277,4 +279,49 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
         return ResultVoUtils.success();
     }
 
+    @Override
+    public ContainerStatusEnum getStatus(String containerId) {
+        try {
+            ContainerInfo info = dockerClient.inspectContainer(containerId);
+            ContainerState state = info.state();
+
+            if(state.running()) {
+                if(state.paused()) {
+                    return ContainerStatusEnum.PAUSE;
+                } else {
+                    return ContainerStatusEnum.START;
+                }
+            } else {
+                return ContainerStatusEnum.STOP;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error("获取容器状态出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.getStatus()",e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * 修改数据库中容器状态
+     * @author jitwxs
+     * @since 2018/7/1 16:48
+     */
+    private ResultVo changeStatus(String containerId) {
+        ContainerStatusEnum statusEnum = getStatus(containerId);
+        if(statusEnum == null) {
+            return ResultVoUtils.error(ResultEnum.DOCKER_EXCEPTION);
+        }
+
+        UserContainer container = userContainerMapper.selectById(containerId);
+        if(container == null) {
+            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+        }
+
+        if(container.getStatus() != statusEnum.getCode()) {
+            container.setStatus(statusEnum.getCode());
+            userContainerMapper.updateById(container);
+        }
+
+        return ResultVoUtils.success();
+    }
 }

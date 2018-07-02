@@ -58,4 +58,14 @@ public class EnumsController {
     public ResultVo listImageType() {
         return ResultVoUtils.success(enumsService.listImageType());
     }
+
+    /**
+     * 获取所有容器状态
+     * @author jitwxs
+     * @since 2018/7/1 20:03
+     */
+    @GetMapping("/container")
+    public ResultVo listContainerStatus() {
+        return ResultVoUtils.success(enumsService.listContainerStatus());
+    }
 }
