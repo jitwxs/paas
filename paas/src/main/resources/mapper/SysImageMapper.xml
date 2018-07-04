@@ -11,8 +11,7 @@
     <select id="listLocalUserImage" resultType="jit.edu.paas.domain.entity.SysImage">
         SELECT * FROM `sys_image`
         WHERE `type` = 2
-        AND `name`
+        AND `name` like "%"#{name}"%"
         AND `has_open` = 1
-        like "%"#{name}"%"
     </select>
 </mapper>

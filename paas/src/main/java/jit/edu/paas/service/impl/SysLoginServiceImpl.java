@@ -8,10 +8,10 @@ import jit.edu.paas.commons.activemq.Task;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.entity.SysLogin;
 import jit.edu.paas.domain.enums.ResultEnum;
+import jit.edu.paas.domain.enums.RoleEnum;
 import jit.edu.paas.domain.vo.ResultVo;
 import jit.edu.paas.mapper.SysLoginMapper;
 import jit.edu.paas.service.SysLoginService;
-import jit.edu.paas.service.SysRoleService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -44,8 +44,6 @@ import java.util.Map;
 public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> implements SysLoginService {
     @Autowired
     private SysLoginMapper loginMapper;
-    @Autowired
-    private SysRoleService roleService;
     @Autowired
     private JavaMailSender mailSender;
     @Autowired
@@ -196,7 +194,7 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
             sysLogin.setPassword(new BCryptPasswordEncoder().encode(sysLogin.getPassword()));
         }
         // 用户角色默认为User
-        sysLogin.setRoleId(roleService.getId("ROLE_USER"));
+        sysLogin.setRoleId(RoleEnum.ROLE_USER.getCode());
         Integer i = loginMapper.insert(sysLogin);
         return i == 1;
     }
@@ -390,6 +388,7 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
 
     @Override
     public String getRoleName(String userId) {
-        return loginMapper.getRoleName(userId);
+        SysLogin sysLogin = getById(userId);
+        return RoleEnum.getMessage(sysLogin.getRoleId());
     }
 }

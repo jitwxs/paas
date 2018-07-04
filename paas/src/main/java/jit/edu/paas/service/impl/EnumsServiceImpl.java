@@ -24,9 +24,18 @@ public class EnumsServiceImpl implements EnumsService {
     }
 
     @Override
-    public Map<Integer, String> listLogType() {
+    public Map<Integer, String> listSysLogType() {
         Map<Integer, String> map = new TreeMap<>(Integer::compareTo);
-        for (LogTypeEnum s : LogTypeEnum.values()) {
+        for (SysLogTypeEnum s : SysLogTypeEnum.values()) {
+            map.put(s.ordinal(), s.getMessage());
+        }
+        return map;
+    }
+
+    @Override
+    public Map<Integer, String> listProjectLogType() {
+        Map<Integer, String> map = new TreeMap<>(Integer::compareTo);
+        for (ProjectLogTypeEnum s : ProjectLogTypeEnum.values()) {
             map.put(s.ordinal(), s.getMessage());
         }
         return map;

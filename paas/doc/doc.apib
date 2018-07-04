@@ -409,11 +409,15 @@
 
 # Group 容器管理
 
-## 容器列表  [GET /container/list/{projectId}]
+## 容器列表  [GET /container/list/{projectId,current,size,orderByField,asc}]
 
 + Parameters
 
     + projectId (string, required) - 项目ID
+    + current (number, optional) - 页码，默认为1
+    + size (number, optional) - 页面容量，默认为10
+    + orderByField (string, optional) - 排序字段
+    + asc (boolean, optional) - 升序：true；降序：false
 
 + Request
 
@@ -424,13 +428,405 @@
 
 	+ Schema
 
-            /container/list/
+            /container/list/b2b09405f54c4cf3a9e70b4ec298b31a?current=2&size=1
 
 
 + Response 200 (application/json)
     
     + Body
 
+    		{
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "total": 2,
+			    "size": 1,
+			    "pages": 2,
+			    "current": 2,
+			    "records": [
+			      {
+			        "id": "f0d99bf2945cf1021040a045405b61c2d6fc37e467bb56d61a29416184fedd4b",
+			        "projectId": "b2b09405f54c4cf3a9e70b4ec298b31a",
+			        "name": "666",
+			        "command": "null",
+			        "port": "{\"80/tcp\":[{\"HostIp\":\"0.0.0.0\",\"HostPort\":\"61139\"}]}",
+			        "image": "nginx:latest",
+			        "status": 1,
+			        "createDate": "2018-07-02 11:10:49",
+			        "updateDate": "2018-07-02 11:16:11"
+			      }
+			    ]
+			  }
+			}
+
+## 创建容器（用户） [POST /container/create]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Body
+
+	        {
+				"imageName": "nginx:latest",
+				"cmd": "/bin/bash",
+				"containerName": "testContainer",
+				"projectId": "b2b09405f54c4cf3a9e70b4ec298b31a"
+			}
+
+	+ Schema
+
+            {
+				"imageName": "镜像名称，字符串，必填",
+				"cmd": "执行命令，字符串，选填",
+				"containerName": "容器名，字符串，必填",
+				"projectId": "项目ID，字符串，必填"
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "id": "54c4af1b16370796dc5d442beac3ea86c83a603e09acb29dfe830310faa9c6a3",
+			    "projectId": "b2b09405f54c4cf3a9e70b4ec298b31a",
+			    "name": "testContainer",
+			    "command": "null",
+			    "port": "{\"80/tcp\":[{\"HostIp\":\"0.0.0.0\",\"HostPort\":\"13479\"}]}",
+			    "image": "nginx:latest",
+			    "status": 0,
+			    "createDate": "2018-07-02 11:20:34",
+			    "updateDate": null
+			  }
+			}
+
+	+ Schema
+
+            {
+				"code": "状态码",
+				"message": "状态消息",
+				"containerName": "容器名，字符串，必填",
+				"data": {
+				    "id": "容器ID",
+				    "projectId": "项目ID",
+				    "name": "容器名",
+				    "command": "容器启动命令",
+				    "port": "端口信息",
+				    "image": "镜像名",
+				    "status": "容器状态",
+				    "createDate": "创建时间",
+				    "updateDate": "更新时间"
+				}
+			}
+
+## 开启容器  [GET /container/start/{containerId}]
+
++ Parameters
+
+    + containerId (string, required) - 容器ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /container/start/f0d99bf2945cf1021040a045405b61c2d6fc37e467bb56d61a29416184fedd4b
+
+
++ Response 200 (application/json)
+    
+    + Body
+
+	    	{
+			  "code": 0,
+			  "message": "成功",
+			  "data": 1
+			}
+
+	+ Schema
+
+            {
+				"code": "状态码",
+				"message": "状态消息",
+				"containerName": "容器名，字符串，必填",
+				"data": "容器状态"
+			}
+
+## 暂停容器  [GET /container/pause/{containerId}]
+
++ Parameters
+
+    + containerId (string, required) - 容器ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /container/pause/f0d99bf2945cf1021040a045405b61c2d6fc37e467bb56d61a29416184fedd4b
+
+
++ Response 200 (application/json)
+    
+    + Body
+
+	    	{
+			  "code": 0,
+			  "message": "成功",
+			  "data": 2
+			}
+
+	+ Schema
+
+            {
+				"code": "状态码",
+				"message": "状态消息",
+				"containerName": "容器名，字符串，必填",
+				"data": "容器状态"
+			}
+
+## 恢复容器  [GET /container/continue/{containerId}]
+
++ Parameters
+
+    + containerId (string, required) - 容器ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /container/continue/f0d99bf2945cf1021040a045405b61c2d6fc37e467bb56d61a29416184fedd4b
+
+
++ Response 200 (application/json)
+    
+    + Body
+
+	    	{
+			  "code": 0,
+			  "message": "成功",
+			  "data": 1
+			}
+
+	+ Schema
+
+            {
+				"code": "状态码",
+				"message": "状态消息",
+				"containerName": "容器名，字符串，必填",
+				"data": "容器状态"
+			}
+
+
+## 停止容器  [GET /container/stop/{containerId}]
+
++ Parameters
+
+    + containerId (string, required) - 容器ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /container/stop/f0d99bf2945cf1021040a045405b61c2d6fc37e467bb56d61a29416184fedd4b
+
+
++ Response 200 (application/json)
+    
+    + Body
+
+	    	{
+			  "code": 0,
+			  "message": "成功",
+			  "data": 0
+			}
+
+	+ Schema
+
+            {
+				"code": "状态码",
+				"message": "状态消息",
+				"containerName": "容器名，字符串，必填",
+				"data": "容器状态"
+			}
+
+## 强制停止容器  [GET /container/kill/{containerId}]
+
++ Parameters
+
+    + containerId (string, required) - 容器ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /container/kill/f0d99bf2945cf1021040a045405b61c2d6fc37e467bb56d61a29416184fedd4b
+
+
++ Response 200 (application/json)
+    
+    + Body
+
+	    	{
+			  "code": 0,
+			  "message": "成功",
+			  "data": 0
+			}
+
+	+ Schema
+
+            {
+				"code": "状态码",
+				"message": "状态消息",
+				"containerName": "容器名，字符串，必填",
+				"data": "容器状态"
+			}
+
+## 容器进程  [GET /container/top/{containerId}]
+
++ Parameters
+
+    + containerId (string, required) - 容器ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /container/top/f0d99bf2945cf1021040a045405b61c2d6fc37e467bb56d61a29416184fedd4b
+
+
++ Response 200 (application/json)
+    
+    + Body
+
+	    	{
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "Titles": [
+			      "UID",
+			      "PID",
+			      "PPID",
+			      "C",
+			      "STIME",
+			      "TTY",
+			      "TIME",
+			      "CMD"
+			    ],
+			    "Processes": [
+			      [
+			        "root",
+			        "11615",
+			        "11603",
+			        "0",
+			        "11:32",
+			        "?",
+			        "00:00:00",
+			        "nginx: master process nginx -g daemon off;"
+			      ],
+			      [
+			        "101",
+			        "11634",
+			        "11615",
+			        "0",
+			        "11:32",
+			        "?",
+			        "00:00:00",
+			        "nginx: worker process"
+			      ]
+			    ]
+			  }
+			}
+
+## 删除容器  [DELETE /container/remove/{containerId}]
+
++ Parameters
+
+    + containerId (string, required) - 容器ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /container/remove/f0d99bf2945cf1021040a045405b61c2d6fc37e467bb56d61a29416184fedd4b
+
+
++ Response 200 (application/json)
+    
+    + Body
+
+	    	{
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
+
+## 进入Terminal  [GET /container/terminal/{containerId}]
+
++ Parameters
+
+    + containerId (string, required) - 容器ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /container/remove/f0d99bf2945cf1021040a045405b61c2d6fc37e467bb56d61a29416184fedd4b
+
+
++ Response 200 (application/json)
+    
+    + Body
+
+	    	{
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
 
 
 # Group 仓储管理
@@ -672,7 +1068,7 @@
 			  }
 			}
 
-## 日志类型列表 [GET /enums/log]
+## 系统日志类型列表 [GET /enums/log/sys]
 
 + Request
 
@@ -691,6 +1087,34 @@
 			  "data": {
 			    "0": "用户登录",
 			    "1": "删除项目"
+			  }
+			}
+
+## 项目日志类型列表 [GET /enums/log/project]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "0": "创建项目",
+			    "1": "创建容器",
+			    "2": "启动容器",
+			    "3": "暂停容器",
+			    "4": "恢复容器",
+			    "5": "停止容器",
+			    "6": "强制停止容器",
+			    "7": "删除容器"
 			  }
 			}
 
@@ -736,5 +1160,28 @@
 			    "0": "本地公共镜像",
 			    "1": "本地用户镜像",
 			    "2": "Docker Hub镜像"
+			  }
+			}
+
+## 容器状态列表 [GET /enums/container]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "0": "容器关闭",
+			    "1": "容器启动",
+			    "2": "容器暂停"
 			  }
 			}

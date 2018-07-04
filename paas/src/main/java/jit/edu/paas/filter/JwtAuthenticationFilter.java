@@ -1,8 +1,7 @@
 package jit.edu.paas.filter;
 
-import jit.edu.paas.service.SysRoleService;
 import jit.edu.paas.commons.util.JwtUtils;
-import jit.edu.paas.commons.util.SpringBeanFactoryUtils;
+import jit.edu.paas.domain.enums.RoleEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
@@ -77,8 +76,8 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
                 // 将用户id放入request中
                 request.setAttribute("uid", uid);
 
-                SysRoleService roleService = SpringBeanFactoryUtils.getBean(SysRoleService.class);
-                authorities.add(new SimpleGrantedAuthority(roleService.getName(rid)));
+                // 设置角色
+                authorities.add(new SimpleGrantedAuthority(RoleEnum.getMessage(rid)));
 
                 // 这里直接注入角色，因为JWT已经验证了用户合法性，所以principal和credentials直接为null即可
                 return new UsernamePasswordAuthenticationToken(null, null, authorities);

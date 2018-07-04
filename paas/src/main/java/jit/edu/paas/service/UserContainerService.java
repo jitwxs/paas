@@ -28,8 +28,8 @@ public interface UserContainerService extends IService<UserContainer> {
      * @author jitwxs
      * @since 2018/7/1 16:00
      */
-    ResultVo createContainer(String userId, String imageName, String[] cmd, ImmutableSet<String> exportPorts,
-                             String containerName, String projectId);
+    ResultVo createContainer(String userId, String imageId, String[] cmd, ImmutableSet<String> exportPorts,
+                             String containerName, String projectId, String env, String[] destination);
 
     /**
      * 停止容器

@@ -7,6 +7,7 @@ import jit.edu.paas.commons.util.ResultVoUtils;
 import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.domain.entity.UserContainer;
 import jit.edu.paas.domain.enums.ResultEnum;
+import jit.edu.paas.domain.enums.RoleEnum;
 import jit.edu.paas.domain.vo.ResultVo;
 import jit.edu.paas.service.SysImageService;
 import jit.edu.paas.service.SysLoginService;
@@ -51,7 +52,7 @@ public class ContainerController {
      */
     @GetMapping("/list/{projectId}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo containerListByUser(@RequestAttribute String uid, @PathVariable String projectId, Page<UserContainer> page){
+    public ResultVo listContainer(@RequestAttribute String uid, @PathVariable String projectId, Page<UserContainer> page) {
         // 1、鉴权
         String roleName = loginService.getRoleName(uid);
         // 1.1、角色无效
@@ -59,7 +60,7 @@ public class ContainerController {
             return ResultVoUtils.error(ResultEnum.AUTHORITY_ERROR);
         }
         // 1.2、越权访问
-        if("ROLE_USER".equals(roleName)) {
+        if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
             if(!projectService.hasBelong(projectId, uid)) {
                 return ResultVoUtils.error(ResultEnum.PERMISSION_ERROR);
             }
@@ -73,74 +74,42 @@ public class ContainerController {
     }
 
     /**
-     * 开启容器
-     * @author jitwxs
-     * @since 2018/7/1 15:39
-     */
-    @PostMapping("/start")
-    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo startContainer(@RequestAttribute String uid, String containerId){
-        return userContainerService.startContainer(uid, containerId);
-    }
-
-    /**
      * 创建容器
-     * @param imageName 镜像名
+     * @param imageId 镜像ID
      * @param cmd 执行命令，如若为空，使用默认的命令
      * @param containerName 容器名
      * @param projectId 所属项目
+     * @destination 容器内部目录
      * @author jitwxs
      * @since 2018/7/1 15:52
      */
     @PostMapping("/create")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResultVo createContainer(@RequestAttribute String uid, String imageName, String[] cmd,
-                                    String containerName,String projectId){
+    public ResultVo createContainer(@RequestAttribute String uid, String imageId, String[] cmd,
+                                    String containerName,String projectId,String env, String[] destination){
         // 1、输入验证
-        if(StringUtils.isBlank(imageName,containerName,projectId)) {
+        if(StringUtils.isBlank(imageId,containerName,projectId)) {
             return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
         }
 
         // 2、获取暴露接口
-        ImmutableSet<String> exportPorts = imageService.listExportPorts(imageName);
+        ImmutableSet<String> exportPorts = imageService.listExportPorts(imageId);
         if(exportPorts == null) {
             return ResultVoUtils.error(ResultEnum.IMAGE_EXCEPTION);
         }
 
-        return userContainerService.createContainer(uid, imageName, cmd, exportPorts, containerName, projectId);
+        return userContainerService.createContainer(uid, imageId, cmd, exportPorts, containerName, projectId, env, destination);
     }
 
     /**
-     * 停止容器运行
+     * 开启容器
      * @author jitwxs
-     * @since 2018/7/1 15:59
+     * @since 2018/7/1 15:39
      */
-    @PostMapping("/stop")
+    @GetMapping("/start/{containerId}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo stopContainer(@RequestAttribute String uid, String containerId){
-        return userContainerService.stopContainer(uid, containerId);
-    }
-
-    /**
-     * 强制停止容器
-     * @author jitwxs
-     * @since 2018/7/1 16:02
-     */
-    @PostMapping("/kill")
-    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo killContainer(@RequestAttribute String uid, String containerId){
-        return userContainerService.killContainer(uid, containerId);
-    }
-
-    /**
-     * 移除容器
-     * @author jitwxs
-     * @since 2018/7/1 16:05
-     */
-    @PostMapping("/rmContainer")
-    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo removeContainer(@RequestAttribute String uid, String containerId){
-        return userContainerService.removeContainer(uid, containerId);
+    public ResultVo startContainer(@RequestAttribute String uid, @PathVariable String containerId){
+        return userContainerService.startContainer(uid, containerId);
     }
 
     /**
@@ -148,9 +117,9 @@ public class ContainerController {
      * @author jitwxs
      * @since 2018/7/1 16:07
      */
-    @PostMapping("/pause")
+    @GetMapping("/pause/{containerId}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo pauseContainer(@RequestAttribute String uid, String containerId){
+    public ResultVo pauseContainer(@RequestAttribute String uid, @PathVariable String containerId){
         return userContainerService.pauseContainer(uid, containerId);
     }
 
@@ -159,10 +128,32 @@ public class ContainerController {
      * @author jitwxs
      * @since 2018/7/1 16:09
      */
-    @PostMapping("/continue")
+    @GetMapping("/continue/{containerId}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo continueContainer(@RequestAttribute String uid, String containerId){
+    public ResultVo continueContainer(@RequestAttribute String uid, @PathVariable String containerId){
         return userContainerService.continueContainer(uid, containerId);
+    }
+
+    /**
+     * 停止容器
+     * @author jitwxs
+     * @since 2018/7/1 15:59
+     */
+    @GetMapping("/stop/{containerId}")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVo stopContainer(@RequestAttribute String uid, @PathVariable String containerId){
+        return userContainerService.stopContainer(uid, containerId);
+    }
+
+    /**
+     * 强制停止容器
+     * @author jitwxs
+     * @since 2018/7/1 16:02
+     */
+    @GetMapping("/kill/{containerId}")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVo killContainer(@RequestAttribute String uid, @PathVariable String containerId){
+        return userContainerService.killContainer(uid, containerId);
     }
 
     /**
@@ -170,10 +161,21 @@ public class ContainerController {
      * @author jitwxs
      * @since 2018/7/1 16:12
      */
-    @PostMapping("/top")
+    @GetMapping("/top/{containerId}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo topContainer(@RequestAttribute String uid, String containerId){
+    public ResultVo topContainer(@RequestAttribute String uid, @PathVariable String containerId){
         return userContainerService.topContainer(uid, containerId);
+    }
+
+    /**
+     * 删除容器
+     * @author jitwxs
+     * @since 2018/7/1 16:05
+     */
+    @DeleteMapping("/remove/{containerId}")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVo removeContainer(@RequestAttribute String uid, @PathVariable String containerId){
+        return userContainerService.removeContainer(uid, containerId);
     }
 
     /**
@@ -183,6 +185,7 @@ public class ContainerController {
      * @since 2018/7/1 14:35
      */
     @GetMapping("/terminal/{containerId}")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public void showTerminal(@PathVariable String containerId, HttpServletResponse response) {
         try {
             response.getWriter().write("<html>\n" +

@@ -4,7 +4,7 @@ import jit.edu.paas.commons.util.JsonUtils;
 import jit.edu.paas.commons.util.ResultVoUtils;
 import jit.edu.paas.commons.util.SpringBeanFactoryUtils;
 import jit.edu.paas.domain.entity.SysLogin;
-import jit.edu.paas.domain.enums.LogTypeEnum;
+import jit.edu.paas.domain.enums.SysLogTypeEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.service.JwtService;
 import jit.edu.paas.service.SysLogService;
@@ -90,7 +90,7 @@ public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter {
 
         // 写入登录日志
         SysLogService logService = SpringBeanFactoryUtils.getBean(SysLogService.class);
-        logService.saveLog(request, LogTypeEnum.USER_LOGIN.getCode());
+        logService.saveLog(request, SysLogTypeEnum.USER_LOGIN.getCode());
 
         // 将token放入响应头中
         response.addHeader("Authorization", token);

@@ -28,6 +28,11 @@ public class SysImage implements Serializable {
     @TableId(type = IdType.INPUT)
     private String id;
     /**
+     * 镜像完整名
+     * 注：容器实际操作时请使用该变量，而不要使用name
+     */
+    private String fullName;
+    /**
      * 镜像名
      */
     private String name;
@@ -38,7 +43,7 @@ public class SysImage implements Serializable {
     /**
      * 所占大小
      */
-    private String size;
+    private Long size;
     /**
      * 镜像类型【1：本地公共镜像；2：本地用户镜像】
      */
@@ -51,6 +56,26 @@ public class SysImage implements Serializable {
      * 如果是用户镜像，是否公开
      */
     private Boolean hasOpen;
+    /**
+     * 镜像虚拟大小
+     */
+    private Long virtualSize;
+    /**
+     * labels
+     */
+    private String labels;
+    /**
+     * 镜像默认CMD
+     */
+    private String cmd;
+    /**
+     *仓库地址【官方：library】
+     */
+    private String repo;
+    /**
+     * parent_id
+     */
+    private String parentId;
     /**
      * 创建时间
      */

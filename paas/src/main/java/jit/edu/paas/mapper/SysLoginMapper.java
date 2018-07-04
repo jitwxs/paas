@@ -12,10 +12,4 @@ import jit.edu.paas.domain.entity.SysLogin;
  * @since 2018-06-27
  */
 public interface SysLoginMapper extends BaseMapper<SysLogin> {
-    /**
-     * 获取用户角色名
-     * @author jitwxs
-     * @since 2018/7/1 15:21
-     */
-    String getRoleName(String userId);
 }

@@ -6,6 +6,7 @@ import jit.edu.paas.service.JwtService;
 import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.commons.util.JwtUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.HashMap;
@@ -23,7 +24,8 @@ public class JwtServiceImpl implements JwtService {
     /**
      * JWT有效时间（单位：ms）
      */
-    private Integer maxAge = 3600_000;
+    @Value("${token.max-age}")
+    private Integer maxAge;
 
     @Override
     public String genToken(String username) {

@@ -23,22 +23,16 @@ public class DockerHttpUtils {
     }
 
     /*  Image  Start */
-    public static  List<ImageSearchResult> searchImages(String term, Integer limit, Boolean isAutomated, Boolean isOfficial, Integer leastStars) {
-        // 准备Map
-        Map<String,Object> map = new HashMap<>();
-        if(isAutomated != null) {
-            map.put("is-automated", isAutomated);
-        }
-        if(isOfficial != null) {
-            map.put("is-official", isOfficial);
-        }
-        if(leastStars != null) {
-            map.put("stars", leastStars);
-        }
-        String jsonStr = JsonUtils.mapToJson(map);
+
+    /**
+     * 搜索Hub镜像
+     * @author jitwxs
+     * @since 2018/7/3 15:42
+     */
+    public static  List<ImageSearchResult> searchImages(String term, Integer limit) {
 
         String url = serverUrl + "/images/search";
-        String params = "term=" + term + "&limit=" + limit + "&filters=" +  jsonStr;
+        String params = "term=" + term + "&limit=" + limit;
 
         String res = HttpClientUtils.sendGetRequest(url, params);
         List<ImageSearchResult> list = JsonUtils.jsonToList(res,ImageSearchResult.class);

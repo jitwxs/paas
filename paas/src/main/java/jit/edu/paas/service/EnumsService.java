@@ -16,11 +16,18 @@ public interface EnumsService {
     Map<Integer, String> listResultCode();
 
     /**
-     * 日志类型列表
+     * 系统日志类型列表
      * @author jitwxs
      * @since 2018/6/30 15:20
      */
-    Map<Integer, String> listLogType();
+    Map<Integer, String> listSysLogType();
+
+    /**
+     * 项目日志类型列表
+     * @author jitwxs
+     * @since 2018/6/30 15:20
+     */
+    Map<Integer, String> listProjectLogType();
 
     /**
      * 仓储类型列表

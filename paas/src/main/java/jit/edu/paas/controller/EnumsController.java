@@ -30,13 +30,23 @@ public class EnumsController {
     }
 
     /**
-     * 获取所有日志类型
+     * 获取所有系统日志类型
      * @author jitwxs
      * @since 2018/6/30 14:46
      */
-    @GetMapping("/log")
-    public ResultVo listLogType() {
-        return ResultVoUtils.success(enumsService.listLogType());
+    @GetMapping("/log/sys")
+    public ResultVo listSysLogType() {
+        return ResultVoUtils.success(enumsService.listSysLogType());
+    }
+
+    /**
+     * 获取所有项目日志类型
+     * @author jitwxs
+     * @since 2018/6/30 14:46
+     */
+    @GetMapping("/log/project")
+    public ResultVo listProjectLogType() {
+        return ResultVoUtils.success(enumsService.listProjectLogType());
     }
 
     /**

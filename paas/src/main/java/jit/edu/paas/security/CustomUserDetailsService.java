@@ -1,8 +1,8 @@
 package jit.edu.paas.security;
 
 import jit.edu.paas.domain.entity.SysLogin;
+import jit.edu.paas.domain.enums.RoleEnum;
 import jit.edu.paas.service.SysLoginService;
-import jit.edu.paas.service.SysRoleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -24,9 +24,6 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Autowired
     private SysLoginService loginService;
 
-    @Autowired
-    private SysRoleService roleService;
-
     @Override
     public UserDetails loadUserByUsername(String s) throws UsernameNotFoundException {
         Collection<GrantedAuthority> authorities = new ArrayList<>();
@@ -38,7 +35,7 @@ public class CustomUserDetailsService implements UserDetailsService {
         }
 
         // 添加权限
-        String roleName = roleService.getName(login.getRoleId());
+        String roleName = RoleEnum.getMessage(login.getRoleId());
         authorities.add(new SimpleGrantedAuthority(roleName));
 
         // 返回UserDetails实现类

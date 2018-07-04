@@ -6,55 +6,31 @@ import com.baomidou.mybatisplus.enums.IdType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
-import java.io.Serializable;
 import java.util.Date;
 
+
 /**
- * <p>
- * 用户容器表
- * </p>
- *
+ * 系统挂载 实体类
  * @author jitwxs
- * @since 2018-06-27
+ * @since 2018/7/4 17:04
  */
 @Data
-public class UserContainer implements Serializable {
+public class SysVolume {
 
-    private static final long serialVersionUID = 1L;
-
-    /**
-     * 容器ID
-     */
     @TableId(type = IdType.UUID)
     private String id;
     /**
-     * 项目ID
+     * 挂载容器id
      */
-    private String projectId;
+    private String containerId;
     /**
-     * 容器名
+     * 挂载名称
      */
-    private String name;
+    private String volumeName;
     /**
-     * 执行命令
+     * 宿主机目录
      */
-    private String command;
-    /**
-     * 端口
-     */
-    private String port;
-    /**
-     * 镜像名
-     */
-    private String image;
-    /**
-     * 容器状态
-     */
-    private Integer status;
-    /**
-     * 环境参数
-     */
-    private String env;
+    private String source;
     /**
      * 创建时间
      */

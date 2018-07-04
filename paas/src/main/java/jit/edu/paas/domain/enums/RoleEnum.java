@@ -3,25 +3,31 @@ package jit.edu.paas.domain.enums;
 import lombok.Getter;
 
 /**
- * 日志类型枚举
+ * 角色枚举
  * @author jitwxs
  * @since 2018/6/5 23:53
  */
 @Getter
-public enum LogTypeEnum {
-    USER_LOGIN("用户登录", 1),
-    DELETE_PROJECT("删除项目", 2);
+public enum RoleEnum {
+    /**
+     * 普通用户
+     */
+    ROLE_USER("ROLE_USER", 1),
+    /**
+     * 管理员
+     */
+    ROLE_SYSTEM("ROLE_SYSTEM", 2);
 
     private String message;
     private int code;
 
-    LogTypeEnum(String message, int code) {
+    RoleEnum(String message, int code) {
         this.message = message;
         this.code = code;
     }
 
     public static String getMessage(int code) {
-        for (LogTypeEnum enums : LogTypeEnum.values()) {
+        for (RoleEnum enums : RoleEnum.values()) {
             if (enums.getCode() == code) {
                 return enums.message;
             }

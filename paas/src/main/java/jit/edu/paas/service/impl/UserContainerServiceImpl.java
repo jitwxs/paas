@@ -1,23 +1,28 @@
 package jit.edu.paas.service.impl;
 
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.UnmodifiableIterator;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.*;
 import jit.edu.paas.commons.util.JsonUtils;
-import jit.edu.paas.commons.util.RandomUtils;
 import jit.edu.paas.commons.util.ResultVoUtils;
 import jit.edu.paas.commons.util.StringUtils;
+import jit.edu.paas.domain.entity.SysImage;
+import jit.edu.paas.domain.entity.SysVolume;
 import jit.edu.paas.domain.entity.UserContainer;
 import jit.edu.paas.domain.enums.ContainerStatusEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
+import jit.edu.paas.domain.enums.RoleEnum;
 import jit.edu.paas.domain.vo.ResultVo;
 import jit.edu.paas.exception.CustomException;
-import jit.edu.paas.mapper.SysLoginMapper;
+import jit.edu.paas.mapper.SysVolumesMapper;
 import jit.edu.paas.mapper.UserContainerMapper;
 import jit.edu.paas.mapper.UserProjectMapper;
 import jit.edu.paas.service.PortService;
+import jit.edu.paas.service.SysImageService;
+import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.service.UserContainerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,7 +48,11 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
     @Autowired
     private PortService portService;
     @Autowired
-    private SysLoginMapper loginMapper;
+    private SysLoginService loginService;
+    @Autowired
+    private SysImageService imageService;
+    @Autowired
+	private SysVolumesMapper sysVolumesMapper;
     @Autowired
     private UserProjectMapper projectMapper;
     @Autowired
@@ -72,14 +81,30 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ResultVo createContainer(String userId, String imageName, String[] cmd, ImmutableSet<String> exportPorts, String containerName, String projectId) {
+    public ResultVo createContainer(String userId, String imageId, String[] cmd, ImmutableSet<String> exportPorts,
+                                    String containerName, String projectId, String env, String[] destination) {
         // Project鉴权
         Boolean b = projectMapper.hasBelong(projectId, userId);
         if(!b) {
             return ResultVoUtils.error(ResultEnum.PERMISSION_ERROR.getCode(), "项目不存在或权限错误");
         }
 
-        // TODO 设置cmd,如果参数为空。使用Image默认
+        // 校验Image
+        SysImage image = imageService.getById(imageId);
+        if(image == null) {
+            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+        }
+        if(!imageService.hasAuthImage(userId, image)) {
+            return ResultVoUtils.error(ResultEnum.PERMISSION_ERROR);
+        }
+
+        // 设置cmd,如果参数为空。使用Image默认
+        if(cmd == null || cmd.length == 0) {
+            String json = image.getCmd();
+            if(StringUtils.isNotBlank(json)) {
+                cmd = JsonUtils.jsonToObject(json, String[].class);
+            }
+        }
 
         // 宿主机端口与暴露端口绑定
         Map<String, List<PortBinding>> portBindings = new HashMap<>(16);
@@ -106,13 +131,16 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
 
         ContainerConfig containerConfig = ContainerConfig.builder()
                 .hostConfig(hostConfig)
-                .image(imageName).exposedPorts(realExportPorts)
-//                .cmd(cmd)
+                .image(image.getFullName()).exposedPorts(realExportPorts)
+                .volumes(destination)
+                .env(env)
+                .cmd(cmd)
                 .build();
 
         try {
             ContainerCreation creation = dockerClient.createContainer(containerConfig);
 
+            List<SysVolume> sv = new ArrayList<>();
             UserContainer uc = new UserContainer();
             uc.setId(creation.id());
             // 仅存在于数据库，不代表实际容器名
@@ -120,13 +148,26 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             uc.setCommand(Arrays.toString(cmd));
             uc.setProjectId(projectId);
             uc.setPort(JsonUtils.objectToJson(portBindings));
-            uc.setImage(imageName);
+            uc.setImage(image.getFullName());
+
+            uc.setEnv(env);
+            // 为数据库中的sysvolumes插入
+            ImmutableList<ContainerMount> info = dockerClient.inspectContainer(creation.id()).mounts();
+            for(int i = 0;i<destination.length;i++){
+                SysVolume sysVolume = new SysVolume();
+                sysVolume.setContainerId(creation.id());
+                sysVolume.setVolumeName(info.get(i).name());
+                sysVolume.setSource(info.get(i).source());
+                sysVolumesMapper.insert(sysVolume);
+            }
+
             // 设置状态
             ContainerStatusEnum status = getStatus(creation.id());
             if(status == null) {
                 throw new CustomException(ResultEnum.DOCKER_EXCEPTION.getCode(), "读取容器状态异常");
             }
             uc.setStatus(status.getCode());
+            uc.setCreateDate(new Date());
 
             userContainerMapper.insert(uc);
 
@@ -190,8 +231,9 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
 
         try {
             dockerClient.removeContainer(containerId);
-            // 查询并修改状态
-            return changeStatus(containerId);
+            // 删除数据
+            userContainerMapper.deleteById(containerId);
+            return ResultVoUtils.success();
         } catch (Exception e) {
             e.printStackTrace();
             log.error("删除容器出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.removeContainer()",e.getMessage());
@@ -260,13 +302,13 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
     @Override
     public ResultVo checkPermission(String userId, String containerId) {
         // 1、鉴权
-        String roleName = loginMapper.getRoleName(userId);
+        String roleName = loginService.getRoleName(userId);
         // 1.1、角色无效
         if(StringUtils.isBlank(roleName)) {
             return ResultVoUtils.error(ResultEnum.AUTHORITY_ERROR);
         }
         // 1.2、越权访问
-        if("ROLE_USER".equals(roleName)) {
+        if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
             UserContainer container = userContainerMapper.selectById(containerId);
             if(container == null) {
                 return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
@@ -322,6 +364,6 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             userContainerMapper.updateById(container);
         }
 
-        return ResultVoUtils.success();
+        return ResultVoUtils.success(statusEnum.getCode());
     }
 }
