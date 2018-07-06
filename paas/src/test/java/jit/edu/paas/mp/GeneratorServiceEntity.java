@@ -19,9 +19,9 @@ public class GeneratorServiceEntity {
     public void generateCode() {
         String packageName = "jit.edu.paas";
         String[] tables = {
-           "sys_image","sys_log","sys_login","sys_repository",
-                "sys_right","sys_role","sys_role_right",
-                "user_container","user_project"
+           "repository_image",
+                "sys_image","sys_log","sys_login","sys_repository",
+                "sys_volume","user_container","user_project"
         };
         boolean serviceNameStartWithI = false;//user -> UserService, 设置成true: user -> IUserService
         generateByTables(serviceNameStartWithI, packageName, tables);

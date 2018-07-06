@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
+
 /**
  * 镜像Controller
  *
@@ -30,11 +32,11 @@ public class ImageController {
      * @author jitwxs
      * @since 2018/7/3 15:46
      */
-    @PostMapping("/search/local")
+    @GetMapping("/list/local")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVo searchLocalImage(String name, Integer type, Page<SysImage> page) {
         // 判断参数
-        if(StringUtils.isBlank(name) || type == null) {
+        if(type == null) {
             return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
         }
 
@@ -57,10 +59,10 @@ public class ImageController {
      * @author jitwxs
      * @since 2018/7/3 15:46
      */
-    @PostMapping("/search/hub")
+    @GetMapping("/list/hub")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo searchHubImage(String name, @RequestParam(defaultValue = "25") Integer limit, Page<SysImage> page) {
-        return imageService.listHubImage(name, limit, page);
+    public ResultVo searchHubImage(String name, @RequestParam(required = false, defaultValue = "10") int limit) {
+        return imageService.listHubImage(name, limit);
     }
 
     /**
@@ -76,7 +78,8 @@ public class ImageController {
     }
 
     /**
-     * 同步镜像到数据库
+     * 本地镜像同步
+     * 同步本地镜像和数据库信息
      * @author jitwxs
      * @since 2018/7/3 16:37
      */
@@ -159,7 +162,7 @@ public class ImageController {
      * @author jitwxs
      * @since 2018/7/4 16:20
      */
-    @GetMapping("/share")
+    @GetMapping("/share/{id}")
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResultVo shareImage(@RequestAttribute String uid, @PathVariable String id) {
         return imageService.changOpenImage(id, uid, true);
@@ -170,25 +173,27 @@ public class ImageController {
      * @author jitwxs
      * @since 2018/7/4 16:20
      */
-    @GetMapping("/disShare")
+    @GetMapping("/disShare/{id}")
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResultVo disShareImage(@RequestAttribute String uid, @PathVariable String id) {
         return imageService.changOpenImage(id, uid, false);
     }
 
-//    /**
-//     * 导入镜像  后期待处理：上传的文件是否要删除
-//     * @author hf
-//     * @since 2018/7/1 20:48
-//     */
-//    @PostMapping("/import")
-//    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-//    public ResultVo importImage(@RequestAttribute String uid, HttpServletRequest request) {
-//        return imageService.importImage(uid, request);
-//    }
+    /**
+     * 导入镜像
+     * @param request 包含name、tag和单个文件
+     * @author hf
+     * @since 2018/7/1 20:48
+     */
+    @PostMapping("/import")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVo importImage(@RequestAttribute String uid, HttpServletRequest request) {
+        return imageService.importImage(uid, request);
+    }
 
 //    /**
 //     * 由dockerfile建立镜像 有错未解决 未成功
+//     * @param request 包含压缩的Dockerfile文件（*.tar.gz）、name和tag
 //     * 报错：HTTP/1.1 500 Internal Server Error {"message":"unexpected EOF"}
 //     *  出错大概原因：运行new file()时未保留文件中的回车符和换行符。。。。
 //     * 注：访问docker的/build接口时 文件必须为tar stream
@@ -197,16 +202,9 @@ public class ImageController {
 //     * @author hf
 //     * @since 2018/7/1 20:48
 //     */
-//    @PostMapping("/bulid")
+//    @PostMapping("/build")
 //    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
 //    public ResultVo buildImage(@RequestAttribute String uid, HttpServletRequest request) {
-//        String fileName = imageService.uploadImages(httpRequest);
-//        if(fileName != null) {
-//            String result = imageService.importImage(uid, fileName);
-//            if (result != null) {
-//                return ResultVoUtils.success("build镜像成功，build的镜像名为:" + result);
-//            }
-//        }
-//        return  ResultVoUtils.error(ResultEnum.IMPORT_ERROR);
+//        return imageService.buildImage(uid, request);
 //    }
 }

@@ -17,8 +17,9 @@ public class EnumsServiceImpl implements EnumsService {
     @Override
     public Map<Integer, String> listResultCode() {
         Map<Integer, String> map = new TreeMap<>(Integer::compareTo);
+
         for (ResultEnum s : ResultEnum.values()) {
-            map.put(s.ordinal(), s.getMessage());
+            map.put(s.getCode(), s.getMessage());
         }
         return map;
     }
@@ -27,7 +28,7 @@ public class EnumsServiceImpl implements EnumsService {
     public Map<Integer, String> listSysLogType() {
         Map<Integer, String> map = new TreeMap<>(Integer::compareTo);
         for (SysLogTypeEnum s : SysLogTypeEnum.values()) {
-            map.put(s.ordinal(), s.getMessage());
+            map.put(s.getCode(), s.getMessage());
         }
         return map;
     }
@@ -36,7 +37,7 @@ public class EnumsServiceImpl implements EnumsService {
     public Map<Integer, String> listProjectLogType() {
         Map<Integer, String> map = new TreeMap<>(Integer::compareTo);
         for (ProjectLogTypeEnum s : ProjectLogTypeEnum.values()) {
-            map.put(s.ordinal(), s.getMessage());
+            map.put(s.getCode(), s.getMessage());
         }
         return map;
     }
@@ -45,7 +46,7 @@ public class EnumsServiceImpl implements EnumsService {
     public Map<Integer, String> listRepositoryType() {
         Map<Integer, String> map = new TreeMap<>(Integer::compareTo);
         for (RepositoryTypeEnum s : RepositoryTypeEnum.values()) {
-            map.put(s.ordinal(), s.getMessage());
+            map.put(s.getCode(), s.getMessage());
         }
         return map;
     }
@@ -54,7 +55,7 @@ public class EnumsServiceImpl implements EnumsService {
     public Map<Integer, String> listImageType() {
         Map<Integer, String> map = new TreeMap<>(Integer::compareTo);
         for (ImageTypeEnum s : ImageTypeEnum.values()) {
-            map.put(s.ordinal(), s.getMessage());
+            map.put(s.getCode(), s.getMessage());
         }
         return map;
     }
@@ -63,7 +64,7 @@ public class EnumsServiceImpl implements EnumsService {
     public Map<Integer, String> listContainerStatus() {
         Map<Integer, String> map = new TreeMap<>(Integer::compareTo);
         for (ContainerStatusEnum s : ContainerStatusEnum.values()) {
-            map.put(s.ordinal(), s.getMessage());
+            map.put(s.getCode(), s.getMessage());
         }
         return map;
     }

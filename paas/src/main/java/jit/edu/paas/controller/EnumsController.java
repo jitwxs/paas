@@ -4,6 +4,7 @@ import jit.edu.paas.commons.util.ResultVoUtils;
 import jit.edu.paas.domain.vo.ResultVo;
 import jit.edu.paas.service.EnumsService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,6 +26,7 @@ public class EnumsController {
      * @since 2018/6/30 14:46
      */
     @GetMapping("/result")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVo listErrorCode() {
         return ResultVoUtils.success(enumsService.listResultCode());
     }
@@ -35,6 +37,7 @@ public class EnumsController {
      * @since 2018/6/30 14:46
      */
     @GetMapping("/log/sys")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVo listSysLogType() {
         return ResultVoUtils.success(enumsService.listSysLogType());
     }
@@ -45,6 +48,7 @@ public class EnumsController {
      * @since 2018/6/30 14:46
      */
     @GetMapping("/log/project")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVo listProjectLogType() {
         return ResultVoUtils.success(enumsService.listProjectLogType());
     }
@@ -55,6 +59,7 @@ public class EnumsController {
      * @since 2018/6/30 14:46
      */
     @GetMapping("/repository")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVo listRepositoryType() {
         return ResultVoUtils.success(enumsService.listRepositoryType());
     }
@@ -65,6 +70,7 @@ public class EnumsController {
      * @since 2018/6/30 14:46
      */
     @GetMapping("/image")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVo listImageType() {
         return ResultVoUtils.success(enumsService.listImageType());
     }
@@ -75,6 +81,7 @@ public class EnumsController {
      * @since 2018/7/1 20:03
      */
     @GetMapping("/container")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVo listContainerStatus() {
         return ResultVoUtils.success(enumsService.listContainerStatus());
     }

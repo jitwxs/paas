@@ -2,22 +2,27 @@ package jit.edu.paas.service.impl;
 
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
+import com.google.common.collect.ImmutableList;
 import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.docker.client.messages.Volume;
-import jit.edu.paas.commons.util.CollectionUtils;
-import jit.edu.paas.commons.util.ResultVoUtils;
+import com.spotify.docker.client.messages.VolumeList;
+import jit.edu.paas.commons.util.*;
+import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.entity.SysVolume;
 import jit.edu.paas.domain.enums.ResultEnum;
+import jit.edu.paas.domain.enums.RoleEnum;
 import jit.edu.paas.domain.vo.ResultVo;
 import jit.edu.paas.mapper.SysVolumesMapper;
+import jit.edu.paas.mapper.UserContainerMapper;
+import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.service.SysVolumeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -27,69 +32,107 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
     @Autowired
     private DockerClient dockerClient;
     @Autowired
-    private SysVolumesMapper sysVolumesMapper;
+    private SysLoginService loginService;
+    @Autowired
+    private SysVolumesMapper volumesMapper;
+    @Autowired
+    private UserContainerMapper containerMapper;
+
+    @Autowired
+    private JedisClient jedisClient;
+    @Value("${redis.volumes.key}")
+    private String key;
+    private final String ID_PREFIX = "ID:";
+    private final String NAME_PREFIX = "NAME:";
 
     @Override
     public SysVolume getById(String id) {
-        return sysVolumesMapper.selectById(id);
+        String field = ID_PREFIX + id;
+        try {
+            String res = jedisClient.hget(key, field);
+            if (StringUtils.isNotBlank(res)) {
+                return JsonUtils.jsonToObject(res, SysVolume.class);
+            }
+        } catch (Exception e) {
+            log.error("缓存读取异常，错误位置：SysVolumeServiceImpl.getById()");
+        }
+
+        SysVolume volume = volumesMapper.selectById(id);
+        if(volume == null) {
+            return null;
+        }
+        try {
+            jedisClient.hset(key, field, JsonUtils.objectToJson(volume));
+        } catch (Exception e) {
+            log.error("缓存存储异常，错误位置：SysVolumeServiceImpl.getById()");
+        }
+        return volume;
     }
 
     @Override
-    public SysVolume getByVolumeName(String volumeName) {
-        List<SysVolume> list = sysVolumesMapper.selectList(new EntityWrapper<SysVolume>().eq("volume_name", volumeName));
-        return CollectionUtils.getListFirst(list);
+    public SysVolume getByName(String name) {
+        String field = NAME_PREFIX + name;
+        try {
+            String res = jedisClient.hget(key, field);
+            if (StringUtils.isNotBlank(res)) {
+                return JsonUtils.jsonToObject(res, SysVolume.class);
+            }
+        } catch (Exception e) {
+            log.error("缓存读取异常，错误位置：SysVolumeServiceImpl.getByName()");
+        }
+
+        List<SysVolume> list = volumesMapper.selectList(new EntityWrapper<SysVolume>().eq("name", name));
+        SysVolume volume = CollectionUtils.getListFirst(list);
+        if(volume == null) {
+            return null;
+        }
+
+        try {
+            jedisClient.hset(key, field, JsonUtils.objectToJson(volume));
+        } catch (Exception e) {
+            log.error("缓存存储异常，错误位置：SysVolumeServiceImpl.getByName()");
+        }
+
+        return volume;
     }
 
     @Override
-    public ResultVo listByContainerId(String containerId) {
-        List<SysVolume> list = sysVolumesMapper.selectList(new EntityWrapper<SysVolume>().eq("container_id",containerId));
+    public ResultVo listByContainerId(String containerId, String uid) {
+        // 1、鉴权
+        String roleName = loginService.getRoleName(uid);
+        if(StringUtils.isBlank(roleName)) {
+            return ResultVoUtils.error(ResultEnum.AUTHORITY_ERROR);
+        }
+        if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
+            if(!containerMapper.hasBelongSb(containerId, uid)) {
+                return ResultVoUtils.error(ResultEnum.PERMISSION_ERROR);
+            }
+        }
+
+        List<SysVolume> list = volumesMapper.selectList(new EntityWrapper<SysVolume>().eq("container_id",containerId));
         return ResultVoUtils.success(list);
     }
 
     @Override
-    public ResultVo createVolume(String volumeName, String containerId) {
-        // 校验数据卷名字
-        if(getByVolumeName(volumeName) != null) {
-            return ResultVoUtils.error(ResultEnum.VOLUME_NAME_ERROR);
-        }
-
-        Volume volume = Volume.builder()
-                .name(volumeName)
-                .driver("local")
-                .build();
-        try {
-            dockerClient.createVolume(volume);
-        } catch (Exception e) {
-          log.error("创建数据卷失败，错误位置：{}", "SysVolumeServiceImpl.createVolume()");
-          return ResultVoUtils.error(ResultEnum.DOCKER_EXCEPTION);
-        }
-
-        SysVolume sysVolume = new SysVolume();
-        sysVolume.setVolumeName(volumeName);
-        sysVolume.setContainerId(containerId);
-
-        // 获取挂载点
-        try {
-            String source = dockerClient.inspectVolume(volumeName).mountpoint();
-            sysVolume.setSource(source);
-            sysVolumesMapper.insert(sysVolume);
-
-            return ResultVoUtils.success();
-        } catch (Exception e) {
-            log.error("创建挂载点失败，错误位置：{}", "SysVolumeServiceImpl.createVolume()");
-            return ResultVoUtils.error(ResultEnum.DOCKER_EXCEPTION);
-        }
-    }
-
-    @Override
-    public ResultVo inspectVolumes(String id) {
+    public ResultVo inspectVolumes(String id, String uid) {
         SysVolume sysVolume = getById(id);
         if(sysVolume == null) {
             return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
         }
 
+        // 鉴权
+        String roleName = loginService.getRoleName(uid);
+        if(StringUtils.isBlank(roleName)) {
+            return ResultVoUtils.error(ResultEnum.AUTHORITY_ERROR);
+        }
+        if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
+            if(!containerMapper.hasBelongSb(sysVolume.getContainerId(), uid)) {
+                return ResultVoUtils.error(ResultEnum.PERMISSION_ERROR);
+            }
+        }
+
         try {
-            Volume volume = dockerClient.inspectVolume(sysVolume.getVolumeName());
+            Volume volume = dockerClient.inspectVolume(sysVolume.getName());
             return ResultVoUtils.success(volume);
         } catch (Exception e) {
             log.error("获取数据卷详情异常，错误位置：{}", "SysVolumeServiceImpl.inspectVolumes()");
@@ -98,21 +141,48 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public ResultVo removeVolmue(String id) {
-        SysVolume sysVolume = getById(id);
-        if(sysVolume == null) {
-            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
-        }
-
+    public ResultVo listFromLocal() {
         try {
-            dockerClient.removeVolume(sysVolume.getVolumeName());
-            sysVolumesMapper.deleteById(id);
-
-            return ResultVoUtils.success();
+            VolumeList volumeList = dockerClient.listVolumes();
+            return ResultVoUtils.success(volumeList);
         } catch (Exception e) {
-            log.error("删除数据卷异常，错误位置：{}", "SysVolumeServiceImpl.removeVolmue()");
-            return ResultVoUtils.error(ResultEnum.DOCKER_EXCEPTION);
+            log.error("获取本地数据卷异常，错误位置：{}，错误信息：{}",
+                    "SysVolumeServiceImpl.listFromLocal()", HttpClientUtils.getStackTraceAsString(e));
+            return ResultVoUtils.error(ResultEnum.VOLUME_LIST_ERROR);
         }
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public ResultVo cleanVolumes() {
+        ResultVo resultVo = listFromLocal();
+        if(resultVo.getCode() != ResultEnum.OK.getCode()) {
+            return resultVo;
+        }
+
+        int successCount = 0, failCount = 0;
+        ImmutableList<Volume> volumes = ((VolumeList) resultVo.getData()).volumes();
+        if(volumes != null) {
+            for(Volume volume : volumes) {
+                try {
+                    dockerClient.removeVolume(volume.name());
+
+                    // 删除数据
+                    SysVolume dbVolume = getByName(volume.name());
+                    if(dbVolume != null) {
+                        volumesMapper.deleteById(dbVolume.getId());
+                    }
+
+                    successCount++;
+                } catch (Exception e) {
+                    failCount++;
+                }
+            }
+        }
+
+        Map<String, Integer> map = new HashMap<>(16);
+        map.put("success", successCount);
+        map.put("fail", failCount);
+        return ResultVoUtils.success(map);
     }
 }

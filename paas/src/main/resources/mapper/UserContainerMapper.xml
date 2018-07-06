@@ -6,4 +6,15 @@
         WHERE `user_container`.project_id = `user_project`.id
 		AND `user_project`.user_id = #{userId}
     </select>
+    <select id="hasBelongSb" resultType="java.lang.Boolean">
+        SELECT
+            count( * )
+        FROM
+            `user_container` AS `c`,
+            `user_project` AS `p`
+        WHERE
+            c.project_id = p.id
+            AND c.id = #{containerId}
+            AND p.user_id = #{userId}
+    </select>
 </mapper>

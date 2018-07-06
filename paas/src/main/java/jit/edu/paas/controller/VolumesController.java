@@ -3,6 +3,7 @@ package jit.edu.paas.controller;
 import jit.edu.paas.domain.vo.ResultVo;
 import jit.edu.paas.service.SysVolumeService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -14,26 +15,17 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/volumes")
 public class VolumesController {
     @Autowired
-    SysVolumeService sysVolumeService;
+    private SysVolumeService sysVolumeService;
 
     /**
-     * 列出某一项目所有数据卷
+     * 列出某一容器所有数据卷
      * @author jitwxs
      * @since 2018/7/4 17:32
      */
-    @GetMapping("/list/{containerId}")
-    public ResultVo listByContainerId(@PathVariable String containerId) {
-        return sysVolumeService.listByContainerId(containerId);
-    }
-
-    /**
-     * 创建数据卷
-     * @author jitwxs
-     * @since 2018/7/4 17:31
-     */
-    @PostMapping("/create")
-    public ResultVo createVolume(String volumeName,String containerId) {
-        return sysVolumeService.createVolume(volumeName, containerId);
+    @GetMapping("/{containerId}/list")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVo listByContainerId(@RequestAttribute String uid, @PathVariable String containerId) {
+        return sysVolumeService.listByContainerId(containerId, uid);
     }
 
     /**
@@ -42,17 +34,30 @@ public class VolumesController {
      * @since 2018/7/4 17:32
      */
     @GetMapping("/inspect/{id}")
-    public ResultVo inspectVolumes(@PathVariable String id){
-        return sysVolumeService.inspectVolumes(id);
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVo inspectVolumes(@RequestAttribute String uid, @PathVariable String id){
+        return sysVolumeService.inspectVolumes(id, uid);
     }
 
     /**
-     * 删除数据卷
+     * 获取本地所有数据卷
+     * @author jitwxs
+     * @since 2018/7/5 13:02
+     */
+    @GetMapping("/list")
+    @PreAuthorize("hasRole('ROLE_SYSTEM')")
+    public ResultVo listFromLocal() {
+        return sysVolumeService.listFromLocal();
+    }
+
+    /**
+     * 清理数据卷
      * @author jitwxs
      * @since 2018/7/4 17:36
      */
-    @DeleteMapping("/delete/{id}")
-    public ResultVo removeVolumes(@PathVariable String id){
-        return sysVolumeService.removeVolmue(id);
+    @DeleteMapping("/clean")
+    @PreAuthorize("hasRole('ROLE_SYSTEM')")
+    public ResultVo cleanVolumes(){
+        return sysVolumeService.cleanVolumes();
     }
 }

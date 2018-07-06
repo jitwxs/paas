@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.ProgressHandler;
+import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.docker.client.messages.*;
 import jit.edu.paas.commons.util.*;
 import jit.edu.paas.commons.util.jedis.JedisClient;
@@ -17,13 +19,15 @@ import jit.edu.paas.domain.vo.ResultVo;
 import jit.edu.paas.mapper.SysImageMapper;
 import jit.edu.paas.service.SysImageService;
 import jit.edu.paas.service.SysLoginService;
+import lombok.Cleanup;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.ContentType;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.entity.mime.content.InputStreamBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.protocol.HTTP;
@@ -32,11 +36,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
 import javax.servlet.http.HttpServletRequest;
-import java.io.File;
-import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * <p>
@@ -82,7 +90,7 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
      * @since 2018/6/28 16:15
      */
     @Override
-    public ResultVo listHubImage(String name, Integer limit, Page<SysImage> page) {
+    public ResultVo listHubImage(String name, Integer limit) {
         if (StringUtils.isBlank(name)) {
             return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
         }
@@ -95,7 +103,7 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             is_automated
             description	描述
             */
-            List<ImageSearchResult> results = DockerHttpUtils.searchImages(name, limit);
+            List<ImageSearchResult> results = DockerApiUtils.searchImages(serverUrl, name, limit);
             return ResultVoUtils.success(results);
         } catch (Exception e) {
             log.error("Docker搜索异常，错误位置：SysImageServiceImpl.listHubImage,出错信息：" + e.getMessage());
@@ -204,55 +212,57 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         try {
             // 1、获取数据库中所有镜像
             List<SysImage> dbImages = imageMapper.selectList(new EntityWrapper<>());
-
             // 2、获取本地所有镜像
             List<Image> tmps = dockerClient.listImages(DockerClient.ListImagesParam.digests());
 
             int deleteCount = 0,addCount = 0,errorCount=0;
             boolean[] dbFlag = new boolean[dbImages.size()];
-            boolean[] serverFlag = new boolean[tmps.size()];
-            Arrays.fill(serverFlag,false);
             Arrays.fill(dbFlag,false);
-            for(int i=0; i<tmps.size(); i++) {
-                for(int j=0; j<dbImages.size(); j++) {
-                    // 排除掉已经判断过的
-                    if(dbFlag[j]) {
-                        continue;
-                    }
-                    Image image = tmps.get(i);
-                    SysImage dbImage = dbImages.get(j);
 
-                    // 存在情况
-                    ImmutableList<String> list = image.repoTags();
-                    if(list!=null && list.size() > 0) {
-                        if(list.get(0).equals(dbImage.getFullName())){
-                            serverFlag[i] = true;
-                            dbFlag[j] = true;
+            // 3、遍历本地镜像
+            for(int i=0; i<tmps.size(); i++) {
+                Image image = tmps.get(i);
+                // 读取所有Tag
+                ImmutableList<String> list = image.repoTags();
+                if(list != null) {
+                    for(String tag : list) {
+                        // 判断tag是否存在
+                        boolean flag = false;
+                        for(int j=0; j<dbImages.size(); j++) {
+                            // 跳过比较过的
+                            if(dbFlag[j]) {
+                                continue;
+                            }
+                            // 比较相等
+                            if(tag.equals(dbImages.get(j).getFullName())) {
+                                flag = true;
+                                dbFlag[j] = true;
+                                break;
+                            }
+                        }
+
+                        // 如果本地不存在，添加到本地
+                        if(!flag) {
+                            SysImage sysImage = imageToSysImage(image, tag);
+                            if(sysImage == null) {
+                                errorCount++;
+                            } else {
+                                addCount++;
+                                imageMapper.insert(sysImage);
+                            }
                         }
                     }
-
                 }
             }
 
-            // 删除掉失效记录
-            for(int i=0;i<dbFlag.length;i++) {
+            // 删除失效的数据
+            for(int i=0; i<dbFlag.length;i++) {
                 if(!dbFlag[i]) {
                     deleteCount++;
                     SysImage sysImage = dbImages.get(i);
                     imageMapper.deleteById(sysImage);
-                }
-            }
-
-            // 添加新增记录
-            for(int i=0;i<serverFlag.length;i++) {
-                if(!serverFlag[i]) {
-                    SysImage image = imageToSysImage(tmps.get(i));
-                    if(image == null) {
-                        errorCount++;
-                    } else {
-                        addCount++;
-                        imageMapper.insert(image);
-                    }
+                    // 更新缓存
+                    cleanCache(sysImage.getId(), sysImage.getFullName());
                 }
             }
 
@@ -282,7 +292,7 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         String roleName = loginService.getRoleName(userId);
         SysImage sysImage = getById(id);
         if(sysImage == null) {
-            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+            return ResultVoUtils.error(ResultEnum.IMAGE_EXCEPTION);
         }
 
         if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
@@ -355,8 +365,9 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             if(images.size() ==0) {
                 return ResultVoUtils.error(ResultEnum.INSPECT_ERROR);
             }
+            Image image = images.get(0);
 
-            SysImage sysImage = imageToSysImage(images.get(0));
+            SysImage sysImage = imageToSysImage(image, image.repoTags().get(0));
             imageMapper.insert(sysImage);
 
             return ResultVoUtils.success();
@@ -421,7 +432,7 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
     public ResultVo exportImage(String id, String uid) {
         SysImage image = getById(id);
         if(image == null ) {
-            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+            return ResultVoUtils.error(ResultEnum.IMAGE_EXCEPTION);
         }
         if(!hasAuthImage(uid, image)) {
             return ResultVoUtils.error(ResultEnum.PERMISSION_ERROR);
@@ -439,43 +450,56 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
      */
     @Override
     public ResultVo importImage(String uid, HttpServletRequest request) {
-//        // or by loading from a source
-//        final File imageFile = new File("D:\\tests\\" + fileNames);  //路径后期要修改！！！
-//        String imageName = fileNames.substring(0, fileNames.indexOf(".")); //提取文件名
-//        imageName = imageName + System.nanoTime();  //名字要唯一！！！
-//        try (InputStream imagePayload = new BufferedInputStream(new FileInputStream(imageFile))) {
-//            dockerClient.create(imageName, imagePayload);  //导入生成镜像
-//            // 更新数据库
-//            imageName = imageName + ":latest";  //系统默认把导入生成的镜像版本默认设为latest
-//            List<Image> list = dockerClient.listImages(DockerClient.ListImagesParam.byName(imageName)); //查找导入后的镜像
-//            Image image = CollectionUtils.getListFirst(list);
-//            //设置数据库image信息
-//            SysImage sysImage = new SysImage();
-//            sysImage.setUserId(uid); //设为用户私有镜像
-//            sysImage.setId(image.id());
-//            sysImage.setType(2); //设为用户私有镜像
-//            sysImage.setName(imageName);
-//            sysImage.setSize(image.size());
-//            sysImage.setCreateDate(new Date(Long.valueOf(image.created())));
-//            sysImage.setHasOpen(false);  //默认不公开
-//            sysImage.setSize(image.size());
-//            sysImage.setUpdateDate(new Date());
-//            sysImage.setParentId(image.parentId());
-//            sysImage.setVirtualSize(image.virtualSize());
-////            sysImage.setCmd(inspectImage(imageName).containerConfig().cmd().toString());
-//            if (image.labels() != null) {
-//                sysImage.setLabels(image.labels().toString());
-//            }
-//            if (image.repoTags() != null) {
-//                sysImage.setTag(image.repoTags().toString());
-//            }
-//            imageMapper.insert(sysImage);  //插入新数据
-//        } catch (Exception e) {
-//            log.error("导入镜像异常，错误位置：SysImageServiceImpl.importImage,出错信息：" + e.getMessage());
-//            return null;
-//        }
-//        return imageName;
-        return ResultVoUtils.success();
+        StandardMultipartHttpServletRequest req = (StandardMultipartHttpServletRequest) request;
+
+        // 遍历普通参数，取出镜像名和tag（默认latest）
+        String imageName = "", tag = "latest";
+        boolean flag = false;
+        Enumeration<String> names = req.getParameterNames();
+        while (names.hasMoreElements()) {
+            String key = names.nextElement();
+            String val = req.getParameter(key);
+            if("name".equals(key)) {
+                flag = true;
+                imageName = val;
+            }
+            if("tag".equals(key)) {
+                tag = val;
+            }
+        }
+        // 遍历文件参数
+        Iterator<String> iterator = req.getFileNames();
+        if(!flag || !iterator.hasNext()) {
+            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+        }
+
+        // 拼接完整名：repo/userId/imageName:tag
+        String fullName = "local/" + uid + "/" + imageName + ":" + tag;
+        // 判断镜像是否存在
+        if(getByFullName(fullName) != null) {
+            return ResultVoUtils.error(ResultEnum.IMPORT_ERROR_BY_NAME);
+        }
+
+        // 取出文件，只取一个
+        MultipartFile file = req.getFile(iterator.next());
+
+        // 导入镜像
+        try(InputStream inputStream = file.getInputStream()) {
+            dockerClient.create(fullName,inputStream);
+            // 获取镜像的信息
+            List<Image> list = dockerClient.listImages(DockerClient.ListImagesParam.byName(fullName));
+            Image image = CollectionUtils.getListFirst(list);
+
+            SysImage sysImage = imageToSysImage(image, image.repoTags().get(0));
+            // 插入数据
+            imageMapper.insert(sysImage);
+
+            return ResultVoUtils.success();
+        } catch (Exception e) {
+            log.error("导入镜像失败，错误位置：{}，镜像名：{}，错误信息：{}",
+                    "SysImageServiceImpl.pullImageFromHub()", fullName, HttpClientUtils.getStackTraceAsString(e));
+            return ResultVoUtils.error(ResultEnum.IMPORT_ERROR);
+        }
     }
 
     /**
@@ -487,7 +511,7 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
     public ResultVo getHistory(String id, String uid) {
         SysImage image = getById(id);
         if(image == null) {
-            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+            return ResultVoUtils.error(ResultEnum.IMAGE_EXCEPTION);
         }
         // 1、鉴权
         if(!hasAuthImage(uid, image)) {
@@ -504,78 +528,87 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
     }
 
     /**
-     * 文件上传
-     * @author sya
-     * @since 6.30
+     * Dockerfile建立镜像
+     * @author jitwxs
+     * @since 2018/7/6 17:16
      */
     @Override
-    public String uploadImages(HttpServletRequest request) {
-        String result = null;
-        try {
-            result = FileUtils.upload(request);
-            if (result.equals("未选择文件")) {
-                throw new Exception("未选择文件");
+    public ResultVo buildImage(String userId, HttpServletRequest request) {
+        StandardMultipartHttpServletRequest req = (StandardMultipartHttpServletRequest) request;
+
+        // 1、遍历普通参数，取出镜像名和tag（默认latest）
+        String imageName = "", tag = "latest";
+        boolean flag = false;
+        Enumeration<String> names = req.getParameterNames();
+        while (names.hasMoreElements()) {
+            String key = names.nextElement();
+            String val = req.getParameter(key);
+            if("name".equals(key)) {
+                flag = true;
+                imageName = val;
             }
-        } catch (Exception e) {
-            log.error("文件上传异常，错误位置：SysImageServiceImpl.uploadImages,出错信息：" + e.getMessage());
-            return null;
+            if("tag".equals(key)) {
+                tag = val;
+            }
         }
-        return result;
-    }
+        // 2、遍历文件参数
+        Iterator<String> iterator = req.getFileNames();
+        if(!flag || !iterator.hasNext()) {
+            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+        }
 
-    /**
-     * dockerfile建立镜像  未成功 报错：HTTP/1.1 500 Internal Server Error {"message":"unexpected EOF"}
-     *
-     * @author hf
-     * @since 2018/7/2 8:15
-     */
-    @Override
-    public String buildImage(String uid, String fileNames) {
-        String imageName = fileNames.substring(0, fileNames.indexOf(".")); //提取文件名
-        imageName = imageName + System.nanoTime();  //名字要唯一！！！
+        // 取出文件，只取一个
+        MultipartFile file = req.getFile(iterator.next());
+        // 判断后缀名是否是tar.gz文件
+        String fileName = file.getOriginalFilename();
+        if(!fileName.endsWith(".tar.gz")) {
+            return ResultVoUtils.error(ResultEnum.BUILD_ERROR_BY_SUFFIX);
+        }
 
-        CloseableHttpClient httpclient = HttpClients.createDefault();
-        //CloseableHttpClient httpclient = HttpClientBuilder.create().build();
+        // 3、拼接完整名：repo/userId/imageName:tag
+        String fullName = "local/" + userId + "/" + imageName + ":" + tag;
+        // 判断镜像是否存在
+        if(getByFullName(fullName) != null) {
+            return ResultVoUtils.error(ResultEnum.IMPORT_ERROR_BY_NAME);
+        }
+
+        // 4、构建Image
         try {
-            HttpPost httppost = new HttpPost("http://192.168.126.148:2375/build?t=" + imageName);
-
+            @Cleanup CloseableHttpClient httpclient = HttpClients.createDefault();
+            // 请求url
+            String uri = serverUrl + "/build?t=" + fullName;
+            HttpPost httpPost = new HttpPost(uri);
             RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(200000).setSocketTimeout(200000).build();
-            httppost.setConfig(requestConfig);
-            httppost.setHeader(HTTP.CONTENT_TYPE, "application/x-tar");
-            FileBody bin = new FileBody(new File(fileNames));
+            httpPost.setConfig(requestConfig);
+            // 设置请求头
+            httpPost.setHeader(HTTP.CONTENT_TYPE, "application/x-tar");
+            // 将dockerFile放入请求中
+            InputStreamBody body = new InputStreamBody(file.getInputStream(), fullName);
+            HttpEntity reqEntity = MultipartEntityBuilder.create().addPart("file", body).build();
+            httpPost.setEntity(reqEntity);
 
-            HttpEntity reqEntity = MultipartEntityBuilder.create().addPart("file", bin).build();
-
-            httppost.setEntity(reqEntity);
-
-            System.out.println("executing request " + httppost.getRequestLine());
-            CloseableHttpResponse response = httpclient.execute(httppost);
-            try {
-                System.out.println(response.getStatusLine());
-                HttpEntity resEntity = response.getEntity();
-                if (resEntity != null) {
-                    String responseEntityStr = EntityUtils.toString(response.getEntity());
-                    System.out.println(responseEntityStr);
-                    System.out.println("Response content length: " + resEntity.getContentLength());
+            // 执行请求
+            @Cleanup CloseableHttpResponse response = httpclient.execute(httpPost);
+            // 判断返回码
+            int code = response.getStatusLine().getStatusCode();
+            if(code != 200) {
+                // 获取响应体
+                String respContent = "";
+                HttpEntity entity = response.getEntity();
+                if (null != entity) {
+                    Charset respCharset = ContentType.getOrDefault(entity).getCharset();
+                    respContent = EntityUtils.toString(entity, respCharset);
+                    EntityUtils.consume(entity);
                 }
-                EntityUtils.consume(resEntity);
-            } finally {
-                response.close();
+                log.error("build镜像错误，错误位置：{}，错误码：{}，响应体：{}",
+                       "SysImageServiceImpl.buildImage()",code, respContent);
+                return ResultVoUtils.error(ResultEnum.NETWORK_ERROR);
             }
+
+            return ResultVoUtils.success();
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error("build镜像异常，错误位置：SysImageServiceImpl.buildImage,出错信息：" + e.getMessage());
-            return null;
-        } finally {
-            try {
-                httpclient.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-                log.error("build镜像异常，错误位置：SysImageServiceImpl.buildImage,出错信息：" + e.getMessage());
-                return null;
-            }
+            return ResultVoUtils.error(ResultEnum.BUILD_ERROR);
         }
-        return imageName;
     }
 
     /**
@@ -607,7 +640,7 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
     public ResultVo changOpenImage(String id, String uid, boolean code) {
         SysImage image = getById(id);
         if(image == null) {
-            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+            return ResultVoUtils.error(ResultEnum.IMAGE_EXCEPTION);
         }
 
         if(ImageTypeEnum.LOCAL_USER_IMAGE.getCode() != image.getType() || !uid.equals(image.getUserId())) {
@@ -623,7 +656,6 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         }
         return ResultVoUtils.success();
     }
-
 
     @Override
     public ImmutableSet<String> listExportPorts(String imageId) {
@@ -692,18 +724,18 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             map.put("name", names[0]);
             map.put("type", ImageTypeEnum.LOCAL_PUBLIC_IMAGE.getCode());
         } else if(names.length == 2) {
-            // 如果包含2个部分，代表来自指定的Image，例如portainer/portainer
+            // 如果包含2个部分，代表来自指定的Image，例如：portainer/portainer
             map.put("repo", names[0]);
             map.put("name", names[1]);
             map.put("type", ImageTypeEnum.LOCAL_PUBLIC_IMAGE.getCode());
         } else if(names.length == 3) {
-            // 如果包含3个部分，代表来自用户上传的Image，例如192.168.30.169:5000/jitwxs/hello-world
+            // 如果包含3个部分，代表来自用户上传的Image，例如：local/jitwxs/hello-world
             map.put("repo", names[0]);
             map.put("type", ImageTypeEnum.LOCAL_USER_IMAGE.getCode());
             map.put("userId", names[1]);
             map.put("name", names[2]);
         } else {
-            // 其他情况异常，形如：192.168.30.169:5000/jitwxs/portainer/portainer:latest
+            // 其他情况异常，形如：local/jitwxs/portainer/portainer:latest
             flag = false;
         }
 
@@ -735,50 +767,45 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
      * @author jitwxs
      * @since 2018/7/3 16:53
      */
-    private SysImage imageToSysImage(Image image) {
+    private SysImage imageToSysImage(Image image, String repoTag) {
         SysImage sysImage = new SysImage();
         // 设置ImageId
-        sysImage.setId(splitImageId(image.id()));
+        sysImage.setImageId(splitImageId(image.id()));
 
         // 获取repoTag
-        ImmutableList<String> tmps = image.repoTags();
-        if(tmps != null && tmps.size() > 0) {
-            String repoTag = tmps.get(0);
+        Map<String, Object> map = splitRepoTag(repoTag);
 
-            Map<String, Object> map = splitRepoTag(repoTag);
+        // 判断状态
+        if(!(Boolean)map.get("status")) {
+            log.error("解析repoTag出现异常，错误目标为：{}", map.get("fullName"));
+            return null;
+        }
 
-            // 判断状态
-            if(!(Boolean)map.get("status")) {
-                log.error("解析repoTag出现异常，错误目标为：{}", (String)map.get("fullName"));
-                return null;
-            }
+        // 设置完整名
+        sysImage.setFullName((String)map.get("fullName"));
+        // 设置Tag
+        sysImage.setTag((String)map.get("tag"));
+        // 设置Repo
+        sysImage.setRepo((String)map.get("repo"));
+        // 设置name
+        sysImage.setName((String)map.get("name"));
+        // 设置type
+        Integer type = (Integer)map.get("type");
+        sysImage.setType(type);
+        // 如果type为LOCAL_USER_IMAGE时
+        if (ImageTypeEnum.LOCAL_USER_IMAGE.getCode() == type) {
+            // 设置userId
+            sysImage.setUserId((String)map.get("userId"));
+            // 用户镜像默认不分享
+            sysImage.setHasOpen(false);
+        }
 
-            // 设置完整名
-            sysImage.setFullName((String)map.get("fullName"));
-            // 设置Tag
-            sysImage.setTag((String)map.get("tag"));
-            // 设置Repo
-            sysImage.setRepo((String)map.get("repo"));
-            // 设置name
-            sysImage.setName((String)map.get("name"));
-            // 设置type
-            Integer type = (Integer)map.get("type");
-            sysImage.setType(type);
-            // 如果type为LOCAL_USER_IMAGE时
-            if (ImageTypeEnum.LOCAL_USER_IMAGE.getCode() == type) {
-                // 设置userId
-                sysImage.setUserId((String)map.get("userId"));
-                // 用户镜像默认不分享
-                sysImage.setHasOpen(false);
-            }
-
-            // 设置CMD
-            try {
-                ImageInfo info = dockerClient.inspectImage(repoTag);
-                sysImage.setCmd(JsonUtils.objectToJson(info.containerConfig().cmd()));
-            } catch (Exception e) {
-                log.error("获取镜像信息错误，错误位置：{}" + "SysImageServiceImpl.imageToSysImage()");
-            }
+        // 设置CMD
+        try {
+            ImageInfo info = dockerClient.inspectImage(repoTag);
+            sysImage.setCmd(JsonUtils.objectToJson(info.containerConfig().cmd()));
+        } catch (Exception e) {
+            log.error("获取镜像信息错误，错误位置：{}" + "SysImageServiceImpl.imageToSysImage()");
         }
 
         // 设置大小

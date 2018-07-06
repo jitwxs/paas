@@ -9,8 +9,18 @@ import lombok.Getter;
  */
 @Getter
 public enum ImageTypeEnum {
-    LOCAL_PUBLIC_IMAGE("本地公共镜像", 1),
-    LOCAL_USER_IMAGE("本地用户镜像", 2);
+    /**
+     * 本地公共镜像
+     * @author jitwxs
+     * @since 2018/7/5 17:26
+     */
+    LOCAL_PUBLIC_IMAGE("公共镜像", 1),
+    /**
+     * 本地用户镜像
+     * @author jitwxs
+     * @since 2018/7/5 17:26
+     */
+    LOCAL_USER_IMAGE("用户镜像", 2);
 
     private String message;
     private int code;

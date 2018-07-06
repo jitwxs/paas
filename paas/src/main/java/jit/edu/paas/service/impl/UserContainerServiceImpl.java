@@ -25,6 +25,7 @@ import jit.edu.paas.service.SysImageService;
 import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.service.UserContainerService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.catalina.Host;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -92,7 +93,7 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
         // 校验Image
         SysImage image = imageService.getById(imageId);
         if(image == null) {
-            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+            return ResultVoUtils.error(ResultEnum.IMAGE_EXCEPTION);
         }
         if(!imageService.hasAuthImage(userId, image)) {
             return ResultVoUtils.error(ResultEnum.PERMISSION_ERROR);
@@ -106,57 +107,71 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             }
         }
 
-        // 宿主机端口与暴露端口绑定
-        Map<String, List<PortBinding>> portBindings = new HashMap<>(16);
-        UnmodifiableIterator<String> iterator = exportPorts.iterator();
+        ContainerConfig containerConfig;
+        UserContainer uc = new UserContainer();
 
-        // 去除/tcp后的端口集合
-        Set<String> realExportPorts = new HashSet<>();
-        while(iterator.hasNext()) {
-            // 取出暴露端口号,形如：80/tcp
-            String exportPort = iterator.next();
-            // 取出去除/tcp后的端口号
-            String tmp = exportPort.trim().split("/")[0];
-            realExportPorts.add(tmp);
+        // 设置暴露端口
+        if(exportPorts != null) {
+            // 宿主机端口与暴露端口绑定
+            Map<String, List<PortBinding>> portBindings = new HashMap<>(16);
+            UnmodifiableIterator<String> iterator = exportPorts.iterator();
 
-            // 捆绑端口
-            List<PortBinding> hostPorts = new ArrayList<>();
-            // 随机分配主机端口
-            Integer hostPort = portService.randomPort();
-            hostPorts.add(PortBinding.of("0.0.0.0", hostPort));
-            portBindings.put(exportPort, hostPorts);
+            // 去除/tcp后的端口集合
+            Set<String> realExportPorts = new HashSet<>();
+            while(iterator.hasNext()) {
+                // 取出暴露端口号,形如：80/tcp
+                String exportPort = iterator.next();
+                // 取出去除/tcp后的端口号
+                String tmp = exportPort.trim().split("/")[0];
+                realExportPorts.add(tmp);
+
+                // 捆绑端口
+                List<PortBinding> hostPorts = new ArrayList<>();
+                // 随机分配主机端口
+                Integer hostPort = portService.randomPort();
+                hostPorts.add(PortBinding.of("0.0.0.0", hostPort));
+                portBindings.put(exportPort, hostPorts);
+            }
+
+            uc.setPort(JsonUtils.objectToJson(portBindings));
+
+            HostConfig hostConfig = HostConfig.builder().portBindings(portBindings).build();
+            containerConfig = ContainerConfig.builder()
+                    .hostConfig(hostConfig)
+                    .image(image.getFullName())
+                    .exposedPorts(realExportPorts)
+                    .volumes(destination)
+                    .env(env)
+                    .cmd(cmd)
+                    .build();
+        } else {
+            HostConfig hostConfig = HostConfig.builder().build();
+            containerConfig = ContainerConfig.builder()
+                    .hostConfig(hostConfig)
+                    .image(image.getFullName())
+                    .volumes(destination)
+                    .env(env)
+                    .cmd(cmd)
+                    .build();
         }
-
-        HostConfig hostConfig = HostConfig.builder().portBindings(portBindings).build();
-
-        ContainerConfig containerConfig = ContainerConfig.builder()
-                .hostConfig(hostConfig)
-                .image(image.getFullName()).exposedPorts(realExportPorts)
-                .volumes(destination)
-                .env(env)
-                .cmd(cmd)
-                .build();
 
         try {
             ContainerCreation creation = dockerClient.createContainer(containerConfig);
 
-            List<SysVolume> sv = new ArrayList<>();
-            UserContainer uc = new UserContainer();
             uc.setId(creation.id());
             // 仅存在于数据库，不代表实际容器名
             uc.setName(containerName);
             uc.setCommand(Arrays.toString(cmd));
             uc.setProjectId(projectId);
-            uc.setPort(JsonUtils.objectToJson(portBindings));
             uc.setImage(image.getFullName());
-
             uc.setEnv(env);
             // 为数据库中的sysvolumes插入
             ImmutableList<ContainerMount> info = dockerClient.inspectContainer(creation.id()).mounts();
             for(int i = 0;i<destination.length;i++){
                 SysVolume sysVolume = new SysVolume();
                 sysVolume.setContainerId(creation.id());
-                sysVolume.setVolumeName(info.get(i).name());
+                sysVolume.setDestination(destination[i]);
+                sysVolume.setName(info.get(i).name());
                 sysVolume.setSource(info.get(i).source());
                 sysVolumesMapper.insert(sysVolume);
             }

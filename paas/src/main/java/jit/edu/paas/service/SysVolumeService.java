@@ -12,25 +12,29 @@ public interface SysVolumeService extends IService<SysVolume> {
      */
     SysVolume getById(String id);
 
-    SysVolume getByVolumeName(String volumeName);
+    SysVolume getByName(String name);
 
      /**
      * 获取挂载列表
      */
-    ResultVo listByContainerId(String containerId);
-
-    /**
-     * 创建挂载
-     */
-    ResultVo createVolume(String volumeName, String containerId);
+    ResultVo listByContainerId(String containerId, String uid);
 
     /**
      * 查看挂载信息
      */
-    ResultVo inspectVolumes(String id);
+    ResultVo inspectVolumes(String id, String uid);
 
     /**
-     * 移除挂载
+     * 获取本地所有数据卷
+     * @author jitwxs
+     * @since 2018/7/5 13:03
      */
-    ResultVo removeVolmue(String id);
+    ResultVo listFromLocal();
+
+    /**
+     * 清理无效数据卷
+     * @author jitwxs
+     * @since 2018/7/5 13:03
+     */
+    ResultVo cleanVolumes();
 }

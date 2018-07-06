@@ -38,7 +38,7 @@ public interface SysImageService extends IService<SysImage> {
      * @author jitwxs
      * @since 2018/6/28 16:15
      */
-    ResultVo listHubImage(String name, Integer limit,  Page<SysImage> page);
+    ResultVo listHubImage(String name, Integer limit);
 
     /**
      * 根据完整名获取镜像
@@ -117,19 +117,13 @@ public interface SysImageService extends IService<SysImage> {
      * @since 2018/7/2 8:15
      */
     ResultVo importImage(String uid,HttpServletRequest request);
-    /**
-     * 文件上传
-     * @author sya
-     * @since 6.30
-     */
-    String uploadImages(HttpServletRequest request);
 
     /**
      *  dockerfile建立镜像
      * @author hf
      * @since 2018/7/2 8:15
      */
-    String buildImage(String imageName,String file);
+    ResultVo buildImage(String userId, HttpServletRequest request);
 
     /**
      * 清理缓存

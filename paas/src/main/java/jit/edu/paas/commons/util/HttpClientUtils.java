@@ -7,6 +7,7 @@ import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -40,9 +41,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -127,6 +126,7 @@ public class HttpClientUtils {
      *
      * @param reqURL 请求地址
      * @param param  请求参数
+     * @param headers 请求头
      * @return 远程主机响应正文
      * @see 1)该方法会自动关闭连接,释放资源
      * @see 2)方法内设置了连接和读取超时时间,单位为毫秒,超时或发生其它异常时方法会自动返回"通信失败"字符串
@@ -137,36 +137,49 @@ public class HttpClientUtils {
      * @see 5)若响应消息头中无Content-Type属性,则会使用HttpClient内部默认的ISO-8859-1作为响应报文的解码字符
      * 集
      */
-    public static String sendGetRequest(String reqURL, String param) {
+    public static Map<String ,Object> sendGetRequest(String reqURL, String param, Map<String ,String> headers) {
+        Map<String,Object> map = new HashMap<>(16);
         if (null != param) {
             reqURL += "?" + param;
         }
-        System.out.println("reqUrl=" + reqURL);
         String respContent = RESP_CONTENT; // 响应内容
-        // reqURL = URLDecoder.decode(reqURL, ENCODE_CHARSET);
         HttpGet httpget = new HttpGet(reqURL);
+        // 设置请求头
+        if(headers != null) {
+            headers.forEach(httpget::setHeader);
+        }
+
         CloseableHttpResponse response = null;
         try {
             response = httpClient.execute(httpget, HttpClientContext.create()); // 执行GET请求
+
             HttpEntity entity = response.getEntity(); // 获取响应实体
             if (null != entity) {
                 Charset respCharset = ContentType.getOrDefault(entity).getCharset();
                 respContent = EntityUtils.toString(entity, respCharset);
                 EntityUtils.consume(entity);
             }
+            map.put("code", response.getStatusLine().getStatusCode());
+            map.put("headers", response.getAllHeaders());
         } catch (ConnectTimeoutException cte) {
+            map.put("code", 404);
             logger.error("请求通信[" + reqURL + "]时连接超时,堆栈轨迹如下", cte);
         } catch (SocketTimeoutException ste) {
+            map.put("code", 404);
             logger.error("请求通信[" + reqURL + "]时读取超时,堆栈轨迹如下", ste);
         } catch (ClientProtocolException cpe) {
+            map.put("code", 404);
             // 该异常通常是协议错误导致:比如构造HttpGet对象时传入协议不对(将'http'写成'htp')or响应内容不符合HTTP协议要求等
             logger.error("请求通信[" + reqURL + "]时协议异常,堆栈轨迹如下", cpe);
         } catch (ParseException pe) {
+            map.put("code", 404);
             logger.error("请求通信[" + reqURL + "]时解析异常,堆栈轨迹如下", pe);
         } catch (IOException ioe) {
+            map.put("code", 404);
             // 该异常通常是网络原因引起的,如HTTP服务器未启动等
             logger.error("请求通信[" + reqURL + "]时网络异常,堆栈轨迹如下", ioe);
         } catch (Exception e) {
+            map.put("code", 404);
             logger.error("请求通信[" + reqURL + "]时偶遇异常,堆栈轨迹如下", e);
         } finally {
             try {
@@ -180,7 +193,86 @@ public class HttpClientUtils {
                 httpget.releaseConnection();
             }
         }
-        return respContent;
+
+        map.put("body", respContent);
+        return map;
+    }
+
+    /**
+     * 发送HTTP_DELETE请求
+     *
+     * @param reqURL 请求地址
+     * @param param  请求参数
+     * @param headers 请求头
+     * @return 远程主机响应正文
+     * @see 1)该方法会自动关闭连接,释放资源
+     * @see 2)方法内设置了连接和读取超时时间,单位为毫秒,超时或发生其它异常时方法会自动返回"通信失败"字符串
+     * @see 3)请求参数含中文时,经测试可直接传入中文,HttpClient会自动编码发给Server,应用时应根据实际效果决
+     * 定传入前是否转码
+     * @see 4)该方法会自动获取到响应消息头中[Content-Type:text/html; charset=GBK]的charset值作为响应报文的
+     * 解码字符集
+     * @see 5)若响应消息头中无Content-Type属性,则会使用HttpClient内部默认的ISO-8859-1作为响应报文的解码字符
+     * 集
+     */
+    public static Map<String ,Object> sendDeleteRequest(String reqURL, String param, Map<String ,String> headers) {
+        Map<String,Object> map = new HashMap<>(16);
+        if (null != param) {
+            reqURL += "?" + param;
+        }
+        String respContent = RESP_CONTENT; // 响应内容
+        HttpDelete httpDelete = new HttpDelete(reqURL);
+        // 设置请求头
+        if(headers != null) {
+            headers.forEach(httpDelete::setHeader);
+        }
+
+        CloseableHttpResponse response = null;
+        try {
+            response = httpClient.execute(httpDelete, HttpClientContext.create()); // 执行DELETE请求
+
+            HttpEntity entity = response.getEntity(); // 获取响应实体
+            if (null != entity) {
+                Charset respCharset = ContentType.getOrDefault(entity).getCharset();
+                respContent = EntityUtils.toString(entity, respCharset);
+                EntityUtils.consume(entity);
+            }
+            map.put("code", response.getStatusLine().getStatusCode());
+            map.put("headers", response.getAllHeaders());
+        } catch (ConnectTimeoutException cte) {
+            map.put("code", 404);
+            logger.error("请求通信[" + reqURL + "]时连接超时,堆栈轨迹如下", cte);
+        } catch (SocketTimeoutException ste) {
+            map.put("code", 404);
+            logger.error("请求通信[" + reqURL + "]时读取超时,堆栈轨迹如下", ste);
+        } catch (ClientProtocolException cpe) {
+            map.put("code", 404);
+            // 该异常通常是协议错误导致:比如构造HttpGet对象时传入协议不对(将'http'写成'htp')or响应内容不符合HTTP协议要求等
+            logger.error("请求通信[" + reqURL + "]时协议异常,堆栈轨迹如下", cpe);
+        } catch (ParseException pe) {
+            map.put("code", 404);
+            logger.error("请求通信[" + reqURL + "]时解析异常,堆栈轨迹如下", pe);
+        } catch (IOException ioe) {
+            map.put("code", 404);
+            // 该异常通常是网络原因引起的,如HTTP服务器未启动等
+            logger.error("请求通信[" + reqURL + "]时网络异常,堆栈轨迹如下", ioe);
+        } catch (Exception e) {
+            map.put("code", 404);
+            logger.error("请求通信[" + reqURL + "]时偶遇异常,堆栈轨迹如下", e);
+        } finally {
+            try {
+                if (response != null) {
+                    response.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            if (httpDelete != null) {
+                httpDelete.releaseConnection();
+            }
+        }
+
+        map.put("body", respContent);
+        return map;
     }
 
     public static String sendPostRequest(String reqURL, String param) {

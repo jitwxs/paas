@@ -22,13 +22,14 @@ public class SysImage implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
+    @TableId(type = IdType.UUID)
+    private String id;
     /**
      * 镜像ID
      */
-    @TableId(type = IdType.INPUT)
-    private String id;
+    private String imageId;
     /**
-     * 镜像完整名
+     * 镜像完整名，唯一
      * 注：容器实际操作时请使用该变量，而不要使用name
      */
     private String fullName;

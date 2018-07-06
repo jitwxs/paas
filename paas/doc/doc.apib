@@ -1,6 +1,6 @@
 ﻿FORMAT: 1A
 
-# 无道PaaS系统
+# 无道云平台 —— 基于Docker容器的PaaS系统
 
 # Group 鉴权管理
 
@@ -471,19 +471,23 @@
 	+ Body
 
 	        {
-				"imageName": "nginx:latest",
-				"cmd": "/bin/bash",
+				"imageId": "e38bc07ac18ee64e6d59cf2eafcdddf9cec2364dfe129fe0af75f1b0194e0c96",
+				"cmd": "[/bin/bash]",
 				"containerName": "testContainer",
-				"projectId": "b2b09405f54c4cf3a9e70b4ec298b31a"
+				"projectId": "b2b09405f54c4cf3a9e70b4ec298b31a",
+				"env": "MYSQL_ROOT_PASSWORD=123456",
+				"destination": null
 			}
 
 	+ Schema
 
             {
-				"imageName": "镜像名称，字符串，必填",
-				"cmd": "执行命令，字符串，选填",
+				"imageId": "镜像ID，字符串，必填",
+				"cmd": "执行命令，字符串数组，选填",
 				"containerName": "容器名，字符串，必填",
-				"projectId": "项目ID，字符串，必填"
+				"projectId": "项目ID，字符串，必填",
+				"env": "环境变量，字符串，选填",
+				"destination": "内部目录，字符串数组，选填"
 			}
 
 + Response 200 (application/json)
@@ -828,10 +832,590 @@
 			  "data": null
 			}
 
+# Group 镜像管理
+
+## 本地镜像列表 [GET /image/list/local{?type,name,current,size,orderByField,asc}]
+
++ Parameters
+
+    + type (number, required) - 镜像类型（取值在【镜像类型列表】API）
+    + name (string, optional) - 镜像名
+    + current (number, optional) - 页码，默认为1
+    + size (number, optional) - 页面容量，默认为10
+    + orderByField (string, optional) - 排序字段
+    + asc (boolean, optional) - 升序：true；降序：false
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /image/list/local?type=1&name=nginx
+
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "total": 1,
+			    "size": 10,
+			    "pages": 1,
+			    "current": 1,
+			    "records": [
+			      {
+			        "id": "5699ececb21caf07b92cbda9daa1e965407e3793a72000ecbf6b8e8595a0824a",
+			        "fullName": "nginx:latest",
+			        "name": "nginx",
+			        "tag": "latest",
+			        "size": 108951970,
+			        "type": 1,
+			        "userId": null,
+			        "hasOpen": null,
+			        "virtualSize": 108951970,
+			        "labels": "{\"maintainer\":\"NGINX Docker Maintainers <docker-maint@nginx.com>\"}",
+			        "cmd": "[\"/bin/sh\",\"-c\",\"#(nop) \",\"CMD [\\\"nginx\\\" \\\"-g\\\" \\\"daemon off;\\\"]\"]",
+			        "repo": "library",
+			        "parentId": "",
+			        "createDate": "2018-07-04 11:28:16",
+			        "updateDate": null
+			      }
+			    ]
+			  }
+			}
+
+	+ Schema
+			
+			{
+				"id": "镜像ID",
+		        "fullName": "完整名",
+		        "name": "名成",
+		        "tag": "Tag",
+		        "size": "大小",
+		        "type": "类别",
+		        "userId": "用户ID",
+		        "hasOpen": "是否公开",
+		        "virtualSize": "虚拟大小",
+		        "labels": "镜像labels",
+		        "cmd": "镜像默认启动命令",
+		        "repo": "所属仓储",
+		        "parentId": "父镜像ID",
+		        "createDate": "创建时间",
+		        "updateDate": "更新时间"
+			}
+
+## DockerHub镜像列表 [GET /image/list/hub{?name,limit}]
+
++ Parameters
+
+    + name (string, optional) - 镜像名
+    + limit (number, optional) - 页面容量，默认为10
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /image/list/hub?name=nginx&limit=5
+
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": [
+			    {
+			      "description": "Official build of Nginx.",
+			      "is_official": true,
+			      "is_automated": false,
+			      "name": "nginx",
+			      "star_count": 8946
+			    },
+			    {
+			      "description": "Automated Nginx reverse proxy for docker containers",
+			      "is_official": false,
+			      "is_automated": true,
+			      "name": "jwilder/nginx-proxy",
+			      "star_count": 1355
+			    },
+			    {
+			      "description": "LetsEncrypt container to use with nginx as proxy",
+			      "is_official": false,
+			      "is_automated": true,
+			      "name": "jrcs/letsencrypt-nginx-proxy-companion",
+			      "star_count": 384
+			    },
+			    {
+			      "description": "Bitnami nginx Docker Image",
+			      "is_official": false,
+			      "is_automated": true,
+			      "name": "bitnami/nginx",
+			      "star_count": 54
+			    },
+			    {
+			      "description": "Container running Nginx + PHP-FPM capable of pulling application code from git",
+			      "is_official": false,
+			      "is_automated": true,
+			      "name": "richarvey/nginx-php-fpm",
+			      "star_count": 583
+			    }
+			  ]
+			}
+
+	+ Schema
+			
+			{
+				"description": "镜像描述",
+				"is_official": "是否是官方镜像",
+				"is_automated": "是否是自动化的",
+				"name": "镜像名",
+				"star_count": "star数"
+			}
+
+## 镜像详情 [GET /image/inspect/{id}]
+
++ Parameters
+
+    + id (string, required) - 镜像ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /image/inspect/7afb7abcfe5f2c54e9a34ddf70337aa7d207eee2bc172100dc439e97bfebfcee
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "Id": "sha256:7afb7abcfe5f2c54e9a34ddf70337aa7d207eee2bc172100dc439e97bfebfcee",
+			    "Parent": "",
+			    "Comment": "",
+			    "Created": "2018-06-25T12:18:25.578+0000",
+			    "Container": "d4c98f5626dec8d9dc329aa1827f4003885f1f33824fee98ec109f00dc1a1c5d",
+			    "ContainerConfig": {
+			      "Hostname": "d4c98f5626de",
+			      "Domainname": "",
+			      "User": "",
+			      "AttachStdin": false,
+			      "AttachStdout": false,
+			      "AttachStderr": false,
+			      "PortSpecs": null,
+			      "ExposedPorts": [
+			        "9000/tcp"
+			      ],
+			      "Tty": false,
+			      "OpenStdin": false,
+			      "StdinOnce": false,
+			      "Env": [
+			        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+			      ],
+			      "Cmd": [
+			        "/bin/sh",
+			        "-c",
+			        "#(nop) ",
+			        "ENTRYPOINT [\"/portainer\"]"
+			      ],
+			      "Image": "sha256:8b761605d9080f8481054bc90d959728951b5499f885235a35a2ba94a7a0f665",
+			      "Volumes": [
+			        "/data"
+			      ],
+			      "WorkingDir": "/",
+			      "Entrypoint": [
+			        "/portainer"
+			      ],
+			      "NetworkDisabled": null,
+			      "OnBuild": null,
+			      "Labels": {},
+			      "MacAddress": null,
+			      "HostConfig": null,
+			      "StopSignal": null,
+			      "Healthcheck": null,
+			      "NetworkingConfig": null
+			    },
+			    "DockerVersion": "18.03.1-ce",
+			    "Author": "",
+			    "Config": {
+			      "Hostname": "",
+			      "Domainname": "",
+			      "User": "",
+			      "AttachStdin": false,
+			      "AttachStdout": false,
+			      "AttachStderr": false,
+			      "PortSpecs": null,
+			      "ExposedPorts": [
+			        "9000/tcp"
+			      ],
+			      "Tty": false,
+			      "OpenStdin": false,
+			      "StdinOnce": false,
+			      "Env": [
+			        "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+			      ],
+			      "Cmd": null,
+			      "Image": "sha256:8b761605d9080f8481054bc90d959728951b5499f885235a35a2ba94a7a0f665",
+			      "Volumes": [
+			        "/data"
+			      ],
+			      "WorkingDir": "/",
+			      "Entrypoint": [
+			        "/portainer"
+			      ],
+			      "NetworkDisabled": null,
+			      "OnBuild": null,
+			      "Labels": null,
+			      "MacAddress": null,
+			      "HostConfig": null,
+			      "StopSignal": null,
+			      "Healthcheck": null,
+			      "NetworkingConfig": null
+			    },
+			    "Architecture": "amd64",
+			    "Os": "linux",
+			    "Size": 56967692,
+			    "VirtualSize": 56967692,
+			    "RootFS": {
+			      "Type": "layers",
+			      "Layers": [
+			        "sha256:dd4969f97241b9aefe2a70f560ce399ee9fa0354301c9aef841082ad52161ec5",
+			        "sha256:ea8a4c153532b4e66f9250f8fc6f8ed638559b260ad96072676311db71450706"
+			      ]
+			    }
+			  }
+			}
+
+## 本地镜像同步（管理员） [GET /image/sync]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /image/sync
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "add": 0,
+			    "error": 0,
+			    "delete": 0
+			  }
+			}
+
+	+ Schema
+
+	        {
+				"add": "新增记录数",
+				"error": "失败记录数",
+				"delete": "删除记录数"
+			}
+
+## 删除镜像 [DELETE /image/delete/{id}]
+
++ Parameters
+
+    + id (string, required) - 镜像ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /image/delete/7afb7abcfe5f2c54e9a34ddf70337aa7d207eee2bc172100dc439e97bfebfcee
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+				"code": 0,
+				"message": "成功",
+				"data": null
+			}
+
+## 从DockerHub拉取镜像 [POST /image/pull/hub]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Body
+
+	        {
+				"imageName": hello-world
+			}
+
+	+ Schema
+
+	        {
+				"imageName": "镜像名",
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+				"code": 0,
+				"message": "成功",
+				"data": null
+			}
+
+## 上传镜像到DockerHub [POST /image/push/hub]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Body
+
+	        {
+				"imageId": e38bc07ac18ee64e6d59cf2eafcdddf9cec2364dfe129fe0af75f1b0194e0c96,
+				"username": jitwxs,
+				"password": password
+			}
+
+	+ Schema
+
+	        {
+				"imageId": "镜像ID",
+				"username": "Docker Hub用户名",
+				"password": "Docker Hub密码"
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": "jitwxs/hello-world"
+			}
+
+	+ Schema
+
+	        {
+				"code": "状态码",
+				"message": "消息",
+				"data": "上传成功后DockerHub的仓储名"
+			}
+
+## 导出镜像 [GET /image/export/{id}]
+
++ Parameters
+
+    + id (string, required) - 镜像ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /image/export/e38bc07ac18ee64e6d59cf2eafcdddf9cec2364dfe129fe0af75f1b0194e0c96
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": "http://192.168.30.175:2375/images/hello-world:latest/get"
+			}
+
+	+ Schema
+
+	        {
+				"code": "状态码",
+				"message": "消息",
+				"data": "导出URL"
+			}
+
+## 导入镜像 [POST /image/import]
+
++ Request
+
+	+ Headers
+	
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Body
+
+	        {
+			  "file": a.tar.gz,
+			  "name": my-image,
+			  "tag": latest
+			}
+
+	+ Schema
+
+            {
+			  "file": "文件，文件对象，必填",
+			  "name": "镜像名，字符串，必填",
+			  "tag": "镜像标签，字符串，选填，默认为latest"
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			    "code": 0,
+			    "message": "成功",
+			    "data": null
+			}
+
+## 查看History [GET /image/history/{id}]
+
++ Parameters
+
+    + id (string, required) - 镜像ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /image/history/e38bc07ac18ee64e6d59cf2eafcdddf9cec2364dfe129fe0af75f1b0194e0c96
+
++ Response 200 (application/json)
+    
+    + Body
+
+			{
+				"code": 0,
+				"message": "成功",
+				"data": [
+					{
+						"Id": "sha256:e38bc07ac18ee64e6d59cf2eafcdddf9cec2364dfe129fe0af75f1b0194e0c96",
+						"Created": 1523470309,
+						"CreatedBy": "/bin/sh -c #(nop)  CMD [\"/hello\"]",
+						"Tags": [
+							"hello-world:latest"
+						],
+						"Size": 0,
+						"Comment": ""
+					},
+					{
+						"Id": "<missing>",
+						"Created": 1523470309,
+						"CreatedBy": "/bin/sh -c #(nop) COPY file:3c3ca82dfdb40d30f91a91e2ee953fc0193dc455289fe87fd85219a2c19edcea in / ",
+						"Tags": null,
+						"Size": 1848,
+						"Comment": ""
+					}
+				]
+			}
+
+## 公开私有镜像（用户） [GET /image/share/{id}]
+
++ Parameters
+
+    + id (string, required) - 镜像ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /image/share/e38bc07ac18ee64e6d59cf2eafcdddf9cec2364dfe129fe0af75f1b0194e0c96
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
+
+## 取消公开私有镜像（用户） [GET /image/disShare/{id}]
+
++ Parameters
+
+    + id (string, required) - 镜像ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /image/disShare/e38bc07ac18ee64e6d59cf2eafcdddf9cec2364dfe129fe0af75f1b0194e0c96
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
+
 
 # Group 仓储管理
 
-## 仓储列表（管理员）  [GET /repository/list{?type,current,size,orderByField,asc}]
+## 仓储列表（管理员） [GET /repository/list{?type,current,size,orderByField,asc}]
 
 + Parameters
 
@@ -851,7 +1435,6 @@
 	+ Schema
 
             /repository/list?type=1&current=1&size=5&orderByField=createDate&asc=false
-
 
 + Response 200 (application/json)
     
@@ -929,6 +1512,402 @@
 			  "code": 0,
 			  "message": "成功",
 			  "data": null
+			}
+
+# Group Hub管理
+
+## 镜像名称列表 [GET /repository/image/list{?current,size,orderByField,asc}]
+
++ Parameters
+
+    + current (number, optional) - 页码，默认为1
+    + size (number, optional) - 页面容量，默认为10
+    + orderByField (string, optional) - 排序字段
+    + asc (boolean, optional) - 升序：true；降序：false
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "total": 2,
+			    "size": 10,
+			    "pages": 1,
+			    "current": 1,
+			    "records": [
+			      {
+			        "id": null,
+			        "fullName": null,
+			        "name": "a",
+			        "tag": null,
+			        "userId": null,
+			        "digest": null,
+			        "repo": null,
+			        "createDate": null,
+			        "updateDate": null
+			      },
+			      {
+			        "id": null,
+			        "fullName": null,
+			        "name": "b",
+			        "tag": null,
+			        "userId": null,
+			        "digest": null,
+			        "repo": null,
+			        "createDate": null,
+			        "updateDate": null
+			      }
+			    ]
+			  }
+			}
+
+## 镜像Tag列表 [GET /repository/image/list/name{?name}]
+
++ Parameters
+
+    + name (string, required) - 镜像名
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": [
+			    {
+			      "id": 1,
+			      "fullName": "a:latest",
+			      "name": "a",
+			      "tag": "latest",
+			      "userId": null,
+			      "digest": "vafafagabaff",
+			      "repo": "av",
+			      "createDate": "2018-07-05 17:07:23",
+			      "updateDate": null
+			    },
+			    {
+			      "id": 2,
+			      "fullName": "a:v1.2",
+			      "name": "a",
+			      "tag": "v1.2",
+			      "userId": null,
+			      "digest": "agabanhbaf",
+			      "repo": "afaf",
+			      "createDate": "2018-07-05 17:07:35",
+			      "updateDate": null
+			    }
+			  ]
+			}
+
+## 上传镜像（用户） [POST /repository/image/push]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Body
+
+	        {
+				"imageId": e38bc07ac18ee64e6d59cf2eafcdddf9cec2364dfe129fe0af75f1b0194e0c96
+			}
+
+	+ Schema
+
+            {
+				"imageId": "本地镜像ID，字符串，必填"
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
+
+## 拉取镜像 [POST /repository/image/pull]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Body
+
+	        {
+				"id": e38bc07ac18ee64e6d59cf2eafcdddf9cec2364dfe129fe0af75f1b0194e0c96
+			}
+
+	+ Schema
+
+            {
+				"id": "镜像ID，字符串，必填"
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
+
+## 删除镜像 （管理员） [DELETE /repository/image/delete/{id}]
+
++ Parameters
+
+    + id (number, required) - 镜像ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
+
+## 镜像同步（管理员） [GET /repository/image/sync]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "add": 0,
+			    "error": 0,
+			    "delete": 3
+			  }
+			}
+
+	+ Schema
+
+            {
+				"add": "新增记录数",
+			    "error": "错误记录数",
+			    "delete": "删除记录数"
+			}
+
+# Group 数据卷管理
+
+## 查看数据卷  [GET /volumes/{containerId}/list]
+
++ Parameters
+
+    + containerId (string, required) - 容器ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+            /volumes/list/e2ae80b9d4cf4f09433e9957b5f62b40ee562d1b62837165502c4d5f7996d3c5
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": [
+			    {
+			      "id": "22710dba2e16487795655e68e56be8e9",
+			      "containerId": "e2ae80b9d4cf4f09433e9957b5f62b40ee562d1b62837165502c4d5f7996d3c5",
+			      "name": "5707b93721f8913e39315d3eec3e77f8096949fe80c1a61a78b5213fae8add42",
+			      "destination": "/usr/local/hello",
+			      "source": "/var/lib/docker/volumes/5707b93721f8913e39315d3eec3e77f8096949fe80c1a61a78b5213fae8add42/_data",
+			      "createDate": "2018-07-05 11:06:55",
+			      "updateDate": null
+			    },
+			    {
+			      "id": "f6658faa690441189cdf3f34c5546167",
+			      "containerId": "e2ae80b9d4cf4f09433e9957b5f62b40ee562d1b62837165502c4d5f7996d3c5",
+			      "name": "7cdf905d9f1f90d9a1166b34fdde554c3fc6edaa30b1fe936180478f1ad999f7",
+			      "destination": "/usr/local/world",
+			      "source": "/var/lib/docker/volumes/7cdf905d9f1f90d9a1166b34fdde554c3fc6edaa30b1fe936180478f1ad999f7/_data",
+			      "createDate": "2018-07-05 11:06:55",
+			      "updateDate": null
+			    }
+			  ]
+			}
+
+	+ Schema
+
+			{
+		      "id": "数据卷ID",
+		      "containerId": "容器ID",
+		      "name": "数据卷名",
+		      "destination": "容器内路径",
+		      "source": "数据卷路径",
+		      "createDate": "创建时间",
+		      "updateDate": "更新实际"
+		    }
+
+## 数据卷详情 [GET /volumes/inspect/{id}]
+
++ Parameters
+
+    + id (number, required) - 数据卷ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+			/volumes/inspect/22710dba2e16487795655e68e56be8e9
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "Name": "5707b93721f8913e39315d3eec3e77f8096949fe80c1a61a78b5213fae8add42",
+			    "Driver": "local",
+			    "DriverOpts": null,
+			    "Options": {},
+			    "Labels": null,
+			    "Mountpoint": "/var/lib/docker/volumes/5707b93721f8913e39315d3eec3e77f8096949fe80c1a61a78b5213fae8add42/_data",
+			    "Scope": "local",
+			    "Status": null
+			  }
+			}
+
+## 获取本地数据卷（管理员） [GET /volumes/list]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+			/volumes/list
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "Volumes": [
+			      {
+			        "Name": "cfd6566969059ce18f4e7b34bb011458395d81df6af6fc445db82c3fa02acd31",
+			        "Driver": "local",
+			        "DriverOpts": null,
+			        "Options": {},
+			        "Labels": null,
+			        "Mountpoint": "/var/lib/docker/volumes/cfd6566969059ce18f4e7b34bb011458395d81df6af6fc445db82c3fa02acd31/_data",
+			        "Scope": "local",
+			        "Status": null
+			      },
+			      {
+			        "Name": "5707b93721f8913e39315d3eec3e77f8096949fe80c1a61a78b5213fae8add42",
+			        "Driver": "local",
+			        "DriverOpts": null,
+			        "Options": {},
+			        "Labels": null,
+			        "Mountpoint": "/var/lib/docker/volumes/5707b93721f8913e39315d3eec3e77f8096949fe80c1a61a78b5213fae8add42/_data",
+			        "Scope": "local",
+			        "Status": null
+			      }
+			    ],
+			    "Warnings": null
+			  }
+			}
+
+## 清理本地数据卷（管理员） [DELETE /volumes/clean]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+			/volumes/clean
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "fail": 5,
+			    "success": 8
+			  }
+			}
+
+
+	+ Schema
+
+			{
+				"fail": "失败数",
+				"success": "成功数"
 			}
 
 # Group 用户管理
@@ -1036,6 +2015,39 @@
 			  "data": "成功影响用户数"
 			}
 
+# Group 端口管理
+
+## 端口是否使用 [GET /port/hasUse/{port}]
+
++ Parameters
+
+    + port (number, required) - 端口号
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": false
+			}
+
+	+ Schema
+
+            {
+				"code": "状态码",
+				"message": "消息",
+				"data": "True：被使用；False：未被使用"
+			}
+
 # Group 枚举管理
 
 ## 状态码列表 [GET /enums/result]
@@ -1056,15 +2068,31 @@
 			  "message": "成功",
 			  "data": {
 			    "0": "成功",
-			    "1": "其他错误",
-			    "2": "用户名或密码错误",
-			    "3": "鉴权错误",
-			    "4": "权限错误",
-			    "5": "参数错误",
-			    "6": "注册错误，用户名或邮件已注册",
-			    "7": "邮件发送错误",
-			    "8": "邮件验证错误，用户已注册或验证时间已过期",
-			    "9": "仓储已经存在"
+			    "10": "其他错误",
+			    "11": "用户名或密码错误",
+			    "12": "用户被冻结，请联系管理员",
+			    "13": "鉴权错误",
+			    "14": "权限错误",
+			    "15": "参数错误",
+			    "16": "注册失败，用户名已注册",
+			    "17": "注册失败，邮箱已注册",
+			    "18": "邮件发送错误",
+			    "19": "邮件验证错误，用户已注册或验证时间已过期",
+			    "20": "仓储已经存在",
+			    "21": "Docker超时",
+			    "22": "Docker异常",
+			    "23": "镜像异常",
+			    "24": "服务器异常",
+			    "25": "查看镜像信息错误,未找到此镜像",
+			    "26": "修改镜像错误，用户无权修改或重命名失败：原镜像正在被使用或该镜像名已经被使用",
+			    "27": "导入镜像错误，文件上传失败或导入异常",
+			    "28": "push镜像失败",
+			    "29": "pull镜像错误，本地已存在",
+			    "30": "pull镜像错误",
+			    "31": "删除镜像错误，没有权限",
+			    "32": "删除镜像错误，有容器正在使用该镜像",
+			    "33": "数据卷名称错误，请更换其他名称",
+			    "34": "获取数据卷列表失败"
 			  }
 			}
 
@@ -1085,8 +2113,8 @@
 			  "code": 0,
 			  "message": "成功",
 			  "data": {
-			    "0": "用户登录",
-			    "1": "删除项目"
+			    "1": "申请TOKEN",
+			    "2": "删除项目"
 			  }
 			}
 
@@ -1107,14 +2135,14 @@
 			  "code": 0,
 			  "message": "成功",
 			  "data": {
-			    "0": "创建项目",
-			    "1": "创建容器",
-			    "2": "启动容器",
-			    "3": "暂停容器",
-			    "4": "恢复容器",
-			    "5": "停止容器",
-			    "6": "强制停止容器",
-			    "7": "删除容器"
+			    "1": "创建项目",
+			    "2": "创建容器",
+			    "3": "启动容器",
+			    "4": "暂停容器",
+			    "5": "恢复容器",
+			    "6": "停止容器",
+			    "7": "强制停止容器",
+			    "8": "删除容器"
 			  }
 			}
 
@@ -1135,8 +2163,8 @@
 			  "code": 0,
 			  "message": "成功",
 			  "data": {
-			    "0": "Docker容器",
-			    "1": "Docker HUB"
+			    "1": "Docker容器",
+			    "2": "Docker HUB"
 			  }
 			}
 
@@ -1157,9 +2185,8 @@
 			  "code": 0,
 			  "message": "成功",
 			  "data": {
-			    "0": "本地公共镜像",
-			    "1": "本地用户镜像",
-			    "2": "Docker Hub镜像"
+			    "1": "公共镜像",
+			    "2": "用户镜像"
 			  }
 			}
 

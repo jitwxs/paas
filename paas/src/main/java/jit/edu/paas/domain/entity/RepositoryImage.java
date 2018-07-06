@@ -6,42 +6,49 @@ import com.baomidou.mybatisplus.enums.IdType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.util.Date;
 
-
 /**
- * 系统挂载 实体类
+ * <p>
+ * 仓储镜像
+ * </p>
+ *
  * @author jitwxs
- * @since 2018/7/4 17:04
+ * @since 2018-07-05
  */
 @Data
-public class SysVolume {
+public class RepositoryImage implements Serializable {
 
+    private static final long serialVersionUID = 1L;
+
+    /**
+     * 镜像ID
+     */
     @TableId(type = IdType.UUID)
     private String id;
     /**
-     * 挂载容器id
+     * 镜像完整名
      */
-    private String containerId;
-    /**
-     * 挂载名称
-     */
+    private String fullName;
     private String name;
+    private String tag;
     /**
-     * 容器内部目录
+     * 上传用户
      */
-    private String destination;
+    private String userId;
+    private String digest;
     /**
-     *挂载目录
+     * 仓储
      */
-    private String source;
+    private String repo;
     /**
      * 创建时间
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date createDate;
     /**
-     * 修改时间
+     * 更新时间
      */
     @TableField(update = "now()")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")

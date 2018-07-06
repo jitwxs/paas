@@ -94,10 +94,6 @@ public class ContainerController {
 
         // 2、获取暴露接口
         ImmutableSet<String> exportPorts = imageService.listExportPorts(imageId);
-        if(exportPorts == null) {
-            return ResultVoUtils.error(ResultEnum.IMAGE_EXCEPTION);
-        }
-
         return userContainerService.createContainer(uid, imageId, cmd, exportPorts, containerName, projectId, env, destination);
     }
 
