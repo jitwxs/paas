@@ -6,30 +6,25 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.UnmodifiableIterator;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.*;
-import jit.edu.paas.commons.util.JsonUtils;
-import jit.edu.paas.commons.util.ResultVoUtils;
-import jit.edu.paas.commons.util.StringUtils;
+import jit.edu.paas.commons.util.*;
+import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.entity.SysImage;
 import jit.edu.paas.domain.entity.SysVolume;
 import jit.edu.paas.domain.entity.UserContainer;
-import jit.edu.paas.domain.enums.ContainerStatusEnum;
-import jit.edu.paas.domain.enums.ResultEnum;
-import jit.edu.paas.domain.enums.RoleEnum;
+import jit.edu.paas.domain.enums.*;
 import jit.edu.paas.domain.vo.ResultVo;
 import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.mapper.SysVolumesMapper;
 import jit.edu.paas.mapper.UserContainerMapper;
 import jit.edu.paas.mapper.UserProjectMapper;
-import jit.edu.paas.service.PortService;
-import jit.edu.paas.service.SysImageService;
-import jit.edu.paas.service.SysLoginService;
-import jit.edu.paas.service.UserContainerService;
+import jit.edu.paas.service.*;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.catalina.Host;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 
@@ -53,11 +48,48 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
     @Autowired
     private SysImageService imageService;
     @Autowired
+    private SysLogService sysLogService;
+    @Autowired
+    private ProjectLogService projectLogService;
+    @Autowired
 	private SysVolumesMapper sysVolumesMapper;
     @Autowired
     private UserProjectMapper projectMapper;
     @Autowired
     private UserContainerMapper userContainerMapper;
+    @Autowired
+    private JedisClient jedisClient;
+    @Autowired
+    private HttpServletRequest request;
+
+    @Value("${redis.user-container.key}")
+    private String key;
+
+    @Override
+    public UserContainer getById(String id) {
+        try {
+            String json = jedisClient.hget(key, id);
+            if(StringUtils.isNotBlank(json)) {
+                return JsonUtils.jsonToObject(json, UserContainer.class);
+            }
+        } catch (Exception e) {
+            log.error("缓存读取异常，错误位置：UserContainerServiceImpl.getById()");
+        }
+
+        UserContainer container = userContainerMapper.selectById(id);
+
+        if(container == null) {
+            return null;
+        }
+
+        try {
+            jedisClient.hset(key, id, JsonUtils.objectToJson(container));
+        } catch (Exception e) {
+            log.error("缓存存储异常，错误位置：UserContainerServiceImpl.getById()");
+        }
+
+        return container;
+    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -71,11 +103,17 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
         // 2、开启容器
         try {
             dockerClient.startContainer(containerId);
+            // 写入日志
+            projectLogService.saveSuccessLog(getProjectId(containerId),containerId,ProjectLogTypeEnum.START_CONTAINER);
+
             // 查询并修改状态
             return changeStatus(containerId);
         } catch (Exception e) {
-            log.error("开启容器出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.startContainer()",e.getMessage());
-            e.printStackTrace();
+            log.error("开启容器出现异常，异常位置：{}，错误信息：{}",
+                    "UserContainerServiceImpl.startContainer()",HttpClientUtils.getStackTraceAsString(e));
+            // 写入日志
+            projectLogService.saveErrorLog(getProjectId(containerId),containerId,ProjectLogTypeEnum.START_CONTAINER_ERROR,ResultEnum.DOCKER_EXCEPTION);
+
             return ResultVoUtils.error(ResultEnum.DOCKER_EXCEPTION);
         }
     }
@@ -83,7 +121,7 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
     @Override
     @Transactional(rollbackFor = Exception.class)
     public ResultVo createContainer(String userId, String imageId, String[] cmd, ImmutableSet<String> exportPorts,
-                                    String containerName, String projectId, String env, String[] destination) {
+                                    String containerName, String projectId, String[] env, String[] destination) {
         // Project鉴权
         Boolean b = projectMapper.hasBelong(projectId, userId);
         if(!b) {
@@ -99,25 +137,18 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             return ResultVoUtils.error(ResultEnum.PERMISSION_ERROR);
         }
 
-        // 设置cmd,如果参数为空。使用Image默认
-        if(cmd == null || cmd.length == 0) {
-            String json = image.getCmd();
-            if(StringUtils.isNotBlank(json)) {
-                cmd = JsonUtils.jsonToObject(json, String[].class);
-            }
-        }
-
-        ContainerConfig containerConfig;
         UserContainer uc = new UserContainer();
+        HostConfig hostConfig;
+        ContainerConfig.Builder builder = ContainerConfig.builder();
 
         // 设置暴露端口
         if(exportPorts != null) {
             // 宿主机端口与暴露端口绑定
+            Set<String> realExportPorts = new HashSet<>();
             Map<String, List<PortBinding>> portBindings = new HashMap<>(16);
             UnmodifiableIterator<String> iterator = exportPorts.iterator();
 
             // 去除/tcp后的端口集合
-            Set<String> realExportPorts = new HashSet<>();
             while(iterator.hasNext()) {
                 // 取出暴露端口号,形如：80/tcp
                 String exportPort = iterator.next();
@@ -135,25 +166,32 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
 
             uc.setPort(JsonUtils.objectToJson(portBindings));
 
-            HostConfig hostConfig = HostConfig.builder().portBindings(portBindings).build();
-            containerConfig = ContainerConfig.builder()
-                    .hostConfig(hostConfig)
-                    .image(image.getFullName())
-                    .exposedPorts(realExportPorts)
-                    .volumes(destination)
-                    .env(env)
-                    .cmd(cmd)
+            builder.exposedPorts(realExportPorts);
+
+            hostConfig = HostConfig.builder()
+                    .portBindings(portBindings)
                     .build();
         } else {
-            HostConfig hostConfig = HostConfig.builder().build();
-            containerConfig = ContainerConfig.builder()
-                    .hostConfig(hostConfig)
-                    .image(image.getFullName())
-                    .volumes(destination)
-                    .env(env)
-                    .cmd(cmd)
-                    .build();
+            hostConfig = HostConfig.builder().build();
         }
+
+
+        // 构建ContainerConfig
+        builder.hostConfig(hostConfig);
+        builder.image(image.getFullName());
+        builder.tty(true);
+        if(CollectionUtils.isNotArrayBlank(cmd)) {
+            builder.cmd(cmd);
+            uc.setCommand(Arrays.toString(cmd));
+        }
+        if(CollectionUtils.isNotArrayBlank(destination)) {
+            builder.volumes(destination);
+        }
+        if(CollectionUtils.isNotArrayBlank(env)) {
+            builder.env(env);
+            uc.setEnv(Arrays.toString(env));
+        }
+        ContainerConfig containerConfig = builder.build();
 
         try {
             ContainerCreation creation = dockerClient.createContainer(containerConfig);
@@ -161,19 +199,20 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             uc.setId(creation.id());
             // 仅存在于数据库，不代表实际容器名
             uc.setName(containerName);
-            uc.setCommand(Arrays.toString(cmd));
             uc.setProjectId(projectId);
             uc.setImage(image.getFullName());
-            uc.setEnv(env);
-            // 为数据库中的sysvolumes插入
-            ImmutableList<ContainerMount> info = dockerClient.inspectContainer(creation.id()).mounts();
-            for(int i = 0;i<destination.length;i++){
-                SysVolume sysVolume = new SysVolume();
-                sysVolume.setContainerId(creation.id());
-                sysVolume.setDestination(destination[i]);
-                sysVolume.setName(info.get(i).name());
-                sysVolume.setSource(info.get(i).source());
-                sysVolumesMapper.insert(sysVolume);
+
+            if(CollectionUtils.isNotArrayBlank(destination)) {
+                // 为数据库中的sysvolumes插入
+                ImmutableList<ContainerMount> info = dockerClient.inspectContainer(creation.id()).mounts();
+                for(int i = 0;i<destination.length;i++){
+                    SysVolume sysVolume = new SysVolume();
+                    sysVolume.setContainerId(creation.id());
+                    sysVolume.setDestination(destination[i]);
+                    sysVolume.setName(info.get(i).name());
+                    sysVolume.setSource(info.get(i).source());
+                    sysVolumesMapper.insert(sysVolume);
+                }
             }
 
             // 设置状态
@@ -186,10 +225,19 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
 
             userContainerMapper.insert(uc);
 
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.CREATE_CONTAINER);
+            projectLogService.saveSuccessLog(projectId,uc.getId(),ProjectLogTypeEnum.CREATE_CONTAINER);
+
             return ResultVoUtils.success();
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error("创建容器出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.createContainer()",e.getMessage());
+            log.error("创建容器出现异常，异常位置：{}，错误信息：{}",
+                    "UserContainerServiceImpl.createContainer()", HttpClientUtils.getStackTraceAsString(e));
+
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.CREATE_CONTAINER, e);
+            projectLogService.saveErrorLog(projectId,uc.getId(),ProjectLogTypeEnum.CREATE_CONTAINER_ERROR,ResultEnum.DOCKER_EXCEPTION);
+
             return ResultVoUtils.error(ResultEnum.DOCKER_EXCEPTION);
         }
     }
@@ -205,12 +253,16 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
 
         try {
             dockerClient.stopContainer(containerId, 5);
+            // 写入日志
+            projectLogService.saveSuccessLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.STOP_CONTAINER);
 
             // 查询并修改状态
             return changeStatus(containerId);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error("停止容器出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.stopContainer()",e.getMessage());
+            log.error("停止容器出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.stopContainer()",HttpClientUtils.getStackTraceAsString(e));
+            // 写入日志
+            projectLogService.saveErrorLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.STOP_CONTAINER_ERROR,ResultEnum.DOCKER_EXCEPTION);
+
             return ResultVoUtils.error(ResultEnum.DOCKER_EXCEPTION);
         }
     }
@@ -226,11 +278,15 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
 
         try {
             dockerClient.killContainer(containerId);
+            // 写入日志
+            projectLogService.saveSuccessLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.KILL_CONTAINER);
             // 查询并修改状态
             return changeStatus(containerId);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error("强制停止容器出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.killContainer()",e.getMessage());
+            log.error("强制停止容器出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.killContainer()",HttpClientUtils.getStackTraceAsString(e));
+            // 写入日志
+            projectLogService.saveErrorLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.KILL_CONTAINER_ERROR,ResultEnum.DOCKER_EXCEPTION);
+
             return ResultVoUtils.error(ResultEnum.DOCKER_EXCEPTION);
         }
     }
@@ -248,10 +304,20 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             dockerClient.removeContainer(containerId);
             // 删除数据
             userContainerMapper.deleteById(containerId);
+            // 清理缓存
+            cleanCache(containerId);
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.DELETE_CONTAINER);
+            projectLogService.saveSuccessLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.DELETE_CONTAINER);
+
             return ResultVoUtils.success();
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error("删除容器出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.removeContainer()",e.getMessage());
+            log.error("删除容器出现异常，异常位置：{}，错误信息：{}",
+                    "UserContainerServiceImpl.removeContainer()", HttpClientUtils.getStackTraceAsString(e));
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.DELETE_CONTAINER, e);
+            projectLogService.saveErrorLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.DELETE_CONTAINER_ERROR,ResultEnum.DOCKER_EXCEPTION);
+
             return ResultVoUtils.error(ResultEnum.DOCKER_EXCEPTION);
         }
     }
@@ -267,12 +333,17 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
 
         try {
             dockerClient.pauseContainer(containerId);
+            // 写入日志
+            projectLogService.saveSuccessLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.PAUSE_CONTAINER);
 
             // 查询并修改状态
             return changeStatus(containerId);
         } catch (Exception e) {
             e.printStackTrace();
-            log.error("暂停容器出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.pauseContainer()",e.getMessage());
+            log.error("暂停容器出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.pauseContainer()",HttpClientUtils.getStackTraceAsString(e));
+            // 写入日志
+            projectLogService.saveErrorLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.PAUSE_CONTAINER_ERROR,ResultEnum.DOCKER_EXCEPTION);
+
             return ResultVoUtils.error(ResultEnum.DOCKER_EXCEPTION);
         }
     }
@@ -287,11 +358,15 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
 
         try {
             dockerClient.unpauseContainer(containerId);
+            // 写入日志
+            projectLogService.saveSuccessLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.CONTINUE_CONTAINER);
             // 查询并修改状态
             return changeStatus(containerId);
         } catch (Exception e) {
-            e.printStackTrace();
-            log.error("继续容器出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.continueContainer()",e.getMessage());
+            log.error("继续容器出现异常，异常位置：{}，错误信息：{}","UserContainerServiceImpl.continueContainer()",HttpClientUtils.getStackTraceAsString(e));
+            // 写入日志
+            projectLogService.saveErrorLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.CONTINUE_CONTAINER,ResultEnum.DOCKER_EXCEPTION);
+
             return ResultVoUtils.error(ResultEnum.DOCKER_EXCEPTION);
         }
     }
@@ -358,6 +433,15 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
         }
     }
 
+    @Override
+    public void cleanCache(String containerId) {
+        try {
+            jedisClient.hdel(key, containerId);
+        } catch (Exception e) {
+            log.error("缓存清理异常，错误位置：UserContainerServiceImpl.cleanCache()");
+        }
+    }
+
     /**
      * 修改数据库中容器状态
      * @author jitwxs
@@ -380,5 +464,11 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
         }
 
         return ResultVoUtils.success(statusEnum.getCode());
+    }
+
+    private String getProjectId(String containerId) {
+        UserContainer container = getById(containerId);
+
+        return  container == null ? null : container.getProjectId();
     }
 }

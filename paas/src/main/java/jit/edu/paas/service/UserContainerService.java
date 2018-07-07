@@ -15,6 +15,13 @@ import jit.edu.paas.domain.vo.ResultVo;
  * @since 2018-06-27
  */
 public interface UserContainerService extends IService<UserContainer> {
+
+    /**
+     * 获取容器信息
+     * @author jitwxs
+     * @since 2018/7/7 9:20
+     */
+    UserContainer getById(String id);
     /**
      * 开启容器
      * @author jitwxs
@@ -29,7 +36,7 @@ public interface UserContainerService extends IService<UserContainer> {
      * @since 2018/7/1 16:00
      */
     ResultVo createContainer(String userId, String imageId, String[] cmd, ImmutableSet<String> exportPorts,
-                             String containerName, String projectId, String env, String[] destination);
+                             String containerName, String projectId, String[] env, String[] destination);
 
     /**
      * 停止容器
@@ -81,4 +88,11 @@ public interface UserContainerService extends IService<UserContainer> {
      * @since 2018/7/1 16:44
      */
     ContainerStatusEnum getStatus(String containerId);
+
+    /**
+     * 清理缓存
+     * @author jitwxs
+     * @since 2018/7/7 9:25
+     */
+    void cleanCache(String containerId);
 }

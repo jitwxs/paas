@@ -24,7 +24,7 @@ public class GeneratorServiceEntity {
                 "sys_volume","user_container","user_project"
         };
         boolean serviceNameStartWithI = false;//user -> UserService, 设置成true: user -> IUserService
-        generateByTables(serviceNameStartWithI, packageName, tables);
+        generateByTables(serviceNameStartWithI, packageName, "project_log");
     }
 
     private void generateByTables(boolean serviceNameStartWithI, String packageName, String... tableNames) {

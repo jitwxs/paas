@@ -1,19 +1,28 @@
 package jit.edu.paas.service.impl;
 
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
+import jit.edu.paas.commons.util.HttpClientUtils;
 import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.commons.util.JsonUtils;
 import jit.edu.paas.commons.util.ResultVoUtils;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.entity.UserProject;
+import jit.edu.paas.domain.enums.ProjectLogTypeEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
+import jit.edu.paas.domain.enums.RoleEnum;
+import jit.edu.paas.domain.enums.SysLogTypeEnum;
 import jit.edu.paas.domain.vo.ResultVo;
 import jit.edu.paas.mapper.UserProjectMapper;
+import jit.edu.paas.service.ProjectLogService;
+import jit.edu.paas.service.SysLogService;
+import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.service.UserProjectService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * <p>
@@ -30,6 +39,14 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
     private UserProjectMapper projectMapper;
     @Autowired
     private JedisClient jedisClient;
+    @Autowired
+    private SysLoginService loginService;
+    @Autowired
+    private SysLogService sysLogService;
+    @Autowired
+    private ProjectLogService projectLogService;
+    @Autowired
+    private HttpServletRequest request;
 
     @Value("${redis.project.key}")
     private String key;
@@ -62,8 +79,9 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
             log.error("缓存存储异常，错误位置：UserProjectServiceImpl.getProjectById()");
         }
 
-        // 鉴权
-        if(StringUtils.isNotBlank(userId)) {
+        // 鉴权（管理员查看所有，用户查看自己）
+        String roleName = loginService.getRoleName(userId);
+        if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
             if(!userId.equals(project.getUserId())) {
                 return ResultVoUtils.error(ResultEnum.PERMISSION_ERROR);
             }
@@ -94,9 +112,21 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
             project.setDescription(description);
         }
 
-        projectMapper.insert(project);
+        try {
+            projectMapper.insert(project);
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.CREATE_PROJECT);
+            projectLogService.saveSuccessLog(project.getId(),null,ProjectLogTypeEnum.CREATE_PROJECT);
 
-        return ResultVoUtils.success();
+            return ResultVoUtils.success();
+        } catch (Exception e) {
+            log.error("创建项目出现错误，错误位置：{}，错误信息：{}",
+                    "UserProjectServiceImpl.createProject()", HttpClientUtils.getStackTraceAsString(e));
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.CREATE_PROJECT, e);
+
+            return ResultVoUtils.error(ResultEnum.CREATE_PROJECT_ERROR);
+        }
     }
 
     @Override
@@ -106,9 +136,22 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
             return resultVo;
         }
 
-        projectMapper.deleteById(id);
-        cleanCache(id);
-        return ResultVoUtils.success();
+        try {
+            projectMapper.deleteById(id);
+            // 清理缓存
+            cleanCache(id);
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.DELETE_PROJECT);
+
+            return ResultVoUtils.success();
+        } catch (Exception e) {
+            log.error("删除项目出现错误，错误位置：{}，错误信息：{}",
+                    "UserProjectServiceImpl.deleteProject()", HttpClientUtils.getStackTraceAsString(e));
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.DELETE_PROJECT,e);
+
+            return ResultVoUtils.error(ResultEnum.DELETE_PROJECT_ERROR);
+        }
     }
 
     @Override
@@ -119,22 +162,17 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
         }
 
         UserProject project = (UserProject)resultVo.getData();
-        boolean updateFlag = false;
 
-        if(!project.getName().equals(name)) {
+        if(StringUtils.isNotBlank(name)) {
             project.setName(name);
-            updateFlag = true;
         }
-        if(!project.getDescription().equals(description)) {
+        if(StringUtils.isNotBlank(description)) {
             project.setDescription(description);
-            updateFlag = true;
         }
 
-        if(updateFlag) {
-            projectMapper.updateById(project);
-            // 清理缓存
-            cleanCache(id);
-        }
+        projectMapper.updateById(project);
+        // 清理缓存
+        cleanCache(id);
 
         return ResultVoUtils.success();
     }
@@ -143,4 +181,30 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
     public Boolean hasBelong(String projectId, String userId) {
         return projectMapper.hasBelong(projectId, userId);
     }
+
+    @Override
+    public String getUserId(String projectId) {
+        try {
+            String res = jedisClient.hget(key, projectId);
+            if(StringUtils.isNotBlank(res)) {
+                UserProject project = JsonUtils.jsonToObject(res, UserProject.class);
+                return project.getUserId();
+            }
+        } catch (Exception e) {
+            log.error("缓存读取异常，错误位置：UserProjectServiceImpl.getProjectById()");
+        }
+
+        UserProject project = projectMapper.selectById(projectId);
+
+        if(project != null) {
+            try {
+                jedisClient.hset(key, projectId, JsonUtils.objectToJson(project));
+            } catch (Exception e) {
+                log.error("缓存存储异常，错误位置：UserProjectServiceImpl.getProjectById()");
+            }
+        }
+
+        return null;
+    }
+
 }

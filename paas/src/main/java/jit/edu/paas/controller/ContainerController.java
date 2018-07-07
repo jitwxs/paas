@@ -86,7 +86,7 @@ public class ContainerController {
     @PostMapping("/create")
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResultVo createContainer(@RequestAttribute String uid, String imageId, String[] cmd,
-                                    String containerName,String projectId,String env, String[] destination){
+                                    String containerName,String projectId,String[] env, String[] destination){
         // 1、输入验证
         if(StringUtils.isBlank(imageId,containerName,projectId)) {
             return ResultVoUtils.error(ResultEnum.PARAM_ERROR);

@@ -2,17 +2,20 @@ package jit.edu.paas.controller;
 
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.plugins.Page;
-import jit.edu.paas.commons.util.ResultVoUtils;
 import jit.edu.paas.commons.component.WrapperComponent;
+import jit.edu.paas.commons.util.ResultVoUtils;
+import jit.edu.paas.domain.entity.ProjectLog;
 import jit.edu.paas.domain.entity.UserProject;
+import jit.edu.paas.domain.enums.ResultEnum;
+import jit.edu.paas.domain.enums.RoleEnum;
 import jit.edu.paas.domain.select.UserProjectSelect;
 import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.service.ProjectLogService;
+import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.service.UserProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-
-import javax.servlet.http.HttpServletRequest;
 
 /**
  * 项目Controller
@@ -23,7 +26,11 @@ import javax.servlet.http.HttpServletRequest;
 @RequestMapping("/project")
 public class ProjectController {
     @Autowired
+    private SysLoginService loginService;
+    @Autowired
     private UserProjectService projectService;
+    @Autowired
+    private ProjectLogService projectLogService;
     @Autowired
     private WrapperComponent wrapperComponent;
 
@@ -101,7 +108,27 @@ public class ProjectController {
      */
     @DeleteMapping("/delete/{id}")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResultVo updateProject(@RequestAttribute String uid, @PathVariable String id, HttpServletRequest request) {
+    public ResultVo updateProject(@RequestAttribute String uid, @PathVariable String id) {
         return projectService.deleteProject(id, uid);
+    }
+
+    /**
+     * 获取操作日志
+     * @author jitwxs
+     * @since 2018/7/7 10:27
+     */
+    @GetMapping("/log/{projectId}")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVo getProjectLog(@RequestAttribute String uid, @PathVariable String projectId, Page<ProjectLog> page) {
+        // 鉴权
+        String roleName = loginService.getRoleName(uid);
+        if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
+            String userId = projectService.getUserId(projectId);
+            if(!uid.equals(userId)) {
+                return ResultVoUtils.error(ResultEnum.PERMISSION_ERROR);
+            }
+        }
+
+        return ResultVoUtils.success(projectLogService.selectPage(page, new EntityWrapper<ProjectLog>().eq("project_id", projectId)));
     }
 }

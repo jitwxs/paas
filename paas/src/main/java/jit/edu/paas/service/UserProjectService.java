@@ -50,4 +50,6 @@ public interface UserProjectService extends IService<UserProject> {
      * @since 2018/7/1 15:34
      */
     Boolean hasBelong(String projectId, String userId);
+
+    String getUserId(String projectId);
 }

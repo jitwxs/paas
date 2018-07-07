@@ -6,8 +6,6 @@ import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.ProgressHandler;
-import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.docker.client.messages.*;
 import jit.edu.paas.commons.util.*;
 import jit.edu.paas.commons.util.jedis.JedisClient;
@@ -15,9 +13,11 @@ import jit.edu.paas.domain.entity.SysImage;
 import jit.edu.paas.domain.enums.ImageTypeEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.RoleEnum;
+import jit.edu.paas.domain.enums.SysLogTypeEnum;
 import jit.edu.paas.domain.vo.ResultVo;
 import jit.edu.paas.mapper.SysImageMapper;
 import jit.edu.paas.service.SysImageService;
+import jit.edu.paas.service.SysLogService;
 import jit.edu.paas.service.SysLoginService;
 import lombok.Cleanup;
 import lombok.extern.slf4j.Slf4j;
@@ -42,9 +42,7 @@ import org.springframework.web.multipart.support.StandardMultipartHttpServletReq
 import javax.servlet.http.HttpServletRequest;
 import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * <p>
@@ -65,6 +63,10 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
     private DockerClient dockerClient;
     @Autowired
     private JedisClient jedisClient;
+    @Autowired
+    private SysLogService sysLogService;
+    @Autowired
+    private HttpServletRequest request;
 
     @Value("${docker.server.url}")
     private String serverUrl;
@@ -271,9 +273,16 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             map.put("delete", deleteCount);
             map.put("add", addCount);
             map.put("error", errorCount);
+
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.SYNC_SYS_IMAGE);
+
             return ResultVoUtils.success(map);
         } catch (Exception e) {
             log.error("Docker同步镜像异常，错误位置：SysImageServiceImpl.syncLocalImage,出错信息{}",HttpClientUtils.getStackTraceAsString(e));
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.SYNC_SYS_IMAGE,e);
+
             return ResultVoUtils.error(ResultEnum.DOCKER_EXCEPTION);
         }
     }
@@ -313,9 +322,16 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             imageMapper.deleteById(sysImage);
             // 清除缓存
             cleanCache(sysImage.getId(), sysImage.getFullName());
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.DELETE_IMAGE);
+
             return ResultVoUtils.success();
         } catch (Exception e) {
-            log.error("Docker删除镜像异常，错误位置：SysImageServiceImpl.removeImage,出错信息{}",HttpClientUtils.getStackTraceAsString(e));
+            log.error("Docker删除镜像异常，错误位置：{},出错信息{}"
+                    ,"SysImageServiceImpl.removeImage",HttpClientUtils.getStackTraceAsString(e));
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.DELETE_IMAGE,e);
+
             return ResultVoUtils.error(ResultEnum.DELETE_IMAGE_BY_CONTAINER_ERROR);
         }
     }
@@ -343,7 +359,6 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             if(getByFullName(name) != null) {
                 syncLocalImage();
             }
-
         } catch (Exception e) {
             log.error("查询本地镜像失败，错误位置：{}，镜像名：{}，错误信息：{}",
                     "SysImageServiceImpl.pullImageFromHub()", name, HttpClientUtils.getStackTraceAsString(e));
@@ -353,9 +368,14 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         // pull 镜像
         try {
             dockerClient.pull(name);
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.PULL_IMAGE_FROM_DOCKER_HUB);
         } catch (Exception e) {
             log.error("Pull Docker Hub镜像失败，错误位置：{}，镜像名：{}，错误信息：{}"
                     , "SysImageServiceImpl.pullImageFromHub()", name, HttpClientUtils.getStackTraceAsString(e));
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.PULL_IMAGE_FROM_DOCKER_HUB, e);
+
             return ResultVoUtils.error(ResultEnum.PULL_ERROR);
         }
 
@@ -407,8 +427,14 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         try {
             // 上传镜像
             dockerClient.push(imageName, registryAuth);
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.PUSH_IMAGE_TO_DOCKER_HUB);
         } catch (Exception e) {
-            log.error("push镜像异常，错误位置：SysImageServiceImpl.pushImage,出错信息：{}", HttpClientUtils.getStackTraceAsString(e));
+            log.error("push镜像异常，错误位置：SysImageServiceImpl.pushImage,出错信息：{}",
+                    HttpClientUtils.getStackTraceAsString(e));
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.PUSH_IMAGE_TO_DOCKER_HUB, e);
+
             return ResultVoUtils.error(ResultEnum.PUSH_ERROR);
         }
 
@@ -493,11 +519,16 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             SysImage sysImage = imageToSysImage(image, image.repoTags().get(0));
             // 插入数据
             imageMapper.insert(sysImage);
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.IMPORT_IMAGE);
 
             return ResultVoUtils.success();
         } catch (Exception e) {
             log.error("导入镜像失败，错误位置：{}，镜像名：{}，错误信息：{}",
                     "SysImageServiceImpl.pullImageFromHub()", fullName, HttpClientUtils.getStackTraceAsString(e));
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.IMPORT_IMAGE, e);
+
             return ResultVoUtils.error(ResultEnum.IMPORT_ERROR);
         }
     }

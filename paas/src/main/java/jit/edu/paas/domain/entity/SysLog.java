@@ -35,6 +35,12 @@ public class SysLog implements Serializable {
      */
     private Integer type;
     /**
+     * 日志描述
+     * @author jitwxs
+     * @since 2018/7/6 21:08
+     */
+    private String description;
+    /**
      * 请求Url
      */
     private String action;

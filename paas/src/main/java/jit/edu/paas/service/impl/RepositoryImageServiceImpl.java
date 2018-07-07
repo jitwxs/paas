@@ -12,16 +12,19 @@ import jit.edu.paas.domain.entity.RepositoryImage;
 import jit.edu.paas.domain.entity.SysImage;
 import jit.edu.paas.domain.enums.ImageTypeEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
+import jit.edu.paas.domain.enums.SysLogTypeEnum;
 import jit.edu.paas.domain.vo.ResultVo;
 import jit.edu.paas.mapper.RepositoryImageMapper;
 import jit.edu.paas.service.RepositoryImageService;
 import jit.edu.paas.service.SysImageService;
+import jit.edu.paas.service.SysLogService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
 /**
@@ -40,9 +43,13 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
     @Autowired
     private SysImageService sysImageService;
     @Autowired
+    private SysLogService sysLogService;
+    @Autowired
     private JedisClient jedisClient;
     @Autowired
     private DockerClient dockerClient;
+    @Autowired
+    private HttpServletRequest request;
 
     @Value("${docker.registry.url}")
     private String registryUrl;
@@ -180,11 +187,16 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
             map.put("delete", deleteCount);
             map.put("add", addCount);
             map.put("error", errorCount);
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.SYNC_HUB_IMAGE);
 
             return ResultVoUtils.success(map);
         } catch (Exception e) {
             log.error("读取Hub数据失败，错误位置：{}，错误信息：{}",
                     "RepositoryImageServiceImpl.sync()",HttpClientUtils.getStackTraceAsString(e));
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.SYNC_HUB_IMAGE,e);
+
             return ResultVoUtils.error(ResultEnum.NETWORK_ERROR);
         }
     }
@@ -225,11 +237,16 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
             repositoryImageMapper.insert(image);
             // 5、清理缓存
             cleanCache(null, image.getName());
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.PUSH_IMAGE_TO_HUB);
 
             return ResultVoUtils.success();
         } catch (Exception e) {
             log.error("上传镜像失败，错误位置：{}，错误信息：{}",
                     "RepositoryImageServiceImpl.pushToHub()", HttpClientUtils.getStackTraceAsString(e));
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.PUSH_IMAGE_TO_HUB,e);
+
             return ResultVoUtils.error(ResultEnum.PUSH_ERROR);
         }
     }
@@ -255,11 +272,16 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
             // 2、插入数据
             SysImage sysImage = repositoryImage2SysImage(repositoryImage);
             sysImageService.insert(sysImage);
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.PULL_IMAGE_FROM_HUB);
 
             return ResultVoUtils.success();
         } catch (Exception e) {
             log.error("拉取镜像失败，错误位置：{}，错误信息：{}",
                     "RepositoryImageServiceImpl.pullFromHub()", HttpClientUtils.getStackTraceAsString(e));
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.PULL_IMAGE_FROM_HUB,e);
+
             return ResultVoUtils.error(ResultEnum.PULL_ERROR);
         }
     }
@@ -287,11 +309,16 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
             repositoryImageMapper.deleteById(id);
             // 清理缓存
             cleanCache(id, name);
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.DELETE_IMAGE_FROM_HUB);
 
             return ResultVoUtils.success();
         } catch (Exception e) {
             log.error("删除Hub镜像失败，错误位置：{}，错误信息：{}",
                     "RepositoryImageServiceImpl.deleteFromHub()", HttpClientUtils.getStackTraceAsString(e));
+            // 写入日志
+            sysLogService.saveLog(request, SysLogTypeEnum.DELETE_IMAGE_FROM_HUB,e);
+
             return ResultVoUtils.error(ResultEnum.DELETE_HUB_IMAGE_ERROR);
         }
     }

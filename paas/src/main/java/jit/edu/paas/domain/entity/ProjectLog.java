@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotations.TableId;
 import com.baomidou.mybatisplus.enums.IdType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.Date;
@@ -14,6 +15,7 @@ import java.util.Date;
  * @since 2018/7/3 13:37
  */
 @Data
+@NoArgsConstructor
 public class ProjectLog implements Serializable {
     private static final long serialVersionUID = 1L;
 
@@ -30,14 +32,21 @@ public class ProjectLog implements Serializable {
     /**
      * 事件类型
      */
-    private String type;
+    private Integer type;
     /**
      * 名称
      */
-    private String name;
+    private String description;
     /**
      * 创建时间
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date createDate;
+
+    public ProjectLog(String projectId, String containerId, Integer type, String description) {
+        this.projectId = projectId;
+        this.containerId = containerId;
+        this.type = type;
+        this.description = description;
+    }
 }

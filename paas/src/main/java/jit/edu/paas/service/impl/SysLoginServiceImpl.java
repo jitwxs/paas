@@ -2,15 +2,17 @@ package jit.edu.paas.service.impl;
 
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
-import jit.edu.paas.commons.util.*;
 import jit.edu.paas.commons.activemq.MQProducer;
 import jit.edu.paas.commons.activemq.Task;
+import jit.edu.paas.commons.util.*;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.entity.SysLogin;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.RoleEnum;
+import jit.edu.paas.domain.enums.SysLogTypeEnum;
 import jit.edu.paas.domain.vo.ResultVo;
 import jit.edu.paas.mapper.SysLoginMapper;
+import jit.edu.paas.service.SysLogService;
 import jit.edu.paas.service.SysLoginService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.command.ActiveMQQueue;
@@ -27,6 +29,7 @@ import org.thymeleaf.context.Context;
 import javax.jms.Destination;
 import javax.mail.MessagingException;
 import javax.mail.internet.MimeMessage;
+import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,6 +48,8 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
     @Autowired
     private SysLoginMapper loginMapper;
     @Autowired
+    private SysLogService sysLogService;
+    @Autowired
     private JavaMailSender mailSender;
     @Autowired
     private TemplateEngine templateEngine;
@@ -52,6 +57,8 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
     private JedisClient jedisClient;
     @Autowired
     private MQProducer mqProducer;
+    @Autowired
+    private HttpServletRequest request;
 
     @Value("${redis.login.key}")
     private String key;
@@ -369,6 +376,9 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
                 count++;
             }
         }
+        // 写入日志
+        sysLogService.saveLog(request, SysLogTypeEnum.FREEZE_USER);
+
         return count;
     }
 

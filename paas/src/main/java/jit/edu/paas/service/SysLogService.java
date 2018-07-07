@@ -2,6 +2,7 @@ package jit.edu.paas.service;
 
 import com.baomidou.mybatisplus.service.IService;
 import jit.edu.paas.domain.entity.SysLog;
+import jit.edu.paas.domain.enums.SysLogTypeEnum;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -14,7 +15,7 @@ import javax.servlet.http.HttpServletRequest;
  * @since 2018-06-27
  */
 public interface SysLogService extends IService<SysLog> {
-    void saveLog(HttpServletRequest request, Integer type);
+    void saveLog(HttpServletRequest request, SysLogTypeEnum enums);
 
-    void saveLog(HttpServletRequest request, Exception ex, Integer type);
+    void saveLog(HttpServletRequest request, SysLogTypeEnum enums, Exception ex);
 }

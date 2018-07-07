@@ -5,13 +5,17 @@
     <select id="listLocalPublicImage" resultType="jit.edu.paas.domain.entity.SysImage">
         SELECT * FROM `sys_image`
         WHERE `type` = 1
-        AND `name` like "%"#{name}"%"
+        <if test="name != null" >
+            AND `name` like "%"#{name}"%"
+        </if>
     </select>
 
     <select id="listLocalUserImage" resultType="jit.edu.paas.domain.entity.SysImage">
         SELECT * FROM `sys_image`
         WHERE `type` = 2
-        AND `name` like "%"#{name}"%"
         AND `has_open` = 1
+        <if test="name != null" >
+            AND `name` like "%"#{name}"%"
+        </if>
     </select>
 </mapper>

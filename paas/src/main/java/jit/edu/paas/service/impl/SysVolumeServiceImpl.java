@@ -11,9 +11,11 @@ import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.entity.SysVolume;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.RoleEnum;
+import jit.edu.paas.domain.enums.SysLogTypeEnum;
 import jit.edu.paas.domain.vo.ResultVo;
 import jit.edu.paas.mapper.SysVolumesMapper;
 import jit.edu.paas.mapper.UserContainerMapper;
+import jit.edu.paas.service.SysLogService;
 import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.service.SysVolumeService;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +24,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,9 +37,13 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
     @Autowired
     private SysLoginService loginService;
     @Autowired
+    private SysLogService sysLogService;
+    @Autowired
     private SysVolumesMapper volumesMapper;
     @Autowired
     private UserContainerMapper containerMapper;
+    @Autowired
+    private HttpServletRequest request;
 
     @Autowired
     private JedisClient jedisClient;
@@ -183,6 +190,9 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
         Map<String, Integer> map = new HashMap<>(16);
         map.put("success", successCount);
         map.put("fail", failCount);
+        // 写入日志
+        sysLogService.saveLog(request, SysLogTypeEnum.CLEAN_VOLUMES);
+
         return ResultVoUtils.success(map);
     }
 }

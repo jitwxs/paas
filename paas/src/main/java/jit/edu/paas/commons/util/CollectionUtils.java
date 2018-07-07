@@ -21,4 +21,21 @@ public class CollectionUtils {
             return list.get(0);
         }
     }
+
+    /**
+     * 判断数组是否为空
+     * @author jitwxs
+     * @since 2018/7/7 15:00
+     */
+    public static boolean isArrayBlank(String[] strings) {
+        if(strings == null || strings.length == 0) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public static boolean isNotArrayBlank(String[] strings) {
+        return !isArrayBlank(strings);
+    }
 }

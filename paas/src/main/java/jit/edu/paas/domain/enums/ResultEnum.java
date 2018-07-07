@@ -41,7 +41,9 @@ public enum ResultEnum {
     IMAGE_UPLOAD_ERROR_BY_EXIST("镜像上传失败，镜像已经上传",37),
     DELETE_HUB_IMAGE_ERROR("删除Hub上镜像失败",38),
     BUILD_ERROR_BY_SUFFIX("编译DockerFile失败，后缀名错误",39),
-    BUILD_ERROR("编译DockerFile失败",40);
+    BUILD_ERROR("编译DockerFile失败",40),
+    CREATE_PROJECT_ERROR("创建项目失败",41),
+    DELETE_PROJECT_ERROR("删除项目失败",42);
 
     private String message;
     private int code;

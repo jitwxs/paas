@@ -7,13 +7,16 @@ import jit.edu.paas.commons.util.ResultVoUtils;
 import jit.edu.paas.domain.entity.SysRepository;
 import jit.edu.paas.domain.enums.RepositoryTypeEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
+import jit.edu.paas.domain.enums.SysLogTypeEnum;
 import jit.edu.paas.domain.vo.ResultVo;
 import jit.edu.paas.mapper.SysRepositoryMapper;
+import jit.edu.paas.service.SysLogService;
 import jit.edu.paas.service.SysRepositoryService;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -28,6 +31,10 @@ import java.util.List;
 public class SysRepositoryServiceImpl extends ServiceImpl<SysRepositoryMapper, SysRepository> implements SysRepositoryService {
     @Autowired
     private SysRepositoryMapper repositoryMapper;
+    @Autowired
+    private SysLogService sysLogService;
+    @Autowired
+    private HttpServletRequest request;
 
     @Override
     public ResultVo createRepository(String address, Integer type) {
@@ -45,6 +52,9 @@ public class SysRepositoryServiceImpl extends ServiceImpl<SysRepositoryMapper, S
         SysRepository repository = new SysRepository(type, address);
         repositoryMapper.insert(repository);
 
+        // 写入日志
+        sysLogService.saveLog(request, SysLogTypeEnum.CREATE_REPOSITORY);
+
         return ResultVoUtils.success();
     }
 
@@ -60,6 +70,8 @@ public class SysRepositoryServiceImpl extends ServiceImpl<SysRepositoryMapper, S
     @Override
     public ResultVo deleteRepository(Integer id) {
         repositoryMapper.deleteById(id);
+        // 写入日志
+        sysLogService.saveLog(request, SysLogTypeEnum.DELETE_REPOSITORY);
 
         return ResultVoUtils.success();
     }
