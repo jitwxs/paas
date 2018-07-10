@@ -13,7 +13,7 @@ import jit.edu.paas.domain.entity.SysImage;
 import jit.edu.paas.domain.enums.ImageTypeEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.SysLogTypeEnum;
-import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.mapper.RepositoryImageMapper;
 import jit.edu.paas.service.RepositoryImageService;
 import jit.edu.paas.service.SysImageService;
@@ -130,7 +130,7 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ResultVo sync() {
+    public ResultVO sync() {
         // 1、遍历数据库
         List<RepositoryImage> dbImage = repositoryImageMapper.selectList(new EntityWrapper<>());
         boolean[] dbFlag = new boolean[dbImage.size()];
@@ -187,35 +187,31 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
             map.put("delete", deleteCount);
             map.put("add", addCount);
             map.put("error", errorCount);
-            // 写入日志
-            sysLogService.saveLog(request, SysLogTypeEnum.SYNC_HUB_IMAGE);
 
-            return ResultVoUtils.success(map);
+            return ResultVOUtils.success(map);
         } catch (Exception e) {
-            log.error("读取Hub数据失败，错误位置：{}，错误信息：{}",
+            log.error("读取Hub数据失败，错误位置：{}，错误栈：{}",
                     "RepositoryImageServiceImpl.sync()",HttpClientUtils.getStackTraceAsString(e));
-            // 写入日志
-            sysLogService.saveLog(request, SysLogTypeEnum.SYNC_HUB_IMAGE,e);
 
-            return ResultVoUtils.error(ResultEnum.NETWORK_ERROR);
+            return ResultVOUtils.error(ResultEnum.NETWORK_ERROR);
         }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ResultVo pushToHub(String sysImageId, String userId) {
+    public ResultVO pushToHub(String sysImageId, String userId) {
         SysImage sysImage = sysImageService.getById(sysImageId);
         if(sysImage == null) {
-            return ResultVoUtils.error(ResultEnum.IMAGE_EXCEPTION);
+            return ResultVOUtils.error(ResultEnum.IMAGE_EXCEPTION);
         }
 
         // 判断镜像类型
         if(ImageTypeEnum.LOCAL_USER_IMAGE.getCode() != sysImage.getType()) {
-            return ResultVoUtils.error(ResultEnum.PUBLIC_IMAGE_UPLOAD_ERROR);
+            return ResultVOUtils.error(ResultEnum.PUBLIC_IMAGE_UPLOAD_ERROR);
         }
         // 判断镜像所属
         if(!userId.equals(sysImage.getUserId())) {
-            return ResultVoUtils.error(ResultEnum.PERMISSION_ERROR);
+            return ResultVOUtils.error(ResultEnum.PERMISSION_ERROR);
         }
 
         try {
@@ -224,7 +220,7 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
             String newName = registryUrl + "/" + userId + "/" + sysImage.getName() + ":" + sysImage.getTag();
             // 判断是否存在
             if(hasExist(newName)) {
-                return ResultVoUtils.error(ResultEnum.IMAGE_UPLOAD_ERROR_BY_EXIST);
+                return ResultVOUtils.error(ResultEnum.IMAGE_UPLOAD_ERROR_BY_EXIST);
             }
 
             dockerClient.tag(sysImage.getFullName(),newName);
@@ -240,30 +236,30 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PUSH_IMAGE_TO_HUB);
 
-            return ResultVoUtils.success();
+            return ResultVOUtils.success();
         } catch (Exception e) {
-            log.error("上传镜像失败，错误位置：{}，错误信息：{}",
+            log.error("上传镜像失败，错误位置：{}，错误栈：{}",
                     "RepositoryImageServiceImpl.pushToHub()", HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PUSH_IMAGE_TO_HUB,e);
 
-            return ResultVoUtils.error(ResultEnum.PUSH_ERROR);
+            return ResultVOUtils.error(ResultEnum.PUSH_ERROR);
         }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ResultVo pullFromHub(String id) {
+    public ResultVO pullFromHub(String id) {
         RepositoryImage repositoryImage = getById(id);
         if(repositoryImage == null) {
-            return ResultVoUtils.error(ResultEnum.IMAGE_EXCEPTION);
+            return ResultVOUtils.error(ResultEnum.IMAGE_EXCEPTION);
         }
 
         String fullName = repositoryImage.getFullName();
 
         // 判断本地是否存在
         if(sysImageService.getByFullName(fullName) != null) {
-            return ResultVoUtils.error(ResultEnum.PULL_ERROR_BY_EXIST);
+            return ResultVOUtils.error(ResultEnum.PULL_ERROR_BY_EXIST);
         }
 
         try {
@@ -275,23 +271,23 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PULL_IMAGE_FROM_HUB);
 
-            return ResultVoUtils.success();
+            return ResultVOUtils.success();
         } catch (Exception e) {
-            log.error("拉取镜像失败，错误位置：{}，错误信息：{}",
+            log.error("拉取镜像失败，错误位置：{}，错误栈：{}",
                     "RepositoryImageServiceImpl.pullFromHub()", HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PULL_IMAGE_FROM_HUB,e);
 
-            return ResultVoUtils.error(ResultEnum.PULL_ERROR);
+            return ResultVOUtils.error(ResultEnum.PULL_ERROR);
         }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ResultVo deleteFromHub(String id) {
+    public ResultVO deleteFromHub(String id) {
         RepositoryImage repositoryImage = getById(id);
         if(repositoryImage == null) {
-            return ResultVoUtils.error(ResultEnum.IMAGE_EXCEPTION);
+            return ResultVOUtils.error(ResultEnum.IMAGE_EXCEPTION);
         }
 
         String name = repositoryImage.getName();
@@ -299,7 +295,7 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
         if(StringUtils.isBlank(name, digest)) {
             log.error("Hub镜像信息不完整，目标ID：{}，目标Name：{}，目标digest：{}",
                     id, name, digest);
-            return ResultVoUtils.error(ResultEnum.IMAGE_EXCEPTION);
+            return ResultVOUtils.error(ResultEnum.IMAGE_EXCEPTION);
         }
 
         try {
@@ -312,14 +308,14 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.DELETE_IMAGE_FROM_HUB);
 
-            return ResultVoUtils.success();
+            return ResultVOUtils.success();
         } catch (Exception e) {
-            log.error("删除Hub镜像失败，错误位置：{}，错误信息：{}",
+            log.error("删除Hub镜像失败，错误位置：{}，错误栈：{}",
                     "RepositoryImageServiceImpl.deleteFromHub()", HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.DELETE_IMAGE_FROM_HUB,e);
 
-            return ResultVoUtils.error(ResultEnum.DELETE_HUB_IMAGE_ERROR);
+            return ResultVOUtils.error(ResultEnum.DELETE_HUB_IMAGE_ERROR);
         }
     }
 
@@ -439,7 +435,7 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
             ImageInfo info = dockerClient.inspectImage(fullName);
             sysImage.setCmd(JsonUtils.objectToJson(info.containerConfig().cmd()));
         } catch (Exception e) {
-            log.error("读取镜像信息异错误，错误位置：{}，错误信息：{}",
+            log.error("读取镜像信息异错误，错误位置：{}，错误栈：{}",
                     "RepositoryImageServiceImpl.repositoryImage2SysImage()", HttpClientUtils.getStackTraceAsString(e));
         }
 

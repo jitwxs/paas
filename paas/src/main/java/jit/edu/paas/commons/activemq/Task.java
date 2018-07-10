@@ -1,5 +1,9 @@
 package jit.edu.paas.commons.activemq;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.io.Serializable;
 import java.util.Map;
 
@@ -8,6 +12,9 @@ import java.util.Map;
  * @author jitwxs
  * @since 2018/5/8 15:24
  */
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class Task implements Serializable {
 
     private static final long serialVersionUID = 1L;
@@ -20,38 +27,5 @@ public class Task implements Serializable {
     /**
      * 任务实体
      */
-    private Map<String,Object> data;
-
-    public Task() {
-
-    }
-
-    public Task(String info, Map<String, Object> data) {
-        this.info = info;
-        this.data = data;
-    }
-
-    public String getInfo() {
-        return info;
-    }
-
-    public void setInfo(String info) {
-        this.info = info;
-    }
-
-    public Map<String, Object> getData() {
-        return data;
-    }
-
-    public void setData(Map<String, Object> data) {
-        this.data = data;
-    }
-
-    @Override
-    public String toString() {
-        return "Task{" +
-                "info='" + info + '\'' +
-                ", data=" + data +
-                '}';
-    }
+    private Map<String,String> data;
 }

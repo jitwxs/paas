@@ -2,7 +2,7 @@ package jit.edu.paas.service;
 
 import com.baomidou.mybatisplus.service.IService;
 import jit.edu.paas.domain.entity.SysLogin;
-import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.domain.vo.ResultVO;
 
 /**
  * <p>
@@ -109,7 +109,7 @@ public interface SysLoginService extends IService<SysLogin> {
      * @author jitwxs
      * @since 2018/7/1 8:43
      */
-    ResultVo registerCheck(String username, String email);
+    ResultVO registerCheck(String username, String email);
 
     String getRoleName(String userId);
 }

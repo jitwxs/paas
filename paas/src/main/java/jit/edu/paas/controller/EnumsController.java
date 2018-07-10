@@ -1,7 +1,7 @@
 package jit.edu.paas.controller;
 
-import jit.edu.paas.commons.util.ResultVoUtils;
-import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.commons.util.ResultVOUtils;
+import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.service.EnumsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,8 +27,8 @@ public class EnumsController {
      */
     @GetMapping("/result")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo listErrorCode() {
-        return ResultVoUtils.success(enumsService.listResultCode());
+    public ResultVO listErrorCode() {
+        return ResultVOUtils.success(enumsService.listResultCode());
     }
 
     /**
@@ -38,8 +38,8 @@ public class EnumsController {
      */
     @GetMapping("/log/sys")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo listSysLogType() {
-        return ResultVoUtils.success(enumsService.listSysLogType());
+    public ResultVO listSysLogType() {
+        return ResultVOUtils.success(enumsService.listSysLogType());
     }
 
     /**
@@ -49,8 +49,8 @@ public class EnumsController {
      */
     @GetMapping("/log/project")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo listProjectLogType() {
-        return ResultVoUtils.success(enumsService.listProjectLogType());
+    public ResultVO listProjectLogType() {
+        return ResultVOUtils.success(enumsService.listProjectLogType());
     }
 
     /**
@@ -60,8 +60,8 @@ public class EnumsController {
      */
     @GetMapping("/repository")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo listRepositoryType() {
-        return ResultVoUtils.success(enumsService.listRepositoryType());
+    public ResultVO listRepositoryType() {
+        return ResultVOUtils.success(enumsService.listRepositoryType());
     }
 
     /**
@@ -71,8 +71,8 @@ public class EnumsController {
      */
     @GetMapping("/image")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo listImageType() {
-        return ResultVoUtils.success(enumsService.listImageType());
+    public ResultVO listImageType() {
+        return ResultVOUtils.success(enumsService.listImageType());
     }
 
     /**
@@ -82,7 +82,7 @@ public class EnumsController {
      */
     @GetMapping("/container")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo listContainerStatus() {
-        return ResultVoUtils.success(enumsService.listContainerStatus());
+    public ResultVO listContainerStatus() {
+        return ResultVOUtils.success(enumsService.listContainerStatus());
     }
 }

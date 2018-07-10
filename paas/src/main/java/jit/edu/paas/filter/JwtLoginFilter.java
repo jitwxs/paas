@@ -1,7 +1,7 @@
 package jit.edu.paas.filter;
 
 import jit.edu.paas.commons.util.JsonUtils;
-import jit.edu.paas.commons.util.ResultVoUtils;
+import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.commons.util.SpringBeanFactoryUtils;
 import jit.edu.paas.domain.entity.SysLogin;
 import jit.edu.paas.domain.enums.ResultEnum;
@@ -91,7 +91,7 @@ public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter {
         response.setHeader("Access-Control-Expose-Headers","Authorization");
 
         response.setContentType("text/html;charset=utf-8");
-        response.getWriter().write(JsonUtils.objectToJson(ResultVoUtils.success()));
+        response.getWriter().write(JsonUtils.objectToJson(ResultVOUtils.success()));
     }
 
     /**

@@ -13,7 +13,7 @@ import java.util.Date;
 
 /**
  * <p>
- *  ProjectLog服务实现类
+ * ProjectLog服务实现类
  * </p>
  *
  * @author jitwxs

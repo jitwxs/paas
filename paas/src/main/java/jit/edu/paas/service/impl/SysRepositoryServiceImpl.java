@@ -1,14 +1,14 @@
 package jit.edu.paas.service.impl;
 
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
+import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.commons.util.CollectionUtils;
-import jit.edu.paas.commons.util.ResultVoUtils;
 import jit.edu.paas.domain.entity.SysRepository;
 import jit.edu.paas.domain.enums.RepositoryTypeEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.SysLogTypeEnum;
-import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.mapper.SysRepositoryMapper;
 import jit.edu.paas.service.SysLogService;
 import jit.edu.paas.service.SysRepositoryService;
@@ -37,15 +37,15 @@ public class SysRepositoryServiceImpl extends ServiceImpl<SysRepositoryMapper, S
     private HttpServletRequest request;
 
     @Override
-    public ResultVo createRepository(String address, Integer type) {
+    public ResultVO createRepository(String address, Integer type) {
         // 判断类型是否正确
         if(StringUtils.isBlank(RepositoryTypeEnum.getMessage(type))) {
-            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
 
         // 判断是否存在
         if(hasExist(address,type)) {
-            return ResultVoUtils.error(ResultEnum.REPOSITORY_EXIST);
+            return ResultVOUtils.error(ResultEnum.REPOSITORY_EXIST);
         }
 
         // 插入记录
@@ -55,7 +55,7 @@ public class SysRepositoryServiceImpl extends ServiceImpl<SysRepositoryMapper, S
         // 写入日志
         sysLogService.saveLog(request, SysLogTypeEnum.CREATE_REPOSITORY);
 
-        return ResultVoUtils.success();
+        return ResultVOUtils.success();
     }
 
     @Override
@@ -68,11 +68,11 @@ public class SysRepositoryServiceImpl extends ServiceImpl<SysRepositoryMapper, S
     }
 
     @Override
-    public ResultVo deleteRepository(Integer id) {
+    public ResultVO deleteRepository(Integer id) {
         repositoryMapper.deleteById(id);
         // 写入日志
         sysLogService.saveLog(request, SysLogTypeEnum.DELETE_REPOSITORY);
 
-        return ResultVoUtils.success();
+        return ResultVOUtils.success();
     }
 }

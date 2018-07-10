@@ -1,9 +1,10 @@
 package jit.edu.paas.exception;
 
 import com.spotify.docker.client.exceptions.DockerTimeoutException;
-import jit.edu.paas.commons.util.ResultVoUtils;
+import jit.edu.paas.commons.util.HttpClientUtils;
+import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.domain.enums.ResultEnum;
-import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.domain.vo.ResultVO;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -15,17 +16,17 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = CustomException.class)
-    public ResultVo customException(CustomException e) {
-        return ResultVoUtils.error(e.getCode(), e.getMessage());
+    public ResultVO customException(CustomException e) {
+        return ResultVOUtils.error(e.getCode(), HttpClientUtils.getStackTraceAsString(e));
     }
 
     @ExceptionHandler(value = DockerTimeoutException.class)
-    public ResultVo customException(DockerTimeoutException e) {
-        return ResultVoUtils.error(ResultEnum.DOCKER_TIMEOUT);
+    public ResultVO customException(DockerTimeoutException e) {
+        return ResultVOUtils.error(ResultEnum.DOCKER_TIMEOUT);
     }
 
     @ExceptionHandler(value = Exception.class)
-    public ResultVo exception(Exception e) {
-        return ResultVoUtils.error(ResultEnum.OTHER_ERROR.getCode(), e.getMessage());
+    public ResultVO exception(Exception e) {
+        return ResultVOUtils.error(ResultEnum.OTHER_ERROR.getCode(), HttpClientUtils.getStackTraceAsString(e));
     }
 }

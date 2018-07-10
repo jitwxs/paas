@@ -1,6 +1,8 @@
 package jit.edu.paas.filter;
 
 import jit.edu.paas.commons.util.JwtUtils;
+import jit.edu.paas.commons.util.SpringBeanFactoryUtils;
+import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.enums.RoleEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -76,6 +78,15 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
                 // 将用户id放入request中
                 request.setAttribute("uid", uid);
 
+                // 保存最后登录时间
+                try {
+                    JedisClient jedisClient = SpringBeanFactoryUtils.getBean(JedisClient.class);
+                    jedisClient.hset("last_login", uid, System.currentTimeMillis() + "");
+                } catch (Exception e) {
+                    log.error("缓存存储异常，错误位置：{}", "JwtAuthenticationFilter.UsernamePasswordAuthenticationToken()");
+                    e.printStackTrace();
+                }
+
                 // 设置角色
                 authorities.add(new SimpleGrantedAuthority(RoleEnum.getMessage(rid)));
 
@@ -93,10 +104,13 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
      * @since 2018/6/28 9:32
      */
     private boolean disProtectedUrl(HttpServletRequest request) {
-        if(pathMatcher.match("/doc.html", request.getServletPath())) {
+        if (pathMatcher.match("/doc.html", request.getServletPath())) {
             return true;
         }
-        if(pathMatcher.match("/auth/**", request.getServletPath())) {
+        if (pathMatcher.match("/auth/**", request.getServletPath())) {
+            return true;
+        }
+        if (pathMatcher.match("/websocket/**", request.getServletPath())) {
             return true;
         }
         return false;

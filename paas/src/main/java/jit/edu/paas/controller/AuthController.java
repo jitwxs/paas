@@ -1,18 +1,18 @@
 package jit.edu.paas.controller;
 
+import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.commons.util.StringUtils;
-import jit.edu.paas.commons.util.ResultVoUtils;
 import jit.edu.paas.domain.entity.SysLogin;
 import jit.edu.paas.domain.enums.ResultEnum;
-import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.domain.vo.ResultVO;
+import jit.edu.paas.service.MonitorService;
 import jit.edu.paas.service.SysLoginService;
+import jit.edu.paas.service.UserContainerService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -26,11 +26,16 @@ import java.io.IOException;
  */
 @RestController
 @RequestMapping("/auth")
+@Slf4j
 public class AuthController {
     @Autowired
     private SysLoginService loginService;
     @Value("${nginx.server}")
     private String nginxServer;
+    @Autowired
+    private MonitorService monitorService;
+    @Autowired
+    private UserContainerService userContainerService;
 
     /**
      * 验证密码是否正确
@@ -38,10 +43,10 @@ public class AuthController {
      * @since 2018/6/28 11:11
      */
     @PostMapping("/password/check")
-    public ResultVo checkPassword(String username, String password) {
+    public ResultVO checkPassword(String username, String password) {
         boolean b = loginService.checkPassword(username, password);
 
-        return b ? ResultVoUtils.success() : ResultVoUtils.error(ResultEnum.LOGIN_ERROR);
+        return b ? ResultVOUtils.success() : ResultVOUtils.error(ResultEnum.LOGIN_ERROR);
     }
 
     /**
@@ -50,7 +55,7 @@ public class AuthController {
      * @since 2018/7/1 8:40
      */
     @PostMapping("/register/check")
-    public ResultVo checkRegister(String username, String email) {
+    public ResultVO checkRegister(String username, String email) {
         return loginService.registerCheck(username, email);
     }
 
@@ -60,15 +65,15 @@ public class AuthController {
      * @since 2018/6/28 9:17
      */
     @PostMapping("/register")
-    public ResultVo register(String username, String password,String email) {
+    public ResultVO register(String username, String password, String email) {
         if(StringUtils.isBlank(username,password,email)) {
-            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
 
         // 1、校验用户名、密码
-        ResultVo resultVo = loginService.registerCheck(username, email);
-        if(resultVo.getCode() != ResultEnum.OK.getCode()) {
-            return resultVo;
+        ResultVO resultVO = loginService.registerCheck(username, email);
+        if(resultVO.getCode() != ResultEnum.OK.getCode()) {
+            return resultVO;
         }
 
         // 2、生成用户
@@ -79,7 +84,7 @@ public class AuthController {
 
         // 3、发送邮件
         Boolean b = loginService.sendRegisterEmail(email);
-        return b ? ResultVoUtils.success("已经发送验证邮件") : ResultVoUtils.error(ResultEnum.EMAIL_SEND_ERROR);
+        return b ? ResultVOUtils.success("已经发送验证邮件") : ResultVOUtils.error(ResultEnum.EMAIL_SEND_ERROR);
     }
 
     /**
@@ -107,7 +112,7 @@ public class AuthController {
                     "    <h1>"+ subject +"</h1>\n" +
                     "</div>\n" +
                     "<div style='position: absolute; bottom:65%;left:45.5%;margin-left:-60px;'>\n" +
-                    "    <a href='http://127.0.0.1:8080'>" + content + "</a>\n" +
+                    "    <a href='http://127.0.0.1:9999'>" + content + "</a>\n" +
                     "</div>\n" +
                     "</body>\n" +
                     "</html>");
@@ -122,16 +127,27 @@ public class AuthController {
      * @since 2018/6/28 9:16
      */
     @RequestMapping("/error")
-    public ResultVo loginError(HttpServletRequest request) {
+    public ResultVO loginError(HttpServletRequest request) {
         AuthenticationException exception =
                 (AuthenticationException)request.getSession().getAttribute("SPRING_SECURITY_LAST_EXCEPTION");
 
         // 如果Spring Security中没有异常，则从request中取
         if(exception == null) {
             ResultEnum resultEnum = (ResultEnum) request.getAttribute("ERR_MSG");
-            return ResultVoUtils.error(resultEnum);
+            return ResultVOUtils.error(resultEnum);
         } else {
-            return ResultVoUtils.error(ResultEnum.AUTHORITY_ERROR.getCode(), exception.toString());
+            return ResultVOUtils.error(ResultEnum.AUTHORITY_ERROR.getCode(), exception.toString());
         }
+    }
+
+    // TODO 以下为测试接口
+    /**
+     * 获取容器实时监控【粒度：5s】
+     * @author jitwxs
+     * @since 2018/7/8 21:13
+     */
+    @GetMapping("/test/{containerId}")
+    public ResultVO getActual(@PathVariable String containerId) {
+        return monitorService.getActualMonitor(containerId);
     }
 }

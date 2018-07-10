@@ -10,7 +10,7 @@ import jit.edu.paas.domain.entity.SysLogin;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.RoleEnum;
 import jit.edu.paas.domain.enums.SysLogTypeEnum;
-import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.mapper.SysLoginMapper;
 import jit.edu.paas.service.SysLogService;
 import jit.edu.paas.service.SysLoginService;
@@ -254,9 +254,9 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
             mailSender.send(mimeMailMessage);
 
             // 发送延时消息
-            Map<String,Object> maps = new HashMap<>();
+            Map<String,String> maps = new HashMap<>(16);
             maps.put("email",email);
-            Task task =  new Task("邮箱注册任务", map);
+            Task task = new Task("邮箱注册任务", maps);
             Destination destination = new ActiveMQQueue("MQ_QUEUE_REGISTER");
             mqProducer.delaySend(destination, JsonUtils.objectToJson(task), (long)registerEmailExpire * 1000);
 
@@ -383,17 +383,17 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
     }
 
     @Override
-    public ResultVo registerCheck(String username, String email) {
+    public ResultVO registerCheck(String username, String email) {
         if(StringUtils.isBlank(username, email)) {
-            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
         if(getByUsername(username) != null) {
-            return ResultVoUtils.error(ResultEnum.REGISTER_USERNAME_ERROR);
+            return ResultVOUtils.error(ResultEnum.REGISTER_USERNAME_ERROR);
         }
         if(getByEmail(email) != null) {
-            return ResultVoUtils.error(ResultEnum.REGISTER_EMAIL_ERROR);
+            return ResultVOUtils.error(ResultEnum.REGISTER_EMAIL_ERROR);
         }
-        return ResultVoUtils.success();
+        return ResultVOUtils.success();
     }
 
     @Override

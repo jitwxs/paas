@@ -34,7 +34,7 @@ public class DockerApiUtils {
 
             return JsonUtils.jsonToList((String)map.get("body"),ImageSearchResult.class);
         } catch (Exception e) {
-            log.error("获取Docker Hub镜像失败，错误位置：{}，错误信息：{}",
+            log.error("获取Docker Hub镜像失败，错误位置：{}，错误栈：{}",
                     "DockerApiUtils.searchImages()", HttpClientUtils.getStackTraceAsString(e));
             return null;
         }

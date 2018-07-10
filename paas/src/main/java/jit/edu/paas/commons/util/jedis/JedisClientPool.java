@@ -160,6 +160,54 @@ public class JedisClientPool implements JedisClient {
     }
 
     @Override
+    public Long zadd(String key, Double score, String member) {
+        Jedis jedis = jedisPool.getResource();
+        Long result = jedis.zadd(key, score, member);
+        jedis.close();
+        return result;
+    }
+
+    @Override
+    public Set<String> zrange(String key, long start, long end) {
+        Jedis jedis = jedisPool.getResource();
+        Set<String> result = jedis.zrange(key, start, end);
+        jedis.close();
+        return result;
+    }
+
+    @Override
+    public Set<String> zrangeByScore(String key, double min, double max) {
+        Jedis jedis = jedisPool.getResource();
+        Set<String> result = jedis.zrangeByScore(key, min, max);
+        jedis.close();
+        return result;
+    }
+
+    @Override
+    public Long zrem(String key, String... members) {
+        Jedis jedis = jedisPool.getResource();
+        Long result = jedis.zrem(key, members);
+        jedis.close();
+        return result;
+    }
+
+    @Override
+    public Long zremrangeByRank(String key, long start, long end) {
+        Jedis jedis = jedisPool.getResource();
+        Long result = jedis.zremrangeByRank(key, start, end);
+        jedis.close();
+        return result;
+    }
+
+    @Override
+    public Long zremrangeByScore(String key, double min, double max) {
+        Jedis jedis = jedisPool.getResource();
+        Long result = jedis.zremrangeByScore(key, min, max);
+        jedis.close();
+        return result;
+    }
+
+    @Override
     public Long del(String key) {
         Jedis jedis = jedisPool.getResource();
         Long result = jedis.del(key);

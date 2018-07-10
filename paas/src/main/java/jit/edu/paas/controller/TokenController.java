@@ -1,7 +1,7 @@
 package jit.edu.paas.controller;
 
-import jit.edu.paas.commons.util.ResultVoUtils;
-import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.commons.util.ResultVOUtils;
+import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.domain.vo.UserVO;
 import jit.edu.paas.service.JwtService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,10 +26,10 @@ public class TokenController {
      * @since 2018/6/28 11:26
      */
     @PostMapping("/token")
-    public ResultVo getUserInfo(HttpServletRequest request) {
+    public ResultVO getUserInfo(HttpServletRequest request) {
         String token = request.getHeader("Authorization");
         UserVO userInfo = jwtService.getUserInfo(token);
 
-        return ResultVoUtils.success(userInfo);
+        return ResultVOUtils.success(userInfo);
     }
 }

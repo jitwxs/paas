@@ -43,7 +43,16 @@ public enum ResultEnum {
     BUILD_ERROR_BY_SUFFIX("编译DockerFile失败，后缀名错误",39),
     BUILD_ERROR("编译DockerFile失败",40),
     CREATE_PROJECT_ERROR("创建项目失败",41),
-    DELETE_PROJECT_ERROR("删除项目失败",42);
+    DELETE_PROJECT_ERROR("删除项目失败",42),
+    INPUT_PORT_ERROR("输入端口错误，请检查端口是否合法、是否可用，暴露端口是否均设置",43),
+    MONITOR_DATA_ERROR("获取监控数据错误",44),
+    CONTAINER_NOT_FOUND("容器不存在",45),
+    CONTAINER_STATUS_REFUSE("容器状态拒绝操作",46),
+    CONTAINER_START_ERROR("容器启动失败",47),
+    USER_AUTHORITY_ERROR("用户身份获取失败",48),
+    CONTAINER_ALREADY_START("容器已经启动",49),
+    REQUEST_TIMEOUT("请求超时",50),
+    REQUEST_ERROR("请求错误",51);
 
     private String message;
     private int code;

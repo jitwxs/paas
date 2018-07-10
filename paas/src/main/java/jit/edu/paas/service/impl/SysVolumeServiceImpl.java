@@ -12,7 +12,7 @@ import jit.edu.paas.domain.entity.SysVolume;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.RoleEnum;
 import jit.edu.paas.domain.enums.SysLogTypeEnum;
-import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.mapper.SysVolumesMapper;
 import jit.edu.paas.mapper.UserContainerMapper;
 import jit.edu.paas.service.SysLogService;
@@ -104,71 +104,71 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
     }
 
     @Override
-    public ResultVo listByContainerId(String containerId, String uid) {
+    public ResultVO listByContainerId(String containerId, String uid) {
         // 1、鉴权
         String roleName = loginService.getRoleName(uid);
         if(StringUtils.isBlank(roleName)) {
-            return ResultVoUtils.error(ResultEnum.AUTHORITY_ERROR);
+            return ResultVOUtils.error(ResultEnum.AUTHORITY_ERROR);
         }
         if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
             if(!containerMapper.hasBelongSb(containerId, uid)) {
-                return ResultVoUtils.error(ResultEnum.PERMISSION_ERROR);
+                return ResultVOUtils.error(ResultEnum.PERMISSION_ERROR);
             }
         }
 
         List<SysVolume> list = volumesMapper.selectList(new EntityWrapper<SysVolume>().eq("container_id",containerId));
-        return ResultVoUtils.success(list);
+        return ResultVOUtils.success(list);
     }
 
     @Override
-    public ResultVo inspectVolumes(String id, String uid) {
+    public ResultVO inspectVolumes(String id, String uid) {
         SysVolume sysVolume = getById(id);
         if(sysVolume == null) {
-            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
 
         // 鉴权
         String roleName = loginService.getRoleName(uid);
         if(StringUtils.isBlank(roleName)) {
-            return ResultVoUtils.error(ResultEnum.AUTHORITY_ERROR);
+            return ResultVOUtils.error(ResultEnum.AUTHORITY_ERROR);
         }
         if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
             if(!containerMapper.hasBelongSb(sysVolume.getContainerId(), uid)) {
-                return ResultVoUtils.error(ResultEnum.PERMISSION_ERROR);
+                return ResultVOUtils.error(ResultEnum.PERMISSION_ERROR);
             }
         }
 
         try {
             Volume volume = dockerClient.inspectVolume(sysVolume.getName());
-            return ResultVoUtils.success(volume);
+            return ResultVOUtils.success(volume);
         } catch (Exception e) {
             log.error("获取数据卷详情异常，错误位置：{}", "SysVolumeServiceImpl.inspectVolumes()");
-            return ResultVoUtils.error(ResultEnum.DOCKER_EXCEPTION);
+            return ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION);
         }
     }
 
     @Override
-    public ResultVo listFromLocal() {
+    public ResultVO listFromLocal() {
         try {
             VolumeList volumeList = dockerClient.listVolumes();
-            return ResultVoUtils.success(volumeList);
+            return ResultVOUtils.success(volumeList);
         } catch (Exception e) {
-            log.error("获取本地数据卷异常，错误位置：{}，错误信息：{}",
+            log.error("获取本地数据卷异常，错误位置：{}，错误栈：{}",
                     "SysVolumeServiceImpl.listFromLocal()", HttpClientUtils.getStackTraceAsString(e));
-            return ResultVoUtils.error(ResultEnum.VOLUME_LIST_ERROR);
+            return ResultVOUtils.error(ResultEnum.VOLUME_LIST_ERROR);
         }
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public ResultVo cleanVolumes() {
-        ResultVo resultVo = listFromLocal();
-        if(resultVo.getCode() != ResultEnum.OK.getCode()) {
-            return resultVo;
+    public ResultVO cleanVolumes() {
+        ResultVO resultVO = listFromLocal();
+        if(resultVO.getCode() != ResultEnum.OK.getCode()) {
+            return resultVO;
         }
 
         int successCount = 0, failCount = 0;
-        ImmutableList<Volume> volumes = ((VolumeList) resultVo.getData()).volumes();
+        ImmutableList<Volume> volumes = ((VolumeList) resultVO.getData()).volumes();
         if(volumes != null) {
             for(Volume volume : volumes) {
                 try {
@@ -193,6 +193,6 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
         // 写入日志
         sysLogService.saveLog(request, SysLogTypeEnum.CLEAN_VOLUMES);
 
-        return ResultVoUtils.success(map);
+        return ResultVOUtils.success(map);
     }
 }

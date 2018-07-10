@@ -1,12 +1,12 @@
 package jit.edu.paas.controller;
 
 import com.baomidou.mybatisplus.plugins.Page;
-import jit.edu.paas.commons.util.ResultVoUtils;
+import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.domain.entity.SysImage;
 import jit.edu.paas.domain.enums.ImageTypeEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
-import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.service.SysImageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -34,20 +34,20 @@ public class ImageController {
      */
     @GetMapping("/list/local")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo searchLocalImage(String name, Integer type, Page<SysImage> page) {
+    public ResultVO searchLocalImage(String name, Integer type, Page<SysImage> page) {
         // 判断参数
         if(type == null) {
-            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
 
         if (type == ImageTypeEnum.LOCAL_PUBLIC_IMAGE.getCode()) {
             // 本地公共镜像
-            return ResultVoUtils.success(imageService.listLocalPublicImage(name, page));
+            return ResultVOUtils.success(imageService.listLocalPublicImage(name, page));
         } else if (type == ImageTypeEnum.LOCAL_USER_IMAGE.getCode()) {
             // 用户镜像
-            return ResultVoUtils.success(imageService.listLocalUserImage(name, page));
+            return ResultVOUtils.success(imageService.listLocalUserImage(name, page));
         } else {
-            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
     }
 
@@ -61,7 +61,7 @@ public class ImageController {
      */
     @GetMapping("/list/hub")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo searchHubImage(String name, @RequestParam(required = false, defaultValue = "10") int limit) {
+    public ResultVO searchHubImage(String name, @RequestParam(required = false, defaultValue = "10") int limit) {
         return imageService.listHubImage(name, limit);
     }
 
@@ -73,7 +73,7 @@ public class ImageController {
      */
     @GetMapping("/inspect/{id}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo imageInspect(@RequestAttribute("uid") String uid, @PathVariable String id) {
+    public ResultVO imageInspect(@RequestAttribute("uid") String uid, @PathVariable String id) {
         return imageService.inspectImage(id, uid);
     }
 
@@ -85,8 +85,8 @@ public class ImageController {
      */
     @GetMapping("/sync")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVo syncLocalImage() {
-        return imageService.syncLocalImage();
+    public ResultVO syncLocalImage() {
+        return imageService.sync();
     }
 
     /**
@@ -97,7 +97,7 @@ public class ImageController {
      */
     @DeleteMapping("/delete/{id}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo deleteImage(@RequestAttribute String uid, @PathVariable String id) {
+    public ResultVO deleteImage(@RequestAttribute String uid, @PathVariable String id) {
         return imageService.removeImage(id, uid);
     }
 
@@ -108,9 +108,9 @@ public class ImageController {
      */
     @PostMapping("/pull/hub")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo pullImage(String imageName) {
+    public ResultVO pullImage(String imageName) {
         if(StringUtils.isBlank(imageName)) {
-            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
         return imageService.pullImageFromHub(imageName);
     }
@@ -125,9 +125,9 @@ public class ImageController {
      */
     @PostMapping("/push/hub")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo pushImage(String imageId, String username, String password) {
+    public ResultVO pushImage(String imageId, String username, String password) {
         if(StringUtils.isBlank(imageId, username, password)) {
-            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
         return imageService.pushImage(imageId, username, password);
     }
@@ -139,9 +139,9 @@ public class ImageController {
      */
     @GetMapping("/export/{id}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo exportImage(@RequestAttribute String uid, @PathVariable String id) {
+    public ResultVO exportImage(@RequestAttribute String uid, @PathVariable String id) {
         if(StringUtils.isBlank(id)) {
-            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
         return imageService.exportImage(id, uid);
     }
@@ -153,7 +153,7 @@ public class ImageController {
      */
     @GetMapping("/history/{id}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo lookImage(@RequestAttribute String uid, @PathVariable String id) {
+    public ResultVO lookImage(@RequestAttribute String uid, @PathVariable String id) {
         return imageService.getHistory(id, uid);
     }
 
@@ -164,7 +164,7 @@ public class ImageController {
      */
     @GetMapping("/share/{id}")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResultVo shareImage(@RequestAttribute String uid, @PathVariable String id) {
+    public ResultVO shareImage(@RequestAttribute String uid, @PathVariable String id) {
         return imageService.changOpenImage(id, uid, true);
     }
 
@@ -175,7 +175,7 @@ public class ImageController {
      */
     @GetMapping("/disShare/{id}")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResultVo disShareImage(@RequestAttribute String uid, @PathVariable String id) {
+    public ResultVO disShareImage(@RequestAttribute String uid, @PathVariable String id) {
         return imageService.changOpenImage(id, uid, false);
     }
 
@@ -187,8 +187,19 @@ public class ImageController {
      */
     @PostMapping("/import")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo importImage(@RequestAttribute String uid, HttpServletRequest request) {
+    public ResultVO importImage(@RequestAttribute String uid, HttpServletRequest request) {
         return imageService.importImage(uid, request);
+    }
+
+    /**
+     * 获取镜像所有暴露接口
+     * @author jitwxs
+     * @since 2018/7/7 15:50
+     */
+    @GetMapping("/{id}/exportPort")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVO listExportPort(@RequestAttribute String uid, @PathVariable String id) {
+        return imageService.listExportPorts(id, uid);
     }
 
 //    /**
@@ -204,7 +215,7 @@ public class ImageController {
 //     */
 //    @PostMapping("/build")
 //    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-//    public ResultVo buildImage(@RequestAttribute String uid, HttpServletRequest request) {
+//    public ResultVO buildImage(@RequestAttribute String uid, HttpServletRequest request) {
 //        return imageService.buildImage(uid, request);
 //    }
 }

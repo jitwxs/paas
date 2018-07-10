@@ -1,10 +1,14 @@
 package jit.edu.paas.service;
 
+import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.IService;
-import com.google.common.collect.ImmutableSet;
+import jit.edu.paas.domain.dto.UserContainerDTO;
 import jit.edu.paas.domain.entity.UserContainer;
 import jit.edu.paas.domain.enums.ContainerStatusEnum;
-import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.domain.vo.ResultVO;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -21,21 +25,30 @@ public interface UserContainerService extends IService<UserContainer> {
      * @author jitwxs
      * @since 2018/7/7 9:20
      */
-    UserContainer getById(String id);
+    UserContainerDTO getById(String id);
+
     /**
-     * 开启容器
+     * 开启容器任务
      * @author jitwxs
      * @since 2018/7/1 15:41
      */
-    ResultVo startContainer(String userId, String containerId);
+//    @Async("taskExecutor")
+    void startContainerTask(String userId, String containerId);
+
+//    /**
+//     * 异步开启容器
+//     * @author jitwxs
+//     * @since 2018/7/1 15:41
+//     */
+//    @Async("taskExecutor")
+//    void startContainer(String userId, String containerId);
 
     /**
      * 创建容器
-     * @param exportPorts 镜像暴露的接口
      * @author jitwxs
      * @since 2018/7/1 16:00
      */
-    ResultVo createContainer(String userId, String imageId, String[] cmd, ImmutableSet<String> exportPorts,
+    ResultVO createContainer(String userId, String imageId, String[] cmd, Map<String, Integer> portMap,
                              String containerName, String projectId, String[] env, String[] destination);
 
     /**
@@ -43,44 +56,58 @@ public interface UserContainerService extends IService<UserContainer> {
      * @author jitwxs
      * @since 2018/7/1 16:00
      */
-    ResultVo stopContainer(String userId, String containerId);
+    ResultVO stopContainer(String userId, String containerId);
 
     /**
      * 强制停止容器
      * @author jitwxs
      * @since 2018/7/1 16:03
      */
-    ResultVo killContainer(String userId, String containerId);
+    ResultVO killContainer(String userId, String containerId);
 
     /**
      * 移除容器
      * @author jitwxs
      * @since 2018/7/1 16:06
      */
-    ResultVo removeContainer(String userId, String containerId);
+    ResultVO removeContainer(String userId, String containerId);
 
     /**
      * 暂停容器
      * @author jitwxs
      * @since 2018/7/1 16:08
      */
-    ResultVo pauseContainer(String userId, String containerId);
+    ResultVO pauseContainer(String userId, String containerId);
+
+    /**
+     * 重启容器
+     * @author jitwxs
+     * @since 2018/7/9 15:52
+     */
+    ResultVO restartContainer(String userId, String containerId);
 
     /**
      * 从暂停状态恢复
      * @author jitwxs
      * @since 2018/7/1 16:10
      */
-    ResultVo continueContainer(String userId, String containerId);
+    ResultVO continueContainer(String userId, String containerId);
 
     /**
      * 获取运行容器的内部状态
      * @author jitwxs
      * @since 2018/7/1 16:13
      */
-    ResultVo topContainer(String userId, String containerId);
+    ResultVO topContainer(String userId, String containerId);
 
-    ResultVo checkPermission(String userId, String containerId);
+    ResultVO checkPermission(String userId, String containerId);
+
+    /**
+     * 判断输入状态是否等于指定状态
+     * @author jitwxs
+     * @since 2018/7/9 9:41
+     */
+    boolean hasEqualStatus(int inputStatusCode, ContainerStatusEnum statusEnum);
 
     /**
      * 获取容器状态
@@ -90,9 +117,31 @@ public interface UserContainerService extends IService<UserContainer> {
     ContainerStatusEnum getStatus(String containerId);
 
     /**
-     * 清理缓存
+     * 获取用户所有镜像
      * @author jitwxs
-     * @since 2018/7/7 9:25
+     * @since 2018/6/28 16:15
      */
-    void cleanCache(String containerId);
+    Page<UserContainerDTO> listContainerByUserId(String userId, Page<UserContainer> page);
+
+    /**
+     * 根据状态获取容器列表
+     * @author jitwxs
+     * @since 2018/7/8 20:48
+     */
+    List<UserContainer> listByStatus(ContainerStatusEnum statusEnum);
+
+    /**
+     * 同步容器状态
+     * @param userId 用户ID，为空时同步所有
+     * @author jitwxs
+     * @since 2018/7/9 11:13
+     */
+    Map<String,Integer> syncStatus(String userId);
+
+    /**
+     * 修改数据库中容器状态
+     * @author jitwxs
+     * @since 2018/7/1 16:48
+     */
+    ResultVO changeStatus(String containerId);
 }

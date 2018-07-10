@@ -3,10 +3,10 @@ package jit.edu.paas.controller;
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.plugins.Page;
 import jit.edu.paas.commons.util.StringUtils;
-import jit.edu.paas.commons.util.ResultVoUtils;
+import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.domain.entity.SysRepository;
 import jit.edu.paas.domain.enums.ResultEnum;
-import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.service.SysRepositoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -30,14 +30,14 @@ public class RepositoryController {
      */
     @GetMapping("/list")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVo listRepository(Integer type, Page<SysRepository> page) {
+    public ResultVO listRepository(Integer type, Page<SysRepository> page) {
         Page<SysRepository> selectPage;
         if(type != null) {
             selectPage = repositoryService.selectPage(page, new EntityWrapper<SysRepository>().eq("type", type));
         } else {
             selectPage = repositoryService.selectPage(page);
         }
-        return ResultVoUtils.success(selectPage);
+        return ResultVOUtils.success(selectPage);
     }
 
     /**
@@ -47,9 +47,9 @@ public class RepositoryController {
      */
     @PostMapping("/create")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVo createRepository(String address, Integer type) {
+    public ResultVO createRepository(String address, Integer type) {
         if(StringUtils.isBlank(address) || type == null) {
-            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
        return repositoryService.createRepository(address, type);
     }
@@ -61,7 +61,7 @@ public class RepositoryController {
      */
     @DeleteMapping("/delete/{id}")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVo deleteRepository(@PathVariable Integer id) {
+    public ResultVO deleteRepository(@PathVariable Integer id) {
         return repositoryService.deleteRepository(id);
     }
 }

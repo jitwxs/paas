@@ -85,4 +85,34 @@ public interface JedisClient {
      * 随即返回一个set成员
      */
     String srandmember(String key);
+
+    /**
+     * 添加成员。如果成员存在，会用新的score替代原有的score，返回值是新加入到集合中的成员个数
+     */
+    Long zadd(String key, Double score, String member);
+
+    /**
+     * 获取集合中下标从start到end的成员
+     */
+    Set<String> zrange(String key, long start, long end);
+
+    /**
+     * 返回score在[min,max]的成员并按照score排序。
+     */
+    Set<String> zrangeByScore(String key, double min, double max);
+
+    /**
+     * 删除成员
+     */
+    Long zrem(String key, String... members);
+
+    /**
+     * 按照下标范围删除成员
+     */
+    Long zremrangeByRank(String key, long start, long end);
+
+    /**
+     * 按照score范围删除成员
+     */
+    Long zremrangeByScore(String key, double min, double max);
 }

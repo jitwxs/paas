@@ -12,6 +12,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 
 /**
+ * 端口服务
  * @author jitwxs
  * @since 2018/7/2 10:09
  */

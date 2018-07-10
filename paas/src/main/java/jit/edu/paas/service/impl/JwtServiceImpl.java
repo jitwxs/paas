@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * JWT 服务
  * @author jitwxs
  * @since 2018/6/27 16:36
  */

@@ -108,6 +108,36 @@ public class JedisClientCluster implements JedisClient {
     }
 
     @Override
+    public Long zadd(String key, Double score, String member) {
+        return jedisCluster.zadd(key, score, member);
+    }
+
+    @Override
+    public Set<String> zrange(String key, long start, long end) {
+        return jedisCluster.zrange(key, start, end);
+    }
+
+    @Override
+    public Set<String> zrangeByScore(String key, double min, double max) {
+        return jedisCluster.zrangeByScore(key, min, max);
+    }
+
+    @Override
+    public Long zrem(String key, String... members) {
+        return jedisCluster.zrem(key, members);
+    }
+
+    @Override
+    public Long zremrangeByRank(String key, long start, long end) {
+        return jedisCluster.zremrangeByRank(key, start, end);
+    }
+
+    @Override
+    public Long zremrangeByScore(String key, double min, double max) {
+        return jedisCluster.zremrangeByScore(key, min, max);
+    }
+
+    @Override
     public Long del(String key) {
         return jedisCluster.del(key);
     }

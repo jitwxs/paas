@@ -2,4 +2,23 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="jit.edu.paas.mapper.ProjectLogMapper">
 
+    <select id="listProjectLog" resultType="jit.edu.paas.domain.vo.ProjectLogVO">
+        SELECT
+            log.id,
+            log.type,
+            log.description,
+            container.NAME AS container_name,
+            log.create_date
+        FROM
+            `project_log` AS `log`
+            LEFT JOIN `user_container` AS `container` ON log.container_id = container.id
+        WHERE
+            1 = 1
+            <if test="projectId != null" >
+                AND log.project_id = #{projectId}
+            </if>
+            <if test="type != null" >
+                AND log.type = #{type}
+            </if>
+    </select>
 </mapper>

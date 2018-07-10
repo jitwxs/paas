@@ -15,11 +15,15 @@ public class CollectionUtils {
      * @since 2018/6/27 14:44
      */
     public static <T> T getListFirst(List<T> list) {
-        if(list == null || list.size() == 0) {
-            return null;
-        } else {
-            return list.get(0);
-        }
+        return isListEmpty(list) ? null : list.get(0);
+    }
+
+    public static <T> boolean isListEmpty(List<T> list) {
+        return list == null || list.size() == 0;
+    }
+
+    public static <T> boolean isListNotEmpty(List<T> list) {
+        return !isListEmpty(list);
     }
 
     /**
@@ -27,7 +31,7 @@ public class CollectionUtils {
      * @author jitwxs
      * @since 2018/7/7 15:00
      */
-    public static boolean isArrayBlank(String[] strings) {
+    public static boolean isArrayEmpty(String[] strings) {
         if(strings == null || strings.length == 0) {
             return true;
         } else {
@@ -35,7 +39,7 @@ public class CollectionUtils {
         }
     }
 
-    public static boolean isNotArrayBlank(String[] strings) {
-        return !isArrayBlank(strings);
+    public static boolean isNotArrayEmpty(String[] strings) {
+        return !isArrayEmpty(strings);
     }
 }

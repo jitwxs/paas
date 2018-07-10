@@ -2,7 +2,7 @@ package jit.edu.paas.service;
 
 import com.baomidou.mybatisplus.service.IService;
 import jit.edu.paas.domain.entity.SysRepository;
-import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.domain.vo.ResultVO;
 
 /**
  * <p>
@@ -20,7 +20,7 @@ public interface SysRepositoryService extends IService<SysRepository> {
      * @author jitwxs
      * @since 2018/6/30 14:10
      */
-    ResultVo createRepository(String address, Integer type);
+    ResultVO createRepository(String address, Integer type);
 
     /**
      * 判断仓储是否存在
@@ -35,6 +35,6 @@ public interface SysRepositoryService extends IService<SysRepository> {
      * @author jitwxs
      * @since 2018/6/30 14:23
      */
-    ResultVo deleteRepository(Integer id);
+    ResultVO deleteRepository(Integer id);
 
 }

@@ -4,7 +4,7 @@ package jit.edu.paas.service;
 import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.IService;
 import jit.edu.paas.domain.entity.RepositoryImage;
-import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.domain.vo.ResultVO;
 
 import java.util.List;
 
@@ -48,7 +48,7 @@ public interface RepositoryImageService extends IService<RepositoryImage> {
      * @author jitwxs
      * @since 2018/7/5 16:58
      */
-    ResultVo sync();
+    ResultVO sync();
 
     /**
      * 上传本地镜像到Hub中
@@ -58,7 +58,7 @@ public interface RepositoryImageService extends IService<RepositoryImage> {
      * @author jitwxs
      * @since 2018/7/5 16:51
      */
-    ResultVo pushToHub(String sysImageId, String userId);
+    ResultVO pushToHub(String sysImageId, String userId);
 
     /**
      * 从Hub上拉取镜像到本地
@@ -66,14 +66,14 @@ public interface RepositoryImageService extends IService<RepositoryImage> {
      * @author jitwxs
      * @since 2018/7/5 16:53
      */
-    ResultVo pullFromHub(String id);
+    ResultVO pullFromHub(String id);
 
     /**
      * 从Hub上删除镜像
      * @author jitwxs
      * @since 2018/7/5 16:59
      */
-    ResultVo deleteFromHub(String id);
+    ResultVO deleteFromHub(String id);
 
     /**
      * 查询镜像的digest

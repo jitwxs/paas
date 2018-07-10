@@ -1,6 +1,6 @@
 package jit.edu.paas.controller;
 
-import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.service.SysVolumeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,7 +24,7 @@ public class VolumesController {
      */
     @GetMapping("/{containerId}/list")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo listByContainerId(@RequestAttribute String uid, @PathVariable String containerId) {
+    public ResultVO listByContainerId(@RequestAttribute String uid, @PathVariable String containerId) {
         return sysVolumeService.listByContainerId(containerId, uid);
     }
 
@@ -35,7 +35,7 @@ public class VolumesController {
      */
     @GetMapping("/inspect/{id}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo inspectVolumes(@RequestAttribute String uid, @PathVariable String id){
+    public ResultVO inspectVolumes(@RequestAttribute String uid, @PathVariable String id){
         return sysVolumeService.inspectVolumes(id, uid);
     }
 
@@ -46,7 +46,7 @@ public class VolumesController {
      */
     @GetMapping("/list")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVo listFromLocal() {
+    public ResultVO listFromLocal() {
         return sysVolumeService.listFromLocal();
     }
 
@@ -57,7 +57,7 @@ public class VolumesController {
      */
     @DeleteMapping("/clean")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVo cleanVolumes(){
+    public ResultVO cleanVolumes(){
         return sysVolumeService.cleanVolumes();
     }
 }

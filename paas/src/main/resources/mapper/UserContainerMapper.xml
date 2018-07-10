@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="jit.edu.paas.mapper.UserContainerMapper">
-    <select id="listContainerById" resultType="jit.edu.paas.domain.entity.UserContainer">
+    <select id="listContainerByUserId" resultType="jit.edu.paas.domain.entity.UserContainer">
         SELECT * FROM `user_container`, `user_project`
         WHERE `user_container`.project_id = `user_project`.id
-		AND `user_project`.user_id = #{userId}
+        <if test="userId != null" >
+		  AND `user_project`.user_id = #{userId}
+        </if>
     </select>
     <select id="hasBelongSb" resultType="java.lang.Boolean">
         SELECT
@@ -16,5 +18,18 @@
             c.project_id = p.id
             AND c.id = #{containerId}
             AND p.user_id = #{userId}
+    </select>
+    <select id="countByUserId" resultType="java.lang.Integer">
+        SELECT
+            count( * )
+        FROM
+            `user_container` AS `c`,
+            `user_project` AS `p`
+        WHERE
+            c.project_id = p.id
+            AND p.user_id = #{userId}
+        <if test="status != null" >
+            AND c.status = #{status}
+        </if>
     </select>
 </mapper>

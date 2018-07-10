@@ -25,7 +25,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     }
 
     @Bean
-    public ContainerExecWSHandler containerExecWSHandler(){
+    public ContainerExecWSHandler containerExecWSHandler() {
         return new ContainerExecWSHandler();
     }
 

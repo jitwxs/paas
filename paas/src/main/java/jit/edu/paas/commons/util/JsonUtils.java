@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Json工具类
@@ -73,6 +74,25 @@ public class JsonUtils {
     public static String mapToJson(Map map) {
         try {
             return MAPPER.writeValueAsString(map);
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static <T> Set<T> jsonToSet(String jsonData) {
+        ObjectMapper mapper = new ObjectMapper();
+        try {
+            return mapper.readValue(jsonData, Set.class);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public static String setToJson(Set set) {
+        try {
+            return MAPPER.writeValueAsString(set);
         } catch (JsonProcessingException e) {
             e.printStackTrace();
         }

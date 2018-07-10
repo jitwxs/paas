@@ -2,12 +2,12 @@ package jit.edu.paas.controller;
 
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.plugins.Page;
-import jit.edu.paas.commons.util.ResultVoUtils;
+import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.commons.component.WrapperComponent;
 import jit.edu.paas.domain.entity.SysLogin;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.select.UserSelect;
-import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.service.SysLoginService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -37,13 +37,13 @@ public class UserController {
      */
     @GetMapping("/list")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVo getSelfInfo(UserSelect userSelect, Page<SysLogin> page) {
+    public ResultVO getSelfInfo(UserSelect userSelect, Page<SysLogin> page) {
         // 1、生成筛选条件
         EntityWrapper<SysLogin> wrapper = wrapperComponent.genUserWrapper(userSelect);
         // 2、分页查询
         Page<SysLogin> selectPage = loginService.selectPage(page, wrapper);
         // 3、返回前台
-        return ResultVoUtils.success(selectPage);
+        return ResultVOUtils.success(selectPage);
     }
 
     /**
@@ -53,13 +53,13 @@ public class UserController {
      */
     @PostMapping("/freeze")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVo freezeUser(String[] ids) {
+    public ResultVO freezeUser(String[] ids) {
         if(ids == null || ids.length == 0) {
-            return ResultVoUtils.error(ResultEnum.PARAM_ERROR);
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
 
         int count = loginService.freezeUser(ids);
 
-        return ResultVoUtils.success(count);
+        return ResultVOUtils.success(count);
     }
 }

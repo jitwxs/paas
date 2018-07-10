@@ -24,7 +24,9 @@ public enum ProjectLogTypeEnum {
     KILL_CONTAINER("强制停止容器", 30),
     KILL_CONTAINER_ERROR("强制停止容器失败", 31),
     DELETE_CONTAINER("删除容器", 32),
-    DELETE_CONTAINER_ERROR("删除容器失败", 33);
+    DELETE_CONTAINER_ERROR("删除容器失败", 33),
+    RESTART_CONTAINER("重启容器", 34),
+    RESTART_CONTAINER_ERROR("重启容器失败", 35);
 
     private String message;
     private int code;

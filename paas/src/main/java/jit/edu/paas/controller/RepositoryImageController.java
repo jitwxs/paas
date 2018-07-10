@@ -2,9 +2,9 @@ package jit.edu.paas.controller;
 
 
 import com.baomidou.mybatisplus.plugins.Page;
-import jit.edu.paas.commons.util.ResultVoUtils;
+import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.domain.entity.RepositoryImage;
-import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.service.RepositoryImageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -34,8 +34,8 @@ public class RepositoryImageController {
      */
     @GetMapping("/list")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo listName(Page<RepositoryImage> page) {
-        return ResultVoUtils.success(repositoryImageService.listRepositoryFromDb(page));
+    public ResultVO listName(Page<RepositoryImage> page) {
+        return ResultVOUtils.success(repositoryImageService.listRepositoryFromDb(page));
     }
 
     /**
@@ -45,10 +45,10 @@ public class RepositoryImageController {
      */
     @GetMapping("/list/name")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo listTagByName(String name) {
+    public ResultVO listTagByName(String name) {
         List<RepositoryImage> list = repositoryImageService.listByName(name);
 
-        return ResultVoUtils.success(list);
+        return ResultVOUtils.success(list);
     }
 
     /**
@@ -59,7 +59,7 @@ public class RepositoryImageController {
      */
     @PostMapping("/push")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResultVo pushImage(@RequestAttribute String uid, String imageId) {
+    public ResultVO pushImage(@RequestAttribute String uid, String imageId) {
         return repositoryImageService.pushToHub(imageId, uid);
     }
 
@@ -70,7 +70,7 @@ public class RepositoryImageController {
      */
     @PostMapping("/pull")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo pullImage(String id) {
+    public ResultVO pullImage(String id) {
         return repositoryImageService.pullFromHub(id);
     }
 
@@ -81,7 +81,7 @@ public class RepositoryImageController {
      */
     @DeleteMapping("/delete/{id}")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVo pushImage(@PathVariable String id) {
+    public ResultVO pushImage(@PathVariable String id) {
         return repositoryImageService.deleteFromHub(id);
     }
 
@@ -92,7 +92,7 @@ public class RepositoryImageController {
      */
     @GetMapping("/sync")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVo syncImage() {
+    public ResultVO syncImage() {
         return repositoryImageService.sync();
     }
 }

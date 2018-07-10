@@ -3,14 +3,13 @@ package jit.edu.paas.controller;
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.plugins.Page;
 import jit.edu.paas.commons.component.WrapperComponent;
-import jit.edu.paas.commons.util.ResultVoUtils;
-import jit.edu.paas.domain.entity.ProjectLog;
+import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.domain.entity.UserProject;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.RoleEnum;
 import jit.edu.paas.domain.select.UserProjectSelect;
-import jit.edu.paas.domain.vo.ResultVo;
-import jit.edu.paas.service.ProjectLogService;
+import jit.edu.paas.domain.vo.ProjectLogVO;
+import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.service.UserProjectService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,8 +29,6 @@ public class ProjectController {
     @Autowired
     private UserProjectService projectService;
     @Autowired
-    private ProjectLogService projectLogService;
-    @Autowired
     private WrapperComponent wrapperComponent;
 
     /**
@@ -41,13 +38,13 @@ public class ProjectController {
      */
     @GetMapping("/list")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVo listProject(UserProjectSelect projectSelect, Page<UserProject> page) {
+    public ResultVO listProject(UserProjectSelect projectSelect, Page<UserProject> page) {
         // 1、生成筛选条件
         EntityWrapper<UserProject> wrapper = wrapperComponent.genUserProjectWrapper(projectSelect);
         // 2、分页查询
         Page<UserProject> selectPage = projectService.selectPage(page, wrapper);
         // 3、返回前台
-        return ResultVoUtils.success(selectPage);
+        return ResultVOUtils.success(selectPage);
     }
 
     /**
@@ -57,7 +54,7 @@ public class ProjectController {
      */
     @GetMapping("/self/list")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResultVo listSelfProject(@RequestAttribute String uid,UserProjectSelect projectSelect, Page<UserProject> page) {
+    public ResultVO listSelfProject(@RequestAttribute String uid, UserProjectSelect projectSelect, Page<UserProject> page) {
         // 1、设置筛选条件uid为当前用户
         projectSelect.setUserId(uid);
         // 2、生成筛选条件
@@ -65,7 +62,7 @@ public class ProjectController {
         // 3、分页查询
         Page<UserProject> selectPage = projectService.selectPage(page, wrapper);
         // 4、返回前台
-        return ResultVoUtils.success(selectPage);
+        return ResultVOUtils.success(selectPage);
     }
 
     /**
@@ -75,7 +72,7 @@ public class ProjectController {
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo getById(@RequestAttribute String uid, @PathVariable String id) {
+    public ResultVO getById(@RequestAttribute String uid, @PathVariable String id) {
         return projectService.getProjectById(id, uid);
     }
 
@@ -86,7 +83,7 @@ public class ProjectController {
      */
     @PostMapping("/create")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResultVo createProject(@RequestAttribute String uid, String name, String description) {
+    public ResultVO createProject(@RequestAttribute String uid, String name, String description) {
         return projectService.createProject(uid, name, description);
     }
 
@@ -97,7 +94,7 @@ public class ProjectController {
      */
     @PutMapping("/update")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResultVo updateProject(@RequestAttribute String uid, String id, String name, String description) {
+    public ResultVO updateProject(@RequestAttribute String uid, String id, String name, String description) {
         return projectService.updateProject(uid, id, name, description);
     }
 
@@ -108,27 +105,29 @@ public class ProjectController {
      */
     @DeleteMapping("/delete/{id}")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResultVo updateProject(@RequestAttribute String uid, @PathVariable String id) {
+    public ResultVO updateProject(@RequestAttribute String uid, @PathVariable String id) {
         return projectService.deleteProject(id, uid);
     }
 
     /**
      * 获取操作日志
+     * @param projectId 项目ID
+     * @param type 日志类型
      * @author jitwxs
      * @since 2018/7/7 10:27
      */
-    @GetMapping("/log/{projectId}")
+    @GetMapping("/log")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVo getProjectLog(@RequestAttribute String uid, @PathVariable String projectId, Page<ProjectLog> page) {
+    public ResultVO getProjectLog(@RequestAttribute String uid, String projectId, Integer type, Page<ProjectLogVO> page) {
         // 鉴权
         String roleName = loginService.getRoleName(uid);
         if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
             String userId = projectService.getUserId(projectId);
             if(!uid.equals(userId)) {
-                return ResultVoUtils.error(ResultEnum.PERMISSION_ERROR);
+                return ResultVOUtils.error(ResultEnum.PERMISSION_ERROR);
             }
         }
 
-        return ResultVoUtils.success(projectLogService.selectPage(page, new EntityWrapper<ProjectLog>().eq("project_id", projectId)));
+        return projectService.listProjectLog(projectId, type, page);
     }
 }

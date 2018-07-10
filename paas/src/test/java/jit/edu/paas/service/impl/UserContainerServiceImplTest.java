@@ -1,5 +1,6 @@
 package jit.edu.paas.service.impl;
 
+import com.spotify.docker.client.DockerClient;
 import jit.edu.paas.service.UserContainerService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.runner.RunWith;
@@ -14,6 +15,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 public class UserContainerServiceImplTest {
     @Autowired
     private UserContainerService userContainerService;
+    @Autowired
+    private DockerClient dockerClient;
 //    @Test
 //    public void startContainer() {
 //        try {

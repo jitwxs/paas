@@ -2,9 +2,8 @@ package jit.edu.paas.service;
 
 import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.IService;
-import com.google.common.collect.ImmutableSet;
 import jit.edu.paas.domain.entity.SysImage;
-import jit.edu.paas.domain.vo.ResultVo;
+import jit.edu.paas.domain.vo.ResultVO;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -38,7 +37,7 @@ public interface SysImageService extends IService<SysImage> {
      * @author jitwxs
      * @since 2018/6/28 16:15
      */
-    ResultVo listHubImage(String name, Integer limit);
+    ResultVO listHubImage(String name, Integer limit);
 
     /**
      * 根据完整名获取镜像
@@ -52,49 +51,49 @@ public interface SysImageService extends IService<SysImage> {
      * @author hf
      * @since 2018/6/28 16:15
      */
-    ResultVo inspectImage(String id, String userId);
+    ResultVO inspectImage(String id, String userId);
 
     /**
      * 同步本地镜像到数据库
      * @author jitwxs
      * @since 2018/7/3 16:38
      */
-    ResultVo syncLocalImage();
+    ResultVO sync();
 
     /**
      * 删除镜像
      * @author hf
      * @since 2018/6/28 16:15
      */
-    ResultVo removeImage(String id, String userId);
+    ResultVO removeImage(String id, String userId);
 
     /**
      * 从DockerHub上拉取镜像
      * @author hf
      * @since 2018/6/28 16:15
      */
-    ResultVo pullImageFromHub(String name);
+    ResultVO pullImageFromHub(String name);
 
     /**
      *  push镜像
      * @author hf
      * @since 2018/6/28 16:15
      */
-    ResultVo pushImage(String id, String username, String password);
+    ResultVO pushImage(String id, String username, String password);
 
     /**
      *  导出镜像
      * @author hf
      * @since 2018/7/2 8:15
      */
-    ResultVo exportImage(String id, String uid);
+    ResultVO exportImage(String id, String uid);
 
     /**
      *  查看History
      * @author hf
      * @since 2018/6/28 16:15
      */
-    ResultVo getHistory(String id, String uid);
+    ResultVO getHistory(String id, String uid);
 
     /**
      * 公开/关闭私有镜像
@@ -102,28 +101,28 @@ public interface SysImageService extends IService<SysImage> {
      * @author jitwxs
      * @since 2018/7/4 16:12
      */
-    ResultVo changOpenImage(String id, String uid, boolean code);
+    ResultVO changOpenImage(String id, String uid, boolean code);
 
     /**
      * 获取一个镜像的所有暴露接口
      * @author jitwxs
      * @since 2018/7/2 8:42
      */
-    ImmutableSet<String> listExportPorts(String imageId);
+    ResultVO listExportPorts(String imageId, String userId);
 
     /**
      *  导入镜像
      * @author hf
      * @since 2018/7/2 8:15
      */
-    ResultVo importImage(String uid,HttpServletRequest request);
+    ResultVO importImage(String uid, HttpServletRequest request);
 
     /**
      *  dockerfile建立镜像
      * @author hf
      * @since 2018/7/2 8:15
      */
-    ResultVo buildImage(String userId, HttpServletRequest request);
+    ResultVO buildImage(String userId, HttpServletRequest request);
 
     /**
      * 清理缓存
