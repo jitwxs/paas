@@ -15,6 +15,16 @@ import java.util.TreeMap;
 public class EnumsServiceImpl implements EnumsService {
 
     @Override
+    public Map<Integer, String> listRole() {
+        Map<Integer, String> map = new TreeMap<>(Integer::compareTo);
+
+        for (RoleEnum s : RoleEnum.values()) {
+            map.put(s.getCode(), s.getMessage());
+        }
+        return map;
+    }
+
+    @Override
     public Map<Integer, String> listResultCode() {
         Map<Integer, String> map = new TreeMap<>(Integer::compareTo);
 

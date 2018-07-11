@@ -450,6 +450,7 @@ public class HttpClientUtils {
         try {
             StringBuilder sb = new StringBuilder();
             int currentLength = 0;
+
             for (char c : replaceHtml(StringEscapeUtils.unescapeHtml4(str)).toCharArray()) {
                 currentLength += String.valueOf(c).getBytes("GBK").length;
                 if (currentLength <= length - 3) {

@@ -1,6 +1,5 @@
 package jit.edu.paas.commons.activemq;
 
-import jit.edu.paas.commons.util.HttpClientUtils;
 import jit.edu.paas.commons.util.JsonUtils;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.commons.websocket.WebSocketServer;
@@ -78,8 +77,7 @@ public class MQConsumer {
                     throw new Exception("session未找到");
                 }
             } catch (Exception e) {
-                log.error("接收容器消息错误，错误位置：{}，错误栈：{}",
-                        "MQConsumer.receiveContainer()", HttpClientUtils.getStackTraceAsString(e));
+                log.error("接收容器消息错误，错误位置：{}，错误信息：{}", "MQConsumer.receiveContainer()", e.getMessage());
             }
         }
     }

@@ -1,8 +1,13 @@
 package jit.edu.paas.controller;
 
+import com.baomidou.mybatisplus.plugins.Page;
+import jit.edu.paas.commons.util.ResultVOUtils;
+import jit.edu.paas.domain.dto.SysLogDTO;
 import jit.edu.paas.domain.enums.ResultEnum;
+import jit.edu.paas.domain.select.SysLogSelect;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.service.MonitorService;
+import jit.edu.paas.service.SysLogService;
 import jit.edu.paas.service.UserContainerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,6 +21,8 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/monitor")
 public class MonitorController {
+    @Autowired
+    private SysLogService sysLogService;
     @Autowired
     private UserContainerService containerService;
     @Autowired
@@ -81,13 +88,36 @@ public class MonitorController {
     }
 
     /**
-     * 读取用户Docker信息
+     * 读取自身Docker信息
      * @author jitwxs
      * @since 2018/7/10 0:26
      */
-    @GetMapping("/info")
+    @GetMapping("/self/info")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO getDockerInfo(@RequestAttribute String uid) {
+    public ResultVO getSelfDockerInfo(@RequestAttribute String uid) {
         return monitorService.getUserDockerInfo(uid);
+    }
+
+    /**
+     * 读取指定用户Docker信息
+     * @author jitwxs
+     * @since 2018/7/10 0:26
+     */
+    @GetMapping("/{userId}/info")
+    @PreAuthorize("hasRole('ROLE_SYSTEM')")
+    public ResultVO getUserDockerInfo(@PathVariable String userId) {
+        return monitorService.getUserDockerInfo(userId);
+    }
+
+    /**
+     * 获取系统日志
+     * @author jitwxs
+     * @since 2018/7/11 9:59
+     */
+    @GetMapping("/log")
+    @PreAuthorize("hasRole('ROLE_SYSTEM')")
+    public ResultVO listSystemLog(SysLogSelect sysLogSelect, Page<SysLogDTO> page) {
+        Page<SysLogDTO> selectPage = sysLogService.listSystemLog(sysLogSelect, page);
+        return ResultVOUtils.success(selectPage);
     }
 }

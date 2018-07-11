@@ -2,8 +2,8 @@ package jit.edu.paas.controller;
 
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.plugins.Page;
-import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.commons.component.WrapperComponent;
+import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.domain.entity.SysLogin;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.select.UserSelect;
@@ -59,6 +59,18 @@ public class UserController {
         }
 
         int count = loginService.freezeUser(ids);
+
+        return ResultVOUtils.success(count);
+    }
+
+    @PostMapping("/cancelFreeze")
+    @PreAuthorize("hasRole('ROLE_SYSTEM')")
+    public ResultVO cancelFreezeUser(String[] ids) {
+        if(ids == null || ids.length == 0) {
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
+        }
+
+        int count = loginService.cancelFreezeUser(ids);
 
         return ResultVOUtils.success(count);
     }

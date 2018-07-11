@@ -2,6 +2,8 @@ package jit.edu.paas.commons.util;
 
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -21,6 +23,8 @@ public class JwtUtils {
     private static final SignatureAlgorithm signatureAlgorithm = SignatureAlgorithm.HS512;
     // token前缀
     private static final String TOKEN_PREFIX = "Bearer ";
+
+    private Logger log = LoggerFactory.getLogger(JwtUtils.class);
 
     /**
      * 生成JWT token
@@ -73,7 +77,7 @@ public class JwtUtils {
                     .parseClaimsJws(token.replace(TOKEN_PREFIX,""))
                     .getBody();
         } catch (Exception e) {
-            System.out.println("Token验证失败："+HttpClientUtils.getStackTraceAsString(e));
+            System.out.println("Token验证失败");
             return null;
         }
     }
@@ -85,7 +89,7 @@ public class JwtUtils {
                     .parseClaimsJws(token.replace(TOKEN_PREFIX,""))
                     .getBody();
         } catch (Exception e) {
-            System.out.println("Token验证失败："+HttpClientUtils.getStackTraceAsString(e));
+            System.out.println("Token验证失败");
             return null;
         }
     }

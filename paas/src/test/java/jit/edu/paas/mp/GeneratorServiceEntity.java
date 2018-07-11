@@ -21,10 +21,10 @@ public class GeneratorServiceEntity {
         String[] tables = {
            "repository_image",
                 "sys_image","sys_log","sys_login","sys_repository",
-                "sys_volume","user_container","user_project"
+                "sys_volume","user_container","user_project","project_log"
         };
         boolean serviceNameStartWithI = false;//user -> UserService, 设置成true: user -> IUserService
-        generateByTables(serviceNameStartWithI, packageName, "project_log");
+        generateByTables(serviceNameStartWithI, packageName, "user_service");
     }
 
     private void generateByTables(boolean serviceNameStartWithI, String packageName, String... tableNames) {

@@ -5,6 +5,7 @@ import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.commons.util.SpringBeanFactoryUtils;
 import jit.edu.paas.domain.entity.SysLogin;
 import jit.edu.paas.domain.enums.ResultEnum;
+import jit.edu.paas.domain.vo.UserVO;
 import jit.edu.paas.service.JwtService;
 import jit.edu.paas.service.SysLoginService;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -91,7 +92,10 @@ public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter {
         response.setHeader("Access-Control-Expose-Headers","Authorization");
 
         response.setContentType("text/html;charset=utf-8");
-        response.getWriter().write(JsonUtils.objectToJson(ResultVOUtils.success()));
+        // 读取用户信息
+        UserVO userVO = jwtService.getUserInfo(token);
+        String json = JsonUtils.objectToJson(ResultVOUtils.success(userVO));
+        response.getWriter().write(json);
     }
 
     /**

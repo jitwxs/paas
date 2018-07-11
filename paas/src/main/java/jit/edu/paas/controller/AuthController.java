@@ -139,15 +139,4 @@ public class AuthController {
             return ResultVOUtils.error(ResultEnum.AUTHORITY_ERROR.getCode(), exception.toString());
         }
     }
-
-    // TODO 以下为测试接口
-    /**
-     * 获取容器实时监控【粒度：5s】
-     * @author jitwxs
-     * @since 2018/7/8 21:13
-     */
-    @GetMapping("/test/{containerId}")
-    public ResultVO getActual(@PathVariable String containerId) {
-        return monitorService.getActualMonitor(containerId);
-    }
 }

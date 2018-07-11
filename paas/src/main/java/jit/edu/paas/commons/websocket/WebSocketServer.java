@@ -1,6 +1,5 @@
 package jit.edu.paas.commons.websocket;
 
-import jit.edu.paas.commons.util.HttpClientUtils;
 import jit.edu.paas.commons.util.SpringBeanFactoryUtils;
 import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.commons.util.jedis.JedisClient;
@@ -23,7 +22,7 @@ import java.util.HashMap;
  * @author jitwxs
  * @since 2018/7/9 16:08
  */
-@ServerEndpoint(value = "/websocket/{userId}")
+@ServerEndpoint(value = "/ws/{userId}")
 @Component
 @Slf4j
 public class WebSocketServer {
@@ -92,7 +91,7 @@ public class WebSocketServer {
      */
     @OnError
     public void onError(Throwable error) {
-        log.error("WebSocket连接异常，sessionId：{}，错误栈：{}", HttpClientUtils.getStackTraceAsString(error));
+        log.error("WebSocket连接出错");
     }
 
     /**

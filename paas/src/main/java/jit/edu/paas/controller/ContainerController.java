@@ -7,6 +7,7 @@ import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.domain.dto.UserContainerDTO;
 import jit.edu.paas.domain.entity.UserContainer;
+import jit.edu.paas.domain.enums.ContainerOpEnum;
 import jit.edu.paas.domain.enums.ContainerStatusEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.RoleEnum;
@@ -123,10 +124,10 @@ public class ContainerController {
     }
 
     /**
-     * 创建容器
-     * @param imageId 镜像ID
-     * @param containerName 容器名
-     * @param projectId 所属项目
+     * 创建容器【WebSocket】
+     * @param imageId 镜像ID 必填
+     * @param containerName 容器名 必填
+     * @param projectId 所属项目 必填
      * @param portMap 端口映射
      * @param cmd 执行命令，如若为空，使用默认的命令
      * @param env 环境变量
@@ -142,76 +143,122 @@ public class ContainerController {
         if(StringUtils.isBlank(imageId,containerName,projectId)) {
             return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
-        portMap.put("80", 37766);
-
-        return containerService.createContainer(uid, imageId, cmd, portMap, containerName, projectId, env, destination);
+        // 创建校验
+        ResultVO resultVO = containerService.createContainerCheck(uid, imageId, portMap, projectId);
+        if(ResultEnum.OK.getCode() != resultVO.getCode()) {
+            return resultVO;
+        } else {
+            containerService.createContainerTask(uid, imageId, cmd, portMap, containerName, projectId, env, destination);
+            return ResultVOUtils.success("正在创建容器");
+        }
     }
 
     /**
-     * 开启容器【异步】
+     * 开启容器【WebSocket】
      * @author jitwxs
      * @since 2018/7/1 15:39
      */
     @GetMapping("/start/{containerId}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVO startContainer(@RequestAttribute String uid, @PathVariable String containerId){
-        containerService.startContainerTask(uid,containerId);
-        return ResultVOUtils.success("容器启动中");
+        ResultVO resultVO = containerService.hasAllowOp(uid, containerId, ContainerOpEnum.START);
+
+        if(ResultEnum.OK.getCode() == resultVO.getCode()) {
+            containerService.startContainerTask(uid,containerId);
+            return ResultVOUtils.success("正在启动容器");
+        } else {
+            return resultVO;
+        }
     }
 
     /**
-     * 暂停容器
+     * 暂停容器【WebSocket】
      * @author jitwxs
      * @since 2018/7/1 16:07
      */
     @GetMapping("/pause/{containerId}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVO pauseContainer(@RequestAttribute String uid, @PathVariable String containerId){
-        return containerService.pauseContainer(uid, containerId);
+        ResultVO resultVO = containerService.hasAllowOp(uid, containerId, ContainerOpEnum.PAUSE);
+
+        if(ResultEnum.OK.getCode() == resultVO.getCode()) {
+            containerService.pauseContainerTask(uid, containerId);
+            return ResultVOUtils.success("正在暂停容器");
+        } else {
+            return resultVO;
+        }
     }
 
     /**
-     * 把容器从暂停状态恢复
+     * 把容器从暂停状态恢复【WebSocket】
      * @author jitwxs
      * @since 2018/7/1 16:09
      */
     @GetMapping("/continue/{containerId}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVO continueContainer(@RequestAttribute String uid, @PathVariable String containerId){
-        return containerService.continueContainer(uid, containerId);
+        ResultVO resultVO = containerService.hasAllowOp(uid, containerId, ContainerOpEnum.CONTINUE);
+
+        if(ResultEnum.OK.getCode() == resultVO.getCode()) {
+            containerService.continueContainerTask(uid, containerId);
+            return ResultVOUtils.success("正在恢复容器");
+        } else {
+            return resultVO;
+        }
     }
 
     /**
-     * 停止容器
+     * 停止容器【WebSocket】
      * @author jitwxs
      * @since 2018/7/1 15:59
      */
     @GetMapping("/stop/{containerId}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVO stopContainer(@RequestAttribute String uid, @PathVariable String containerId){
-        return containerService.stopContainer(uid, containerId);
+        ResultVO resultVO = containerService.hasAllowOp(uid, containerId, ContainerOpEnum.STOP);
+
+        if(ResultEnum.OK.getCode() == resultVO.getCode()) {
+            containerService.stopContainerTask(uid, containerId);
+            return ResultVOUtils.success("正在停止容器");
+        } else {
+            return resultVO;
+        }
     }
 
     /**
-     * 强制停止容器
+     * 强制停止容器【WebSocket】
      * @author jitwxs
      * @since 2018/7/1 16:02
      */
     @GetMapping("/kill/{containerId}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVO killContainer(@RequestAttribute String uid, @PathVariable String containerId){
-        return containerService.killContainer(uid, containerId);
+        ResultVO resultVO = containerService.hasAllowOp(uid, containerId, ContainerOpEnum.KILL);
+
+        if(ResultEnum.OK.getCode() == resultVO.getCode()) {
+            containerService.killContainerTask(uid, containerId);
+            return ResultVOUtils.success("正在强制停止容器");
+        } else {
+            return resultVO;
+        }
     }
 
     /**
-     * 重启容器
+     * 重启容器【WebSocket】
      * @author jitwxs
      * @since 2018/7/1 16:02
      */
     @GetMapping("/restart/{containerId}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVO restartContainer(@RequestAttribute String uid, @PathVariable String containerId){
-        return containerService.restartContainer(uid, containerId);
+        ResultVO resultVO = containerService.hasAllowOp(uid, containerId, ContainerOpEnum.RESTART);
+
+        if(ResultEnum.OK.getCode() == resultVO.getCode()) {
+            containerService.restartContainerTask(uid, containerId);
+            return ResultVOUtils.success("正在重启容器");
+        } else {
+            return resultVO;
+        }
     }
 
     /**
@@ -226,14 +273,21 @@ public class ContainerController {
     }
 
     /**
-     * 删除容器
+     * 删除容器【WebSocket】
      * @author jitwxs
      * @since 2018/7/1 16:05
      */
-    @DeleteMapping("/remove/{containerId}")
+    @DeleteMapping("/delete/{containerId}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVO removeContainer(@RequestAttribute String uid, @PathVariable String containerId){
-        return containerService.removeContainer(uid, containerId);
+        ResultVO resultVO = containerService.hasAllowOp(uid, containerId, ContainerOpEnum.DELETE);
+
+        if(ResultEnum.OK.getCode() == resultVO.getCode()) {
+            containerService.removeContainerTask(uid, containerId);
+            return ResultVOUtils.success("正在删除容器");
+        } else {
+            return resultVO;
+        }
     }
 
     /**
@@ -255,7 +309,7 @@ public class ContainerController {
             return ResultVOUtils.error(ResultEnum.CONTAINER_NOT_FOUND);
         }
         // 只有启动状态容器才能调用Terminal
-        if(!containerService.hasEqualStatus(container.getStatus(),ContainerStatusEnum.START)) {
+        if(!containerService.hasEqualStatus(container.getStatus(),ContainerStatusEnum.RUNNING)) {
             return ResultVOUtils.error(ResultEnum.CONTAINER_STATUS_REFUSE);
         }
 

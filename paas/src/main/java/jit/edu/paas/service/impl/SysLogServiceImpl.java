@@ -1,16 +1,19 @@
 package jit.edu.paas.service.impl;
 
+import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import jit.edu.paas.commons.util.HttpClientUtils;
+import jit.edu.paas.domain.dto.SysLogDTO;
 import jit.edu.paas.domain.entity.SysLog;
 import jit.edu.paas.domain.enums.SysLogTypeEnum;
+import jit.edu.paas.domain.select.SysLogSelect;
 import jit.edu.paas.mapper.SysLogMapper;
 import jit.edu.paas.service.SysLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Date;
+import java.util.List;
 
 /**
  * <p>
@@ -42,8 +45,17 @@ public class SysLogServiceImpl extends ServiceImpl<SysLogMapper, SysLog> impleme
         log.setIp(HttpClientUtils.getRemoteAddr(request));
         log.setUserAgent(request.getHeader("user-agent"));
         log.setParam(request.getParameterMap());
-        log.setException(HttpClientUtils.getStackTraceAsString(ex));
+        if(ex != null) {
+            log.setException(ex.getMessage());
+        }
 
         logMapper.insert(log);
+    }
+
+    @Override
+    public Page<SysLogDTO> listSystemLog(SysLogSelect sysLogSelect, Page<SysLogDTO> page) {
+        List<SysLogDTO> list = logMapper.listSystemLog(sysLogSelect, page);
+
+        return page.setRecords(list);
     }
 }

@@ -23,7 +23,8 @@ public enum SysLogTypeEnum {
     PULL_IMAGE_FROM_HUB("拉取镜像从Hub", 41),
     DELETE_IMAGE_FROM_HUB("删除Hub上镜像", 42),
     CLEAN_VOLUMES("清理数据卷", 50),
-    FREEZE_USER("冻结用户", 60);
+    FREEZE_USER("冻结用户", 60),
+    CANCEL_FREEZE_USER("取消冻结用户", 61);
 
     private String message;
     private int code;

@@ -2,4 +2,31 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="jit.edu.paas.mapper.SysLogMapper">
 
+    <select id="listSystemLog" resultType="jit.edu.paas.domain.dto.SysLogDTO">
+        SELECT
+            `log`.*,
+            `login`.username
+        FROM
+            `sys_log` AS `log`,
+            `sys_login` AS `login`
+        WHERE
+            `log`.user_id = `login`.id
+            <if test="sysLogSelect.userId != null" >
+                AND `log`.user_id = #{sysLogSelect.userId}
+            </if>
+            <if test="sysLogSelect.type != null" >
+                AND `log`.type = #{sysLogSelect.type}
+            </if>
+            <if test="sysLogSelect.hasException != null" >
+                <if test="sysLogSelect.hasException == true" >
+                    AND `log`.exception IS NOT NULL
+                </if>
+                <if test="sysLogSelect.hasException == false" >
+                    AND `log`.exception IS NULL
+                </if>
+            </if>
+            <if test="sysLogSelect.startDate != null and  sysLogSelect.endDate != null" >
+                AND `log`.create_date between #{sysLogSelect.startDate} and #{sysLogSelect.endDate}
+            </if>
+    </select>
 </mapper>

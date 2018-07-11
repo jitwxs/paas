@@ -112,16 +112,16 @@ public class MonitorServiceImpl implements MonitorService {
         monitorVo.setCpuUtilization(NumberUtils.decimal3Bit(cpuUtilization));
 
         // 3、设置内存相关
-        double memoryUsage = 0, memoryLimit = 0, memoryLimitUtilization = 0;
+        double memoryUsage = 0, memoryLimit = 0, memoryUtilization = 0;
         try {
             memoryUsage = stats.memoryStats().stats().activeAnon();
             memoryLimit = stats.memoryStats().limit();
-            memoryLimitUtilization = memoryUsage / memoryLimit * 100;
+            memoryUtilization = memoryUsage / memoryLimit * 100;
         } catch (Exception e) {}
         // bit --> Mb，保留三位小数
         monitorVo.setMemoryUsage(NumberUtils.decimal3Bit(memoryUsage / 1048576));
         monitorVo.setMemoryLimit(NumberUtils.decimal3Bit(memoryLimit / 1048576));
-        monitorVo.setMemoryLimitUtilization(NumberUtils.decimal3Bit(memoryLimitUtilization));
+        monitorVo.setMemoryUtilization(NumberUtils.decimal3Bit(memoryUtilization));
 
         // 4、IO相关
         double blockRead = 0, blockWrite = 0;
@@ -307,7 +307,7 @@ public class MonitorServiceImpl implements MonitorService {
         UserDockerInfoVO infoVO = new UserDockerInfoVO();
 
         infoVO.setContainerNum(containerMapper.countByUserId(uid, null));
-        infoVO.setContainerRunningNum(containerMapper.countByUserId(uid, ContainerStatusEnum.START.getCode()));
+        infoVO.setContainerRunningNum(containerMapper.countByUserId(uid, ContainerStatusEnum.RUNNING.getCode()));
         infoVO.setContainerPauseNum(containerMapper.countByUserId(uid, ContainerStatusEnum.PAUSE.getCode()));
         infoVO.setContainerStopNum(containerMapper.countByUserId(uid, ContainerStatusEnum.STOP.getCode()));
 

@@ -368,7 +368,7 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
         for(String id : ids) {
             SysLogin login = getById(id);
 
-            if(login != null && !login.getHasFreeze()) {
+            if(login != null && !login.getHasFreeze() && login.getRoleId() == RoleEnum.ROLE_USER.getCode()) {
                 login.setHasFreeze(true);
                 // 更新数据
                 update(login);
@@ -378,6 +378,25 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
         }
         // 写入日志
         sysLogService.saveLog(request, SysLogTypeEnum.FREEZE_USER);
+
+        return count;
+    }
+
+    @Override
+    public int cancelFreezeUser(String[] ids) {
+        int count = 0;
+        for(String id : ids) {
+            SysLogin login = getById(id);
+
+            if(login != null && login.getHasFreeze() && login.getRoleId() == RoleEnum.ROLE_USER.getCode()) {
+                login.setHasFreeze(false);
+                // 更新数据
+                update(login);
+                count++;
+            }
+        }
+        // 写入日志
+        sysLogService.saveLog(request, SysLogTypeEnum.CANCEL_FREEZE_USER);
 
         return count;
     }

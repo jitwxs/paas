@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableList;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.Volume;
 import com.spotify.docker.client.messages.VolumeList;
+import jit.edu.paas.commons.socket.FileTransferClient;
 import jit.edu.paas.commons.util.*;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.entity.SysVolume;
@@ -23,11 +24,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.IOException;
+import java.util.*;
 
 @Service
 @Slf4j
@@ -194,5 +196,85 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
         sysLogService.saveLog(request, SysLogTypeEnum.CLEAN_VOLUMES);
 
         return ResultVOUtils.success(map);
+    }
+
+    @Override
+    public ResultVO uploadToVolumes(String uid, HttpServletRequest request) {
+        StandardMultipartHttpServletRequest req;
+        try {
+            req = (StandardMultipartHttpServletRequest) request;
+        } catch (Exception e) {
+            return ResultVOUtils.error(ResultEnum.UPLOAD_TYPE_ERROR);
+        }
+
+        // 1、校验参数
+        String id = null;
+        Iterator<String> iterator = req.getFileNames();
+        Enumeration<String> names = req.getParameterNames();
+
+        while (names.hasMoreElements()) {
+            String key = names.nextElement();
+            if("id".equals(key)) {
+                id = req.getParameter(key);
+                break;
+            }
+        }
+        if(StringUtils.isEmpty(id) || !iterator.hasNext()) {
+            ResultVOUtils.error(ResultEnum.PARAM_ERROR);
+        }
+
+        // 2、鉴权
+        SysVolume volume = getById(id);
+        ResultVO resultVO = checkPermission(uid, volume);
+        if(ResultEnum.OK.getCode() != resultVO.getCode()) {
+            return resultVO;
+        }
+
+        // 3、上传
+        int successCount = 0, errorCount = 0,times = 0;
+        try {
+            FileTransferClient transferClient = new FileTransferClient();
+            while (iterator.hasNext()) {
+                MultipartFile file = req.getFile(iterator.next());
+                int i = transferClient.sendFile(volume.getSource(), file);
+                if(i != -1) {
+                    successCount++;
+                    times += i;
+                } else {
+                    errorCount++;
+                }
+            }
+        } catch (IOException e) {
+            log.error("上传数据卷出现错误，错误位置：{}，错误栈：{}",
+                    "SysVolumeServiceImpl.uploadToVolumes()", HttpClientUtils.getStackTraceAsString(e));
+            return ResultVOUtils.error(ResultEnum.VOLUME_UPLOAD_ERROR);
+        }
+
+
+        Map<String, Integer> map = new HashMap<>(16);
+        map.put("success", successCount);
+        map.put("error", errorCount);
+        map.put("times", times);
+        return ResultVOUtils.success(map);
+    }
+
+    @Override
+    public ResultVO checkPermission(String uid, SysVolume volume) {
+        if(volume == null) {
+            return ResultVOUtils.error(ResultEnum.VOLUME_NOT_EXIST);
+        }
+
+        String roleName = loginService.getRoleName(uid);
+        if(StringUtils.isBlank(roleName)) {
+            return ResultVOUtils.error(ResultEnum.AUTHORITY_ERROR);
+        }
+
+        if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
+            if(!containerMapper.hasBelongSb(volume.getContainerId(), uid)) {
+                return ResultVOUtils.error(ResultEnum.PERMISSION_ERROR);
+            }
+        }
+
+        return ResultVOUtils.success();
     }
 }

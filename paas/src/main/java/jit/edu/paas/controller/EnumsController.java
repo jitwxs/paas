@@ -21,6 +21,17 @@ public class EnumsController {
     private EnumsService enumsService;
 
     /**
+     * 获取所有角色
+     * @author jitwxs
+     * @since 2018/6/30 14:46
+     */
+    @GetMapping("/role")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVO listRole() {
+        return ResultVOUtils.success(enumsService.listRole());
+    }
+
+    /**
      * 获取所有状态码
      * @author jitwxs
      * @since 2018/6/30 14:46

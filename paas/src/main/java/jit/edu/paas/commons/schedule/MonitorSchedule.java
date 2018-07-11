@@ -34,7 +34,7 @@ public class MonitorSchedule {
         LocalDateTime time = LocalDateTime.now();
 
         // 获取所有启动的容器列表
-        List<UserContainer> containers = containerService.listByStatus(ContainerStatusEnum.START);
+        List<UserContainer> containers = containerService.listByStatus(ContainerStatusEnum.RUNNING);
         for(UserContainer container : containers) {
             // 实时监控，粒度：5s
             if(time.getSecond() % 5 == 0) {

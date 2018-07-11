@@ -31,6 +31,7 @@ public class OutPutThread extends Thread {
                 // 当n=-1时，代表连接关闭，例如用户输入exit
                 if( n == -1) {
                     session.close();
+                    return;
                 }
 
                 String msg=new String(bytes,0,n);

@@ -50,9 +50,15 @@ public enum ResultEnum {
     CONTAINER_STATUS_REFUSE("容器状态拒绝操作",46),
     CONTAINER_START_ERROR("容器启动失败",47),
     USER_AUTHORITY_ERROR("用户身份获取失败",48),
-    CONTAINER_ALREADY_START("容器已经启动",49),
-    REQUEST_TIMEOUT("请求超时",50),
-    REQUEST_ERROR("请求错误",51);
+    CONTAINER_ALREADY_START("容器正运行，操作被拒绝",49),
+    CONTAINER_ALREADY_PAUSE("容器已经暂停，操作被拒绝",50),
+    CONTAINER_ALREADY_STOP("容器已经停止，操作被拒绝",51),
+    REQUEST_TIMEOUT("请求超时",52),
+    REQUEST_ERROR("请求错误",53),
+    CONTAINER_STATUS_ERROR("容器状态错误",54),
+    VOLUME_NOT_EXIST("数据卷不存在",55),
+    VOLUME_UPLOAD_ERROR("数据卷上传失败",56),
+    UPLOAD_TYPE_ERROR("上传类型错误",57);
 
     private String message;
     private int code;

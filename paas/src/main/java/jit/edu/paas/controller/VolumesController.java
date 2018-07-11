@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
+
 /**
  * 数据卷Controller
  * @author jitwxs
@@ -59,5 +61,17 @@ public class VolumesController {
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
     public ResultVO cleanVolumes(){
         return sysVolumeService.cleanVolumes();
+    }
+
+    /**
+     * 上传文件到数据卷
+     * @param request 包含ID（数据卷ID）、File对象（文件）
+     * @author jitwxs
+     * @since 2018/7/11 14:21
+     */
+    @PostMapping("/upload")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVO uploadToVolumes(@RequestAttribute String uid, HttpServletRequest request) {
+        return sysVolumeService.uploadToVolumes(uid, request);
     }
 }

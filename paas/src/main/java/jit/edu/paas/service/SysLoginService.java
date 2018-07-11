@@ -105,6 +105,14 @@ public interface SysLoginService extends IService<SysLogin> {
     int freezeUser(String[] ids);
 
     /**
+     * 取消冻结用户
+     * @author jitwxs
+     * @since 2018/6/30 16:34
+     * @return 成功数
+     */
+    int cancelFreezeUser(String[] ids);
+
+    /**
      * 校验注册
      * @author jitwxs
      * @since 2018/7/1 8:43

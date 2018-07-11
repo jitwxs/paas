@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.service.IService;
 import jit.edu.paas.domain.entity.SysVolume;
 import jit.edu.paas.domain.vo.ResultVO;
 
+import javax.servlet.http.HttpServletRequest;
+
 public interface SysVolumeService extends IService<SysVolume> {
     /**
      *
@@ -37,4 +39,20 @@ public interface SysVolumeService extends IService<SysVolume> {
      * @since 2018/7/5 13:03
      */
     ResultVO cleanVolumes();
+
+    /**
+     * 上传文件到数据卷
+     * @author jitwxs
+     * @since 2018/7/11 14:27
+     */
+    ResultVO uploadToVolumes(String uid, HttpServletRequest request);
+
+    /**
+     * 检查权限
+     * @param uid 用户ID
+     * @param volume 数据卷
+     * @author jitwxs
+     * @since 2018/7/11 14:31
+     */
+    ResultVO checkPermission(String uid, SysVolume volume);
 }

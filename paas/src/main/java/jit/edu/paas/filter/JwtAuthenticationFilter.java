@@ -110,7 +110,7 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
         if (pathMatcher.match("/auth/**", request.getServletPath())) {
             return true;
         }
-        if (pathMatcher.match("/websocket/**", request.getServletPath())) {
+        if (pathMatcher.match("/ws/**", request.getServletPath())) {
             return true;
         }
         return false;

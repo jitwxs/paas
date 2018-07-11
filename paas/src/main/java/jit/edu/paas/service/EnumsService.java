@@ -9,6 +9,12 @@ import java.util.Map;
  */
 public interface EnumsService {
     /**
+     * 角色列表
+     * @author jitwxs
+     * @since 2018/7/11 9:38
+     */
+    Map<Integer, String> listRole();
+    /**
      * 返回码列表
      * @author jitwxs
      * @since 2018/6/30 15:20

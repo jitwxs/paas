@@ -473,7 +473,12 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
      */
     @Override
     public ResultVO importImage(String uid, HttpServletRequest request) {
-        StandardMultipartHttpServletRequest req = (StandardMultipartHttpServletRequest) request;
+        StandardMultipartHttpServletRequest req;
+        try {
+            req = (StandardMultipartHttpServletRequest) request;
+        } catch (Exception e) {
+            return ResultVOUtils.error(ResultEnum.UPLOAD_TYPE_ERROR);
+        }
 
         // 遍历普通参数，取出镜像名和tag（默认latest）
         String imageName = "", tag = "latest";
@@ -563,7 +568,12 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
      */
     @Override
     public ResultVO buildImage(String userId, HttpServletRequest request) {
-        StandardMultipartHttpServletRequest req = (StandardMultipartHttpServletRequest) request;
+        StandardMultipartHttpServletRequest req;
+        try {
+            req = (StandardMultipartHttpServletRequest) request;
+        } catch (Exception e) {
+            return ResultVOUtils.error(ResultEnum.UPLOAD_TYPE_ERROR);
+        }
 
         // 1、遍历普通参数，取出镜像名和tag（默认latest）
         String imageName = "", tag = "latest";

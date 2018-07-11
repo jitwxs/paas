@@ -69,7 +69,7 @@ public class ContainerMonitorVO {
      * 描述：用户实际使用的内存量与总内存量之比，不包含系统缓冲区和缓存占用内存
      * 单位：百分比
      */
-    private double memoryLimitUtilization;
+    private double memoryUtilization;
 
     /* IO相关 */
     /**

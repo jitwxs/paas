@@ -123,7 +123,6 @@ public class FileUtils extends org.apache.commons.io.FileUtils {
      * @since 2018/6/17 21:54
      */
     public static void resizeImage(String srcImgPath, String distImgPath, int width, int height) throws IOException {
-
         File srcFile = new File(srcImgPath);
         Image srcImg = ImageIO.read(srcFile);
         BufferedImage buffImg = null;
@@ -186,7 +185,7 @@ public class FileUtils extends org.apache.commons.io.FileUtils {
             FileOutputStream fos = new FileOutputStream(file1);
             fos.write(content);
             fos.flush();
-            result = result + fileNames + ":" + content.length;
+            result = "D:\\test\\"+fileNames;
             System.out.println("write success");
         }
         return result;
@@ -249,8 +248,5 @@ public class FileUtils extends org.apache.commons.io.FileUtils {
             e.printStackTrace();
         }
         return res;
-    }
-
-    public static void main(String[] args) {
     }
 }

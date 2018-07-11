@@ -35,10 +35,24 @@
     + Body
 
 	        {
-	        	"code":0,
-	        	"message":"成功",
-	        	"data":null
-	        }
+			    "code": 0,
+			    "message": "成功",
+			    "data": {
+			        "userId": "1231451941131",
+			        "username": "sys",
+			        "email": null,
+			        "roleId": 2
+			    }
+			}
+
+	+ Schema
+
+	        {
+				"userId": "用户ID",
+				"username": "用户名",
+				"email": "用户邮箱",
+				"roleId": "用户角色ID"
+			}
 
 ## 用户注册  [POST /auth/register]
 
@@ -178,14 +192,10 @@
 	+ Schema
 
 	        {
-			  "code": "状态码",
-			  "message": "消息",
-			  "data": {
-			    "userId": "用户ID",
-			    "username": "用户名",
-			    "email": "用户邮箱",
-			    "roleId": "用户角色ID"
-			  }
+				"userId": "用户ID",
+				"username": "用户名",
+				"email": "用户邮箱",
+				"roleId": "用户角色ID"
 			}		
 
 # Group 项目管理
@@ -643,7 +653,7 @@
 			  }
 			}
 
-## 创建容器（用户） [POST /container/create]
+## 创建容器 - WebSocket（用户） [POST /container/create]
 
 + Request
 
@@ -686,10 +696,10 @@
 	        {
 			  "code": 0,
 			  "message": "成功",
-			  "data": null
+			  "data": "正在创建容器"
 			}
 
-## 开启容器  [GET /container/start/{containerId}]
+## 开启容器 - WebSocket [GET /container/start/{containerId}]
 
 + Parameters
 
@@ -714,19 +724,10 @@
 	    	{
 			  "code": 0,
 			  "message": "成功",
-			  "data": 1
+			  "data": "正在启动容器"
 			}
 
-	+ Schema
-
-            {
-				"code": "状态码",
-				"message": "状态消息",
-				"containerName": "容器名，字符串，必填",
-				"data": "容器状态"
-			}
-
-## 暂停容器  [GET /container/pause/{containerId}]
+## 暂停容器 - WebSocket [GET /container/pause/{containerId}]
 
 + Parameters
 
@@ -751,19 +752,10 @@
 	    	{
 			  "code": 0,
 			  "message": "成功",
-			  "data": 2
+			  "data": "正在暂停容器"
 			}
 
-	+ Schema
-
-            {
-				"code": "状态码",
-				"message": "状态消息",
-				"containerName": "容器名，字符串，必填",
-				"data": "容器状态"
-			}
-
-## 恢复容器  [GET /container/continue/{containerId}]
+## 恢复容器 - WebSocket [GET /container/continue/{containerId}]
 
 + Parameters
 
@@ -788,20 +780,11 @@
 	    	{
 			  "code": 0,
 			  "message": "成功",
-			  "data": 1
-			}
-
-	+ Schema
-
-            {
-				"code": "状态码",
-				"message": "状态消息",
-				"containerName": "容器名，字符串，必填",
-				"data": "容器状态"
+			  "data": "正在恢复容器"
 			}
 
 
-## 停止容器  [GET /container/stop/{containerId}]
+## 停止容器 - WebSocket [GET /container/stop/{containerId}]
 
 + Parameters
 
@@ -826,19 +809,10 @@
 	    	{
 			  "code": 0,
 			  "message": "成功",
-			  "data": 0
+			  "data": "正在停止容器"
 			}
 
-	+ Schema
-
-            {
-				"code": "状态码",
-				"message": "状态消息",
-				"containerName": "容器名，字符串，必填",
-				"data": "容器状态"
-			}
-
-## 强制停止容器  [GET /container/kill/{containerId}]
+## 强制停止容器  - WebSocket [GET /container/kill/{containerId}]
 
 + Parameters
 
@@ -863,19 +837,10 @@
 	    	{
 			  "code": 0,
 			  "message": "成功",
-			  "data": 0
+			  "data": "正在强制停止容器"
 			}
 
-	+ Schema
-
-            {
-				"code": "状态码",
-				"message": "状态消息",
-				"containerName": "容器名，字符串，必填",
-				"data": "容器状态"
-			}
-
-## 重启容器  [GET /container/restart/{containerId}]
+## 重启容器 - WebSocket [GET /container/restart/{containerId}]
 
 + Parameters
 
@@ -900,16 +865,7 @@
 	    	{
 			  "code": 0,
 			  "message": "成功",
-			  "data": 0
-			}
-
-	+ Schema
-
-            {
-				"code": "状态码",
-				"message": "状态消息",
-				"containerName": "容器名，字符串，必填",
-				"data": "容器状态"
+			  "data": "正在重启容器"
 			}
 
 ## 容器进程  [GET /container/top/{containerId}]
@@ -973,7 +929,7 @@
 			  }
 			}
 
-## 删除容器  [DELETE /container/remove/{containerId}]
+## 删除容器 - WebSocket [DELETE /container/delete/{containerId}]
 
 + Parameters
 
@@ -988,7 +944,7 @@
 
 	+ Schema
 
-            /container/remove/f0d99bf2945cf1021040a045405b61c2d6fc37e467bb56d61a29416184fedd4b
+            /container/delete/f0d99bf2945cf1021040a045405b61c2d6fc37e467bb56d61a29416184fedd4b
 
 
 + Response 200 (application/json)
@@ -998,7 +954,7 @@
 	    	{
 			  "code": 0,
 			  "message": "成功",
-			  "data": null
+			  "data": "正在删除容器"
 			}
 
 ## 调用终端  [POST /container/terminal]
@@ -1541,6 +1497,7 @@
 
 	+ Headers
 	
+			enctype: multipart/form-data
 			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
 
 	+ Body
@@ -1777,7 +1734,7 @@
 			  "data": null
 			}
 
-## 删除仓储（用户） [DELETE /repository/delete/{id}]
+## 删除仓储（管理员） [DELETE /repository/delete/{id}]
 
 + Parameters
 
@@ -2115,6 +2072,51 @@
 			  }
 			}
 
+## 上传文件 [POST /volumes/upload]
+
++ Request
+
+	+ Headers
+	
+			enctype: multipart/form-data
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Body
+
+	        {
+				"id": 22710dba2e16487795655e68e56be8e9,
+				"file": 文件
+			}
+
+	+ Schema
+
+            {
+				"id": "数据卷ID，字符串，必填",
+				"file": 要上传的文件
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			    "code": 0,
+			    "message": "成功",
+			    "data": {
+			        "times": 0,
+			        "success": 1,
+			        "error": 0
+			    }
+			}
+
+	+ Schema
+
+            {
+				"times": "耗时（秒）",
+				"success": "成功文件数",
+				"error": "失败文件数"
+			}
+
 ## 获取本地数据卷（管理员） [GET /volumes/list]
 
 + Request
@@ -2205,9 +2207,9 @@
     + id (string, optional) - 用户ID
     + username (string, optional) - 用户名
     + email (string, optional) - 邮箱
-    + hasFreeze (string, optional) - 冻结true；活跃：false
-    + startDate (string, optional) - 注册开始时间
-    + endDate (string, optional) - 注册截至时间
+    + hasFreeze (boolean, optional) - 冻结true；活跃：false
+    + startDate (date, optional) - 注册开始时间
+    + endDate (date, optional) - 注册截至时间
     + current (number, optional) - 页码，默认为1
     + size (number, optional) - 页面容量，默认为10
     + orderByField (string, optional) - 排序字段
@@ -2301,7 +2303,115 @@
 			  "data": "成功影响用户数"
 			}
 
+## 取消冻结用户（管理员） [POST /user/cancelFreeze]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Body
+
+	        {
+				"ids": 4151361367131,3241513613121
+			}
+
+	+ Schema
+
+            {
+				"ids": "用户数组，字符串，至少一个",
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": 2
+			}
+
+	+ Schema
+
+            {
+			  "code": "状态码",
+			  "message": "消息",
+			  "data": "成功影响用户数"
+			}
+
 # Group 监控管理
+
+# 系统日志（管理员） [GET /monitor/log{?userId,type,hasException,startDate,endDate,current,size,orderByField,asc}]
+
++ Parameters
+
+    + userId (string, optional) - 用户ID
+    + type (number, optional) - 日志类别
+    + hasException (boolean, optional) - 有异常true；无异常：false
+    + startDate (date, optional) - 记录开始时间
+    + endDate (date, optional) - 记录截至时间
+    + current (number, optional) - 页码，默认为1
+    + size (number, optional) - 页面容量，默认为10
+    + orderByField (string, optional) - 排序字段
+    + asc (boolean, optional) - 升序：true；降序：false
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "total": 1,
+			    "size": 10,
+			    "pages": 1,
+			    "current": 1,
+			    "records": [
+			      {
+			        "id": "2af6929e67fb48e289cc4f6dc02dbde8",
+			        "userId": "1231451941131",
+			        "type": 22,
+			        "description": "同步镜像",
+			        "action": "/image/sync",
+			        "method": "GET",
+			        "ip": "0:0:0:0:0:0:0:1",
+			        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:61.0) Gecko/20100101 Firefox/61.0",
+			        "param": null,
+			        "exception": null,
+			        "createDate": "2018-07-07 16:16:40",
+			        "username": "sys"
+			      }
+			    ]
+			  }
+			}
+
+	+ Schema
+
+            {
+				"id": "日志ID",
+		        "userId": "用户ID",
+		        "type": "日志类别",
+		        "description": "日志描述",
+		        "action": "操作URL",
+		        "method": "请求方式",
+		        "ip": "请求IP",
+		        "userAgent": "用户代理",
+		        "param": "请求参数",
+		        "exception": "异常信息",
+		        "createDate": "请求时间",
+		        "username": "用户名"
+			}
 
 ## 宿主机信息（管理员） [GET /monitor/host]
 
@@ -2352,7 +2462,7 @@
 			    "time": "数据获取时间"
 			}
 
-## 用户信息 [GET /monitor/info]
+## 自身信息 [GET /monitor/self/info]
 
 + Request
 
@@ -2393,6 +2503,42 @@
 			    "hubImageNum": "Hub镜像数目"
 			}
 
+## 用户信息（管理员） [GET /monitor/{userId}/info]
+
++ Parameters
+
+    + userId (string, required) - 用户ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Schema
+
+			/monitor/f4f4bb152cf54fec94eb0d2b22d25f71/info
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "lastLogin": "2018-07-11 09:35:16",
+			    "projectNum": 7,
+			    "containerNum": 1,
+			    "containerRunningNum": 0,
+			    "containerPauseNum": 0,
+			    "containerStopNum": 1,
+			    "uploadImageNum": 3,
+			    "hubImageNum": 0
+			  }
+			}
+
 ## 容器实时监控  [GET /monitor/container/actual/{containerId}]
 
 + Parameters
@@ -2427,7 +2573,7 @@
 			            "cpuUtilization": 0,
 			            "memoryUsage": 1.375,
 			            "memoryLimit": 974.566,
-			            "memoryLimitUtilization": 0.141,
+			            "memoryUtilization": 0.141,
 			            "blockRead": 14.063,
 			            "blockWrite": 0
 			        },
@@ -2440,7 +2586,7 @@
 			            "cpuUtilization": 0,
 			            "memoryUsage": 1.375,
 			            "memoryLimit": 974.566,
-			            "memoryLimitUtilization": 0.141,
+			            "memoryUtilization": 0.141,
 			            "blockRead": 14.063,
 			            "blockWrite": 0
 			        }
@@ -2458,7 +2604,7 @@
 				"cpuUtilization": "CPU利用率，百分比",
 				"memoryUsage": "内存使用量，Mb",
 				"memoryLimit": "内存限制，Mb",
-				"memoryLimitUtilization": "内存使用率，百分比",
+				"memoryUtilization": "内存使用率，百分比",
 				"blockRead": "本地读流量，MB",
 				"blockWrite": "本地写流量，MB"
 			}
@@ -2579,6 +2725,28 @@
 			}
 
 # Group 枚举管理
+
+## 角色列表 [GET /enums/role]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "1": "ROLE_USER",
+			    "2": "ROLE_SYSTEM"
+			  }
+			}
 
 ## 状态码列表 [GET /enums/result]
 
