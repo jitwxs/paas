@@ -1,9 +1,11 @@
 package jit.edu.paas.filter;
 
-import jit.edu.paas.commons.util.JwtUtils;
 import jit.edu.paas.commons.util.SpringBeanFactoryUtils;
 import jit.edu.paas.commons.util.jedis.JedisClient;
+import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.RoleEnum;
+import jit.edu.paas.domain.vo.ResultVO;
+import jit.edu.paas.service.JwtService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
@@ -41,17 +43,21 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         if (!disProtectedUrl(request)) {
-            UsernamePasswordAuthenticationToken authentication = getAuthentication(request);
+            Object obj = getAuthentication(request);
 
-            // 如果验证失败，设置异常；否则将UsernamePasswordAuthenticationToken注入到框架中
-            if (authentication == null) {
-                //手动设置异常
+            if(obj instanceof ResultVO) {
+                //如果属于ResultVO，表示有错误
+                request.setAttribute("ERR_TOKEN", obj);
+                // 转发到错误Url
+                request.getRequestDispatcher("/auth/error").forward(request, response);
+            } else if(obj instanceof UsernamePasswordAuthenticationToken) {
+                SecurityContextHolder.getContext().setAuthentication((UsernamePasswordAuthenticationToken)obj);
+                filterChain.doFilter(request, response);
+            } else {
+                // 如果验证失败，设置异常；否则将UsernamePasswordAuthenticationToken注入到框架中
                 request.getSession().setAttribute("SPRING_SECURITY_LAST_EXCEPTION", new AuthenticationCredentialsNotFoundException("权限认证失败"));
                 // 转发到错误Url
                 request.getRequestDispatcher("/auth/error").forward(request, response);
-            } else {
-                SecurityContextHolder.getContext().setAuthentication(authentication);
-                filterChain.doFilter(request, response);
             }
         } else {
             filterChain.doFilter(request, response);
@@ -62,39 +68,43 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
      * 验证token
      * @return 成功返回包含角色的UsernamePasswordAuthenticationToken；失败返回null
      */
-    private UsernamePasswordAuthenticationToken getAuthentication(HttpServletRequest request) {
+    private Object getAuthentication(HttpServletRequest request) {
         Collection<GrantedAuthority> authorities = new ArrayList<>();
         String token = request.getHeader("Authorization");
-
-        if (token != null) {
-            Map map = JwtUtils.unSign(token);
-            if (map == null) {
-                return null;
-            }
-
-            String uid = (String) map.get("uid");
-            Integer rid = (Integer) map.get("rid");
-            if (StringUtils.isNotBlank(uid) && rid != null) {
-                // 将用户id放入request中
-                request.setAttribute("uid", uid);
-
-                // 保存最后登录时间
-                try {
-                    JedisClient jedisClient = SpringBeanFactoryUtils.getBean(JedisClient.class);
-                    jedisClient.hset("last_login", uid, System.currentTimeMillis() + "");
-                } catch (Exception e) {
-                    log.error("缓存存储异常，错误位置：{}", "JwtAuthenticationFilter.UsernamePasswordAuthenticationToken()");
-                    e.printStackTrace();
-                }
-
-                // 设置角色
-                authorities.add(new SimpleGrantedAuthority(RoleEnum.getMessage(rid)));
-
-                // 这里直接注入角色，因为JWT已经验证了用户合法性，所以principal和credentials直接为null即可
-                return new UsernamePasswordAuthenticationToken(null, null, authorities);
-            }
+        if (token == null) {
             return null;
         }
+        JedisClient jedisClient = SpringBeanFactoryUtils.getBean(JedisClient.class);
+        JwtService jwtService = SpringBeanFactoryUtils.getBean(JwtService.class);
+        // 校验token
+        ResultVO resultVO = jwtService.checkToken(token);
+        if(ResultEnum.OK.getCode() != resultVO.getCode()){
+            return resultVO;
+        }
+
+        Map map = (Map) resultVO.getData();
+
+        String uid = (String) map.get("uid");
+        Integer rid = (Integer) map.get("rid");
+        if (StringUtils.isNotBlank(uid) && rid != null) {
+            // 将用户id放入request中
+            request.setAttribute("uid", uid);
+
+            // 保存最后登录时间
+            try {
+                jedisClient.hset("last_login", uid, System.currentTimeMillis() + "");
+            } catch (Exception e) {
+                log.error("缓存存储异常，错误位置：{}", "JwtAuthenticationFilter.UsernamePasswordAuthenticationToken()");
+                e.printStackTrace();
+            }
+
+            // 设置角色
+            authorities.add(new SimpleGrantedAuthority(RoleEnum.getMessage(rid)));
+
+            // 这里直接注入角色，因为JWT已经验证了用户合法性，所以principal和credentials直接为null即可
+            return new UsernamePasswordAuthenticationToken(null, null, authorities);
+        }
+
         return null;
     }
 

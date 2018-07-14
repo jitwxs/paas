@@ -25,9 +25,23 @@ public interface SysImageMapper extends BaseMapper<SysImage> {
     List<SysImage> listLocalPublicImage(Pagination page, @Param("name") String name);
 
     /**
+     * 获取本地公开用户镜像
+     * @author jitwxs
+     * @since 2018/6/28 16:19
+     */
+    List<SysImage> listLocalOpenUserImage(Pagination page, @Param("name") String name);
+
+    /**
      * 获取本地用户镜像
      * @author jitwxs
      * @since 2018/6/28 16:19
      */
     List<SysImage> listLocalUserImage(Pagination page, @Param("name") String name);
+
+    /**
+     * 获取当前用户所有镜像
+     * @author jitwxs
+     * @since 2018/7/12 14:35
+     */
+    List<SysImage> listSelfImage(@Param("userId") String userId, Pagination page);
 }

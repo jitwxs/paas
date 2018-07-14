@@ -26,8 +26,11 @@ public enum ProjectLogTypeEnum {
     DELETE_CONTAINER("删除容器", 32),
     DELETE_CONTAINER_ERROR("删除容器失败", 33),
     RESTART_CONTAINER("重启容器", 34),
-    RESTART_CONTAINER_ERROR("重启容器失败", 35);
-
+    RESTART_CONTAINER_ERROR("重启容器失败", 35),
+    DELETE_SERVICE("删除服务", 36),
+    DELETE_SERVICE_ERROR("删除服务失败", 37),
+    CREATE_SERVICE("新建服务", 38),
+    CREATE_SERVICE_ERROR("新建服务失败", 39);
     private String message;
     private int code;
 

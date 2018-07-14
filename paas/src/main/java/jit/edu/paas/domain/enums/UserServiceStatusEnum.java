@@ -1,27 +1,28 @@
 package jit.edu.paas.domain.enums;
 
+
 import lombok.Getter;
 
 /**
- * 仓储类型枚举
- * @author jitwxs
- * @since 2018/6/5 23:53
+ * 服务状态枚举
+ * @author hf
+ * @since 2018/7/13 09:15
  */
 @Getter
-public enum RepositoryTypeEnum {
-    DOCKER_CONTAINER("Docker容器", 1),
-    DOCKER_HUB("Docker HUB", 2);
+public enum UserServiceStatusEnum {
+    STOP("服务关闭", 0),
+    RUNNING("服务运行", 1);
 
     private String message;
     private int code;
 
-    RepositoryTypeEnum(String message, int code) {
+    UserServiceStatusEnum(String message, int code) {
         this.message = message;
         this.code = code;
     }
 
     public static String getMessage(int code) {
-        for (RepositoryTypeEnum enums : RepositoryTypeEnum.values()) {
+        for (UserServiceStatusEnum enums : UserServiceStatusEnum.values()) {
             if (enums.getCode() == code) {
                 return enums.message;
             }

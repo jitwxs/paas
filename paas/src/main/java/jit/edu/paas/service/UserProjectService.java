@@ -2,7 +2,9 @@ package jit.edu.paas.service;
 
 import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.IService;
+import jit.edu.paas.domain.dto.UserProjectDTO;
 import jit.edu.paas.domain.entity.UserProject;
+import jit.edu.paas.domain.select.UserProjectSelect;
 import jit.edu.paas.domain.vo.ProjectLogVO;
 import jit.edu.paas.domain.vo.ResultVO;
 
@@ -23,12 +25,26 @@ public interface UserProjectService extends IService<UserProject> {
     String getProjectName(String projectId);
 
     /**
+     * 获取用户ID
+     * @author jitwxs
+     * @since 2018/7/11 18:39
+     */
+    String getUserId(String projectId);
+
+    /**
      * 根据ID获取项目信息
      * @param userId 用户ID
      * @author jitwxs
      * @since 2018/6/29 18:29
      */
     ResultVO getProjectById(String id, String userId);
+
+    /**
+     * 获取项目列表
+     * @author jitwxs
+     * @since 2018/7/11 18:40
+     */
+    Page<UserProjectDTO> list(UserProjectSelect projectSelect, Page<UserProjectDTO> page);
 
     /**
      * 清理缓存
@@ -51,6 +67,11 @@ public interface UserProjectService extends IService<UserProject> {
      */
     ResultVO deleteProject(String id, String userId);
 
+    /**
+     * 更新项目
+     * @author jitwxs
+     * @since 2018/7/11 18:40
+     */
     ResultVO updateProject(String userId, String id, String name, String description);
 
     /**
@@ -59,8 +80,6 @@ public interface UserProjectService extends IService<UserProject> {
      * @since 2018/7/1 15:34
      */
     Boolean hasBelong(String projectId, String userId);
-
-    String getUserId(String projectId);
 
     /**
      * 获取某个项目日志

@@ -11,6 +11,7 @@ import jit.edu.paas.commons.util.*;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.entity.RepositoryImage;
 import jit.edu.paas.domain.entity.SysImage;
+import jit.edu.paas.domain.entity.UserContainer;
 import jit.edu.paas.domain.entity.UserProject;
 import jit.edu.paas.domain.enums.ContainerStatusEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
@@ -23,6 +24,7 @@ import jit.edu.paas.mapper.UserContainerMapper;
 import jit.edu.paas.mapper.UserProjectMapper;
 import jit.edu.paas.service.MonitorService;
 import jit.edu.paas.service.SysImageService;
+import jit.edu.paas.service.UserContainerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,6 +33,7 @@ import org.springframework.stereotype.Service;
 import java.util.Date;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author jitwxs
@@ -43,6 +46,8 @@ public class MonitorServiceImpl implements MonitorService {
     private UserProjectMapper userProjectMapper;
     @Autowired
     private UserContainerMapper containerMapper;
+    @Autowired
+    private UserContainerService containerService;
     @Autowired
     private SysImageService sysImageService;
     @Autowired
@@ -60,6 +65,11 @@ public class MonitorServiceImpl implements MonitorService {
     @Value("${redis.monitor-week.prefix}")
     private String WEEK_PREFIX;
 
+    /**
+     * 如果某个容器多次无法获取信息，就有可能状态发生改变，需要检测状态
+     */
+    private Map<String, Integer> map = new ConcurrentHashMap<>();
+
     @Override
     public ContainerMonitorVO getCurrentInfo(String containerId) {
         ContainerStats stats;
@@ -71,6 +81,17 @@ public class MonitorServiceImpl implements MonitorService {
         } catch (Exception e) {
             log.error("获取实时监控数据异常，错误位置：{}，容器ID：{}",
                     "MonitorServiceImpl.getCurrentInfo", containerId);
+
+            if(map.containsKey(containerId)) {
+                Integer times = map.get(containerId);
+                if(times > 3) {
+                    containerService.changeStatus(containerId);
+                    times -= 3;
+                }
+                map.put(containerId, times + 1);
+            } else {
+                map.put(containerId, 1);
+            }
             return null;
         }
 

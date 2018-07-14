@@ -9,6 +9,41 @@
             `user_project` AS p
         WHERE
             p.id = #{projectId}
-            AND p.user_id = #{userId}
+        AND
+            p.user_id = #{userId}
+    </select>
+    <select id="getById" resultType="jit.edu.paas.domain.dto.UserProjectDTO">
+        SELECT
+            `project`.*,
+            `sys_login`.username
+        FROM
+            `user_project` AS `project`,
+            `sys_login`
+        WHERE
+            `project`.user_id = `sys_login`.id
+        AND
+            `project`.id = #{id}
+    </select>
+    <select id="list" resultType="jit.edu.paas.domain.dto.UserProjectDTO">
+        SELECT
+            `project`.*,
+            `sys_login`.username
+        FROM
+            `user_project` AS `project`,
+            `sys_login`
+        WHERE
+            `project`.user_id = `sys_login`.id
+        <if test="projectSelect.name != null" >
+            AND `project`.name like "%"#{projectSelect.name}"%"
+        </if>
+        <if test="projectSelect.userId != null" >
+            AND `project`.user_id = #{projectSelect.userId}
+        </if>
+        <if test="projectSelect.username != null" >
+            AND `sys_login`.username like "%"#{projectSelect.username}"%"
+        </if>
+        <if test="projectSelect.startDate != null and projectSelect.endDate != null" >
+            AND `project`.create_date between #{projectSelect.startDate} and #{projectSelect.endDate}
+        </if>
     </select>
 </mapper>

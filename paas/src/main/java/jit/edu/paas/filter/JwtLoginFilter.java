@@ -3,6 +3,7 @@ package jit.edu.paas.filter;
 import jit.edu.paas.commons.util.JsonUtils;
 import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.commons.util.SpringBeanFactoryUtils;
+import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.domain.entity.SysLogin;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.vo.UserVO;
@@ -45,6 +46,11 @@ public class JwtLoginFilter extends UsernamePasswordAuthenticationFilter {
     public Authentication attemptAuthentication(HttpServletRequest req, HttpServletResponse res) throws AuthenticationException {
         String username = req.getParameter("username");
         String password = req.getParameter("password");
+
+        if(StringUtils.isBlank(username, password)) {
+            return null;
+        }
+
         try {
             // 将用户信息放入authenticationManager
             password = getEncryPassword(username, password);

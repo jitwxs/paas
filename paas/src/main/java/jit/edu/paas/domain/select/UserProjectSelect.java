@@ -12,27 +12,23 @@ import java.util.Date;
 @Data
 public class UserProjectSelect {
     /**
-     * 名称
-     * @author jitwxs
-     * @since 2018/6/29 15:06
+     * 名称【模糊】
      */
     private String name;
     /**
      * 用户ID
-     * @author jitwxs
-     * @since 2018/6/29 15:06
      */
     private String userId;
     /**
+     * 用户名【模糊】
+     */
+    private String username;
+    /**
      * 起始时间【创建时间】
-     * @author jitwxs
-     * @since 2018/6/29 15:06
      */
     private Date startDate;
     /**
      * 截至时间【创建时间】
-     * @author jitwxs
-     * @since 2018/6/29 15:07
      */
     private Date endDate;
 }

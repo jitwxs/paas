@@ -23,33 +23,33 @@ public class DataSyncSchedule {
 
     /**
      * 同步容器状态
-     * 每30分钟执行一次
+     * 启动后延迟1s执行，每15分钟执行一次
      * @author jitwxs
      * @since 2018/7/9 11:08
      */
-    @Scheduled(cron = "0 0/30 * * * ?")
+    @Scheduled(initialDelay=1000, fixedRate=900_000)
     public void syncContainerStatus() {
         containerService.syncStatus(null);
     }
 
     /**
      * 同步系统镜像
-     * 每30分钟执行一次
+     * 启动后延迟1s执行，每15分钟执行一次
      * @author jitwxs
      * @since 2018/7/9 11:08
      */
-    @Scheduled(cron = "0 0/30 * * * ?")
+    @Scheduled(initialDelay=1000, fixedRate=900_000)
     public void syncSystemImage() {
         sysImageService.sync();
     }
 
     /**
      * 同步Hub镜像
-     * 每30分钟执行一次
+     * 启动后延迟1s执行，每15分钟执行一次
      * @author jitwxs
      * @since 2018/7/9 11:08
      */
-    @Scheduled(cron = "0 0/30 * * * ?")
+    @Scheduled(initialDelay=1000, fixedRate=900_000)
     public void syncHubImage() {
         repositoryImageService.sync();
     }

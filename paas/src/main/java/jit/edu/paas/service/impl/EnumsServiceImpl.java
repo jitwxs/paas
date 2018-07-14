@@ -53,18 +53,18 @@ public class EnumsServiceImpl implements EnumsService {
     }
 
     @Override
-    public Map<Integer, String> listRepositoryType() {
+    public Map<Integer, String> listImageType() {
         Map<Integer, String> map = new TreeMap<>(Integer::compareTo);
-        for (RepositoryTypeEnum s : RepositoryTypeEnum.values()) {
+        for (ImageTypeEnum s : ImageTypeEnum.values()) {
             map.put(s.getCode(), s.getMessage());
         }
         return map;
     }
 
     @Override
-    public Map<Integer, String> listImageType() {
+    public Map<Integer, String> listWebSocketType() {
         Map<Integer, String> map = new TreeMap<>(Integer::compareTo);
-        for (ImageTypeEnum s : ImageTypeEnum.values()) {
+        for (WebSocketTypeEnum s : WebSocketTypeEnum.values()) {
             map.put(s.getCode(), s.getMessage());
         }
         return map;

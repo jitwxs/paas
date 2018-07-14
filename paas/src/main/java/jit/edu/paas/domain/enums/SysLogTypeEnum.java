@@ -23,8 +23,13 @@ public enum SysLogTypeEnum {
     PULL_IMAGE_FROM_HUB("拉取镜像从Hub", 41),
     DELETE_IMAGE_FROM_HUB("删除Hub上镜像", 42),
     CLEAN_VOLUMES("清理数据卷", 50),
-    FREEZE_USER("冻结用户", 60),
-    CANCEL_FREEZE_USER("取消冻结用户", 61);
+    CREATE_PUBLIC_NETWORK("创建公共网络", 60),
+    CREATE_PUBLIC_NETWORK_ERROR("创建公共网络失败", 61),
+    DELETE_NETWORK_ERROR("删除网络失败", 62),
+    FREEZE_USER("冻结用户", 80),
+    CANCEL_FREEZE_USER("取消冻结用户", 81),
+    DELETE_SERVICE("删除服务", 90),
+    CREATE_SERVICE("创建服务",91);
 
     private String message;
     private int code;

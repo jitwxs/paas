@@ -8,6 +8,7 @@ import jit.edu.paas.domain.enums.ContainerOpEnum;
 import jit.edu.paas.domain.enums.ContainerStatusEnum;
 import jit.edu.paas.domain.vo.ResultVO;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 
@@ -28,6 +29,12 @@ public interface UserContainerService extends IService<UserContainer> {
      */
     UserContainerDTO getById(String id);
 
+    /**
+     * 获取容器名
+     * @author jitwxs
+     * @since 2018/7/13 14:09
+     */
+    String getName(String id);
     /**
      * 是否允许容器操作
      * @param userId 用户ID
@@ -51,7 +58,7 @@ public interface UserContainerService extends IService<UserContainer> {
      * @since 2018/7/1 16:00
      */
     void createContainerTask(String userId, String imageId, String[] cmd, Map<String, Integer> portMap,
-                             String containerName, String projectId, String[] env, String[] destination);
+                             String containerName, String projectId, String[] env, String[] destination, HttpServletRequest request);
 
     /**
      * 开启容器任务
@@ -79,7 +86,7 @@ public interface UserContainerService extends IService<UserContainer> {
      * @author hf
      * @since 2018/7/1 16:06
      */
-    void removeContainerTask(String userId, String containerId);
+    void removeContainerTask(String userId, String containerId, HttpServletRequest request);
 
     /**
      * 暂停容器
@@ -127,10 +134,11 @@ public interface UserContainerService extends IService<UserContainer> {
 
     /**
      * 获取用户所有镜像
+     * @param name 容器名
      * @author jitwxs
      * @since 2018/6/28 16:15
      */
-    Page<UserContainerDTO> listContainerByUserId(String userId, Page<UserContainer> page);
+    Page<UserContainerDTO> listContainerByUserId(String userId, String name, Page<UserContainer> page);
 
     /**
      * 根据状态获取容器列表
@@ -153,4 +161,11 @@ public interface UserContainerService extends IService<UserContainer> {
      * @since 2018/7/1 16:48
      */
     ResultVO changeStatus(String containerId);
+
+    /**
+     * 修改容器所属项目
+     * @author jitwxs
+     * @since 2018/7/14 8:36
+     */
+    ResultVO changeBelongProject(String containerId, String projectId, String uid);
 }

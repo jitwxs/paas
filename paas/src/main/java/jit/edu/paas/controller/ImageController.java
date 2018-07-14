@@ -6,13 +6,19 @@ import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.domain.entity.SysImage;
 import jit.edu.paas.domain.enums.ImageTypeEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
+import jit.edu.paas.domain.enums.RoleEnum;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.service.SysImageService;
+import jit.edu.paas.service.SysLoginService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Enumeration;
+import java.util.Iterator;
 
 /**
  * 镜像Controller
@@ -24,6 +30,8 @@ import javax.servlet.http.HttpServletRequest;
 @RequestMapping("/image")
 public class ImageController {
     @Autowired
+    private SysLoginService loginService;
+    @Autowired
     private SysImageService imageService;
 
     /**
@@ -34,18 +42,25 @@ public class ImageController {
      */
     @GetMapping("/list/local")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO searchLocalImage(String name, Integer type, Page<SysImage> page) {
+    public ResultVO searchLocalImage(@RequestAttribute String uid,  String name, Integer type, Page<SysImage> page) {
         // 判断参数
         if(type == null) {
             return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
 
+        String roleName = loginService.getRoleName(uid);
+
         if (type == ImageTypeEnum.LOCAL_PUBLIC_IMAGE.getCode()) {
             // 本地公共镜像
             return ResultVOUtils.success(imageService.listLocalPublicImage(name, page));
         } else if (type == ImageTypeEnum.LOCAL_USER_IMAGE.getCode()) {
-            // 用户镜像
-            return ResultVOUtils.success(imageService.listLocalUserImage(name, page));
+            // 系统管理员查看所有本地用户镜像，普通用户只能查看公开的本地用户镜像
+            if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
+                return ResultVOUtils.success(imageService.listLocalUserImage(name, true, page));
+            } else {
+                return ResultVOUtils.success(imageService.listLocalUserImage(name, false, page));
+            }
+
         } else {
             return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
@@ -63,6 +78,17 @@ public class ImageController {
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVO searchHubImage(String name, @RequestParam(required = false, defaultValue = "10") int limit) {
         return imageService.listHubImage(name, limit);
+    }
+
+    /**
+     * 查看个人上传的所有镜像
+     * @author jitwxs
+     * @since 2018/7/12 14:24
+     */
+    @GetMapping("/self")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVO selfImage(@RequestAttribute String uid,  Page<SysImage> page) {
+        return ResultVOUtils.success(imageService.selfImage(uid, page));
     }
 
     /**
@@ -91,45 +117,50 @@ public class ImageController {
 
     /**
      * 删除镜像
+     * 普通用户只能删除自己上传的镜像
      * @param id 镜像ID
      * @author hf
      * @since 2018/6/30 10:26
      */
     @DeleteMapping("/delete/{id}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO deleteImage(@RequestAttribute String uid, @PathVariable String id) {
-        return imageService.removeImage(id, uid);
+    public ResultVO deleteImage(@RequestAttribute String uid, @PathVariable String id, HttpServletRequest request) {
+        return imageService.removeImage(id, uid, request);
     }
 
     /**
-     * 从DockHub拉取镜像到本地
+     * 从DockHub拉取镜像到本地【WebSocket】
      * @author hf
      * @since 2018/6/30 10:26
      */
-    @PostMapping("/pull/hub")
+    @PostMapping("/pull")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO pullImage(String imageName) {
+    public ResultVO pullImage(@RequestAttribute String uid, String imageName, HttpServletRequest request) {
         if(StringUtils.isBlank(imageName)) {
             return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
-        return imageService.pullImageFromHub(imageName);
+
+        imageService.pullImageTask(imageName, uid, request);
+        return ResultVOUtils.success("开始拉取镜像");
     }
 
 
     /**
-     * push镜像到dockHub
+     * push镜像到DockHub【WebSocket】
      * 上传后的格式为 docker账户名 + name
      * 例如Jitwxs用户的rancher/agent --> Jitwxs/agent
      * @author hf
      * @since 2018/6/30 10:26
      */
-    @PostMapping("/push/hub")
+    @PostMapping("/push")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO pushImage(String imageId, String username, String password) {
+    public ResultVO pushImage(@RequestAttribute String uid, String imageId, String username, String password, HttpServletRequest request) {
         if(StringUtils.isBlank(imageId, username, password)) {
             return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
-        return imageService.pushImage(imageId, username, password);
+
+        imageService.pushImageTask(imageId, username, password, uid, request);
+        return ResultVOUtils.success("开始上传镜像");
     }
 
     /**
@@ -180,7 +211,7 @@ public class ImageController {
     }
 
     /**
-     * 导入镜像
+     * 导入镜像【WebSocket】
      * @param request 包含name、tag和单个文件
      * @author hf
      * @since 2018/7/1 20:48
@@ -188,7 +219,47 @@ public class ImageController {
     @PostMapping("/import")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVO importImage(@RequestAttribute String uid, HttpServletRequest request) {
-        return imageService.importImage(uid, request);
+        StandardMultipartHttpServletRequest req;
+        try {
+            req = (StandardMultipartHttpServletRequest) request;
+        } catch (Exception e) {
+            return ResultVOUtils.error(ResultEnum.UPLOAD_TYPE_ERROR);
+        }
+
+        // 遍历普通参数，取出镜像名和tag（默认latest）
+        String imageName = "", tag = "latest";
+        boolean flag = false;
+        Enumeration<String> names = req.getParameterNames();
+        while (names.hasMoreElements()) {
+            String key = names.nextElement();
+            String val = req.getParameter(key);
+            if("name".equals(key)) {
+                flag = true;
+                imageName = val;
+            }
+            if("tag".equals(key)) {
+                tag = val;
+            }
+        }
+        // 遍历文件参数
+        Iterator<String> iterator = req.getFileNames();
+        if(!flag || !iterator.hasNext()) {
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
+        }
+
+        // 拼接完整名：repo/userId/imageName:tag
+        String fullName = "local/" + uid + "/" + imageName + ":" + tag;
+        // 判断镜像是否存在
+        if(imageService.getByFullName(fullName) != null) {
+            return ResultVOUtils.error(ResultEnum.IMPORT_ERROR_BY_NAME);
+        }
+
+        // 取出文件，只取一个
+        MultipartFile file = req.getFile(iterator.next());
+
+        imageService.importImageTask(file, fullName, uid, request);
+
+        return ResultVOUtils.success("开始导入镜像");
     }
 
     /**
@@ -201,21 +272,4 @@ public class ImageController {
     public ResultVO listExportPort(@RequestAttribute String uid, @PathVariable String id) {
         return imageService.listExportPorts(id, uid);
     }
-
-//    /**
-//     * 由dockerfile建立镜像 有错未解决 未成功
-//     * @param request 包含压缩的Dockerfile文件（*.tar.gz）、name和tag
-//     * 报错：HTTP/1.1 500 Internal Server Error {"message":"unexpected EOF"}
-//     *  出错大概原因：运行new file()时未保留文件中的回车符和换行符。。。。
-//     * 注：访问docker的/build接口时 文件必须为tar stream
-//     * 命令行成功过的示例：curl -v -X POST -H "Content-Type:application/tar" --data-binary '@Dockerfile.tar.gz' http://localhost:2375/build?t=23sb23
-//     * 如果是@file_name,则保留文件中的回车符和换行符，不做任何转换
-//     * @author hf
-//     * @since 2018/7/1 20:48
-//     */
-//    @PostMapping("/build")
-//    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-//    public ResultVO buildImage(@RequestAttribute String uid, HttpServletRequest request) {
-//        return imageService.buildImage(uid, request);
-//    }
 }

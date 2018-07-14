@@ -36,18 +36,18 @@ public interface EnumsService {
     Map<Integer, String> listProjectLogType();
 
     /**
-     * 仓储类型列表
-     * @author jitwxs
-     * @since 2018/6/30 15:56
-     */
-    Map<Integer, String> listRepositoryType();
-
-    /**
      * 镜像类型列表
      * @author jitwxs
      * @since 2018/6/30 15:56
      */
     Map<Integer, String > listImageType();
+
+    /**
+     * WebSocket消息类型列表
+     * @author jitwxs
+     * @since 2018/6/30 15:56
+     */
+    Map<Integer, String > listWebSocketType();
 
     /**
      * 容器状态列表

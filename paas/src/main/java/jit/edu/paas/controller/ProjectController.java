@@ -1,10 +1,8 @@
 package jit.edu.paas.controller;
 
-import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.plugins.Page;
-import jit.edu.paas.commons.component.WrapperComponent;
 import jit.edu.paas.commons.util.ResultVOUtils;
-import jit.edu.paas.domain.entity.UserProject;
+import jit.edu.paas.domain.dto.UserProjectDTO;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.RoleEnum;
 import jit.edu.paas.domain.select.UserProjectSelect;
@@ -28,8 +26,6 @@ public class ProjectController {
     private SysLoginService loginService;
     @Autowired
     private UserProjectService projectService;
-    @Autowired
-    private WrapperComponent wrapperComponent;
 
     /**
      * 所有项目列表
@@ -38,12 +34,10 @@ public class ProjectController {
      */
     @GetMapping("/list")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVO listProject(UserProjectSelect projectSelect, Page<UserProject> page) {
-        // 1、生成筛选条件
-        EntityWrapper<UserProject> wrapper = wrapperComponent.genUserProjectWrapper(projectSelect);
-        // 2、分页查询
-        Page<UserProject> selectPage = projectService.selectPage(page, wrapper);
-        // 3、返回前台
+    public ResultVO listProject(UserProjectSelect projectSelect,
+                                @RequestParam(defaultValue = "1") Integer current,
+                                @RequestParam(defaultValue = "10") Integer size) {
+        Page<UserProjectDTO> selectPage = projectService.list(projectSelect, new Page<>(current, size));
         return ResultVOUtils.success(selectPage);
     }
 
@@ -54,14 +48,15 @@ public class ProjectController {
      */
     @GetMapping("/self/list")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResultVO listSelfProject(@RequestAttribute String uid, UserProjectSelect projectSelect, Page<UserProject> page) {
-        // 1、设置筛选条件uid为当前用户
+    public ResultVO listSelfProject(@RequestAttribute String uid, UserProjectSelect projectSelect,
+                                @RequestParam(defaultValue = "1") Integer current,
+                                @RequestParam(defaultValue = "10") Integer size) {
+        // 设置筛选条件userId为当前用户
         projectSelect.setUserId(uid);
-        // 2、生成筛选条件
-        EntityWrapper<UserProject> wrapper = wrapperComponent.genUserProjectWrapper(projectSelect);
-        // 3、分页查询
-        Page<UserProject> selectPage = projectService.selectPage(page, wrapper);
-        // 4、返回前台
+        // 设置筛选条件username为null
+        projectSelect.setUsername(null);
+
+        Page<UserProjectDTO> selectPage = projectService.list(projectSelect, new Page<>(current, size));
         return ResultVOUtils.success(selectPage);
     }
 

@@ -65,14 +65,14 @@ public class EnumsController {
     }
 
     /**
-     * 获取所有仓储类型
+     * 获取WebSocket消息类型
      * @author jitwxs
      * @since 2018/6/30 14:46
      */
-    @GetMapping("/repository")
+    @GetMapping("/webSocket")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO listRepositoryType() {
-        return ResultVOUtils.success(enumsService.listRepositoryType());
+    public ResultVO listWebSocketType() {
+        return ResultVOUtils.success(enumsService.listWebSocketType());
     }
 
     /**

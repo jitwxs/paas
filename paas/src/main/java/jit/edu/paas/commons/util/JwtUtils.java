@@ -66,7 +66,7 @@ public class JwtUtils {
     }
 
     /**
-     * 验证JWT token并返回数据。当验证失败时，抛出异常
+     * 验证JWT token并返回数据。当验证失败时，返回NULL
      * @author jitwxs
      * @since 2018/5/3 23:20
      */

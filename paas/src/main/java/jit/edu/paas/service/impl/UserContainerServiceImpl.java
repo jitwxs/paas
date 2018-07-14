@@ -5,15 +5,18 @@ import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import com.google.common.collect.ImmutableList;
 import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.exceptions.ContainerNotFoundException;
 import com.spotify.docker.client.messages.*;
 import jit.edu.paas.commons.activemq.MQProducer;
 import jit.edu.paas.commons.activemq.Task;
 import jit.edu.paas.commons.convert.UserContainerDTOConvert;
 import jit.edu.paas.commons.util.*;
+import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.dto.UserContainerDTO;
 import jit.edu.paas.domain.entity.SysImage;
 import jit.edu.paas.domain.entity.SysVolume;
 import jit.edu.paas.domain.entity.UserContainer;
+import jit.edu.paas.domain.entity.UserProject;
 import jit.edu.paas.domain.enums.*;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.exception.CustomException;
@@ -25,6 +28,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
@@ -71,11 +75,14 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
     private MQProducer mqProducer;
     @Autowired
     private DockerClient dockerClient;
+    @Autowired
+    private JedisClient jedisClient;
 
     @Autowired
     private UserContainerDTOConvert dtoConvert;
-    @Autowired
-    private HttpServletRequest request;
+
+    @Value("${redis.container-name.key}")
+    private String key;
 
     /**
      * 启动状态允许的操作
@@ -99,6 +106,31 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
     }
 
     @Override
+    public String getName(String id) {
+        try {
+            String name = jedisClient.hget(key, id);
+            if(StringUtils.isNotBlank(name)) {
+                return name;
+            }
+        } catch (Exception e) {
+            log.error("缓存读取异常，异常位置：{}", "UserContainerServiceImpl.getName()");
+        }
+
+        String name = getById(id).getName();
+        if(StringUtils.isBlank(name)) {
+            return name;
+        }
+
+        try {
+            jedisClient.hset(key,id,name);
+        } catch (Exception e) {
+            log.error("缓存存储异常，异常位置：{}", "UserContainerServiceImpl.getName()");
+        }
+
+        return name;
+    }
+
+    @Override
     public ResultVO hasAllowOp(String userId, String containerId, ContainerOpEnum containerOpEnum) {
         // 1、鉴权
         ResultVO resultVO = checkPermission(userId, containerId);
@@ -119,28 +151,6 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             return allowOpByStop.contains(containerOpEnum) ? ResultVOUtils.success() : ResultVOUtils.error(ResultEnum.CONTAINER_ALREADY_STOP);
         } else {
             return ResultVOUtils.error(ResultEnum.CONTAINER_STATUS_ERROR);
-        }
-    }
-
-    @Override
-    public void createContainerTask(String userId, String imageId, String[] cmd, Map<String, Integer> portMap,
-                                    String containerName, String projectId, String[] env, String[] destination) {
-        try {
-            // 执行任务
-            Future<ResultVO> future = createContainer(imageId, cmd, portMap, containerName, projectId, env, destination);
-            // 获取执行结果，不超过10s
-            ResultVO resultVO = future.get(10, TimeUnit.SECONDS);
-
-            if(resultVO == null) {
-                sendMQ(userId, null, ResultVOUtils.error(ResultEnum.REQUEST_TIMEOUT));
-            } else {
-                String containerId = (String)resultVO.getData();
-                sendMQ(userId, containerId, resultVO);
-            }
-        } catch (Exception e) {
-            log.error("执行创建容器异步任务出现错误，错误位置：{}，错误栈：{}",
-                    "UserContainerServiceImpl.createContainerTask()", HttpClientUtils.getStackTraceAsString(e));
-            sendMQ(userId, null, ResultVOUtils.error(ResultEnum.REQUEST_ERROR));
         }
     }
 
@@ -176,9 +186,10 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
     }
 
     @Async("taskExecutor")
-    @Transactional(rollbackFor = Exception.class)
-    public Future<ResultVO> createContainer(String imageId, String[] cmd, Map<String,Integer> portMap,
-                                            String containerName, String projectId, String[] env, String[] destination) {
+    @Transactional(rollbackFor = CustomException.class)
+    @Override
+    public void createContainerTask(String userId, String imageId, String[] cmd, Map<String, Integer> portMap,
+                                    String containerName, String projectId, String[] env, String[] destination, HttpServletRequest request) {
         SysImage image = imageService.getById(imageId);
         UserContainer uc = new UserContainer();
         HostConfig hostConfig;
@@ -264,16 +275,16 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             sysLogService.saveLog(request, SysLogTypeEnum.CREATE_CONTAINER);
             projectLogService.saveSuccessLog(projectId,uc.getId(),ProjectLogTypeEnum.CREATE_CONTAINER);
 
-            return new AsyncResult<>(ResultVOUtils.success(creation.id()));
+            sendMQ(userId, null, ResultVOUtils.successWithMsg("容器"+containerName+"创建成功"));
         } catch (Exception e) {
             log.error("创建容器出现异常，异常位置：{}，错误栈：{}",
-                    "UserContainerServiceImpl.createContainer()", HttpClientUtils.getStackTraceAsString(e));
+                    "UserContainerServiceImpl.createContainerTask()", HttpClientUtils.getStackTraceAsString(e));
 
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.CREATE_CONTAINER, e);
             projectLogService.saveErrorLog(projectId,uc.getId(),ProjectLogTypeEnum.CREATE_CONTAINER_ERROR,ResultEnum.DOCKER_EXCEPTION);
 
-            return new AsyncResult<>(ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
+            sendMQ(userId, null, ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
         }
     }
 
@@ -282,34 +293,10 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
      * @author jitwxs
      * @since 2018/7/9 22:04
      */
+    @Async("taskExecutor")
+    @Transactional(rollbackFor = CustomException.class)
     @Override
     public void startContainerTask(String userId, String containerId) {
-        try {
-            // 执行任务
-            Future<ResultVO> future = startContainer(containerId);
-            // 获取执行结果，不超过10s
-            ResultVO resultVO = future.get(10, TimeUnit.SECONDS);
-
-            if(resultVO == null) {
-                sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.REQUEST_TIMEOUT));
-            } else {
-                sendMQ(userId, containerId, resultVO);
-            }
-        } catch (Exception e) {
-            log.error("执行启动容器异步任务出现错误，错误位置：{}，错误栈：{}",
-                    "UserContainerServiceImpl.startContainerTask()", HttpClientUtils.getStackTraceAsString(e));
-            sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.REQUEST_ERROR));
-        }
-    }
-
-    /**
-     * 开启容器
-     * @author jitwxs
-     * @since 2018/7/9 22:05
-     */
-    @Async("taskExecutor")
-    @Transactional(rollbackFor = Exception.class)
-    public Future<ResultVO> startContainer(String containerId) {
         try {
             dockerClient.startContainer(containerId);
             changeStatus(containerId);
@@ -318,41 +305,22 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             projectLogService.saveSuccessLog(getProjectId(containerId),containerId,ProjectLogTypeEnum.START_CONTAINER);
 
             // 发送成功消息
-            return new AsyncResult<>(ResultVOUtils.success());
+            sendMQ(userId, containerId, ResultVOUtils.successWithMsg("容器"+getName(containerId)+"启动成功"));
         } catch (Exception e) {
             log.error("开启容器出现异常，异常位置：{}，错误栈：{}",
-                    "UserContainerServiceImpl.startContainer()",HttpClientUtils.getStackTraceAsString(e));
+                    "UserContainerServiceImpl.startContainerTask()",HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             projectLogService.saveErrorLog(getProjectId(containerId),containerId,ProjectLogTypeEnum.START_CONTAINER_ERROR,ResultEnum.DOCKER_EXCEPTION);
 
             // 发送异常消息
-            return new AsyncResult<>(ResultVOUtils.error(ResultEnum.CONTAINER_START_ERROR));
-        }
-    }
-
-    @Override
-    public void stopContainerTask(String userId, String containerId) {
-        try {
-            // 执行任务
-            Future<ResultVO> future = stopContainer(containerId);
-            // 获取执行结果，不超过10s
-            ResultVO resultVO = future.get(10, TimeUnit.SECONDS);
-
-            if(resultVO == null) {
-                sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.REQUEST_TIMEOUT));
-            } else {
-                sendMQ(userId, containerId, resultVO);
-            }
-        } catch (Exception e) {
-            log.error("执行停止容器异步任务出现错误，错误位置：{}，错误栈：{}",
-                    "UserContainerServiceImpl.stopContainerTask()", HttpClientUtils.getStackTraceAsString(e));
-            sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.REQUEST_ERROR));
+            sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.CONTAINER_START_ERROR));
         }
     }
 
     @Async("taskExecutor")
-    @Transactional(rollbackFor = Exception.class)
-    public Future<ResultVO> stopContainer(String containerId) {
+    @Transactional(rollbackFor = CustomException.class)
+    @Override
+    public void stopContainerTask(String userId, String containerId) {
         try {
             dockerClient.stopContainer(containerId, 5);
             changeStatus(containerId);
@@ -360,121 +328,67 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             projectLogService.saveSuccessLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.STOP_CONTAINER);
 
             // 发送成功消息
-            return new AsyncResult<>(ResultVOUtils.success());
+            sendMQ(userId, containerId, ResultVOUtils.successWithMsg("容器" + getName(containerId) + "关闭成功"));
         } catch (Exception e) {
-            log.error("停止容器出现异常，异常位置：{}，错误栈：{}","UserContainerServiceImpl.stopContainer()",HttpClientUtils.getStackTraceAsString(e));
+            log.error("停止容器出现异常，异常位置：{}，错误栈：{}","UserContainerServiceImpl.stopContainerTask()",HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             projectLogService.saveErrorLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.STOP_CONTAINER_ERROR,ResultEnum.DOCKER_EXCEPTION);
             // 发送异常消息
-            return new AsyncResult<>(ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
-        }
-    }
-
-    @Override
-    public void killContainerTask(String userId, String containerId) {
-        try {
-            // 执行任务
-            Future<ResultVO> future = killContainer(containerId);
-            // 获取执行结果，不超过10s
-            ResultVO resultVO = future.get(10, TimeUnit.SECONDS);
-
-            if(resultVO == null) {
-                sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.REQUEST_TIMEOUT));
-            } else {
-                sendMQ(userId, containerId, resultVO);
-            }
-        } catch (Exception e) {
-            log.error("执行强制停止容器异步任务出现错误，错误位置：{}，错误栈：{}",
-                    "UserContainerServiceImpl.killContainerTask()", HttpClientUtils.getStackTraceAsString(e));
-            sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.REQUEST_ERROR));
+            sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
         }
     }
 
     @Async("taskExecutor")
-    @Transactional(rollbackFor = Exception.class)
-    public Future<ResultVO> killContainer(String containerId) {
+    @Transactional(rollbackFor = CustomException.class)
+    @Override
+    public void killContainerTask(String userId, String containerId) {
         try {
             dockerClient.killContainer(containerId);
             changeStatus(containerId);
             // 写入日志
             projectLogService.saveSuccessLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.KILL_CONTAINER);
             // 发送成功消息
-            return new AsyncResult<>(ResultVOUtils.success());
+            sendMQ(userId, containerId, ResultVOUtils.successWithMsg("容器" + getName(containerId) + "强制关闭成功"));
         } catch (Exception e) {
-            log.error("强制停止容器出现异常，异常位置：{}，错误栈：{}","UserContainerServiceImpl.killContainer()",HttpClientUtils.getStackTraceAsString(e));
+            log.error("强制停止容器出现异常，异常位置：{}，错误栈：{}", "UserContainerServiceImpl.killContainerTask()", HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
-            projectLogService.saveErrorLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.KILL_CONTAINER_ERROR,ResultEnum.DOCKER_EXCEPTION);
+            projectLogService.saveErrorLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.KILL_CONTAINER_ERROR, ResultEnum.DOCKER_EXCEPTION);
             // 发送异常消息
-            return new AsyncResult<>(ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
-        }
-    }
-
-    @Override
-    public void removeContainerTask(String userId, String containerId) {
-        try {
-            // 执行任务
-            Future<ResultVO> future = removeContainer(containerId);
-            // 获取执行结果，不超过10s
-            ResultVO resultVO = future.get(10, TimeUnit.SECONDS);
-
-            if(resultVO == null) {
-                sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.REQUEST_TIMEOUT));
-            } else {
-                sendMQ(userId, containerId, resultVO);
-            }
-        } catch (Exception e) {
-            log.error("执行删除容器异步任务出现错误，错误位置：{}，错误栈：{}",
-                    "UserContainerServiceImpl.removeContainerTask()", HttpClientUtils.getStackTraceAsString(e));
-            sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.REQUEST_ERROR));
+            sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
         }
     }
 
     @Async("taskExecutor")
-    @Transactional(rollbackFor = Exception.class)
-    public Future<ResultVO> removeContainer(String containerId) {
+    @Transactional(rollbackFor = CustomException.class)
+    @Override
+    public void removeContainerTask(String userId, String containerId, HttpServletRequest request) {
         try {
             dockerClient.removeContainer(containerId);
             // 删除数据
+            String name = getName(containerId);
             userContainerMapper.deleteById(containerId);
+            // 清理缓存
+            cleanCache(containerId);
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.DELETE_CONTAINER);
             projectLogService.saveSuccessLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.DELETE_CONTAINER);
             // 发送成功消息
-            return new AsyncResult<>(ResultVOUtils.success());
+            sendMQ(userId, containerId, ResultVOUtils.successWithMsg("容器" + name + "移除成功"));
         } catch (Exception e) {
             log.error("删除容器出现异常，异常位置：{}，错误栈：{}",
-                    "UserContainerServiceImpl.removeContainer()", HttpClientUtils.getStackTraceAsString(e));
+                    "UserContainerServiceImpl.removeContainerTask()", HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.DELETE_CONTAINER, e);
             projectLogService.saveErrorLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.DELETE_CONTAINER_ERROR,ResultEnum.DOCKER_EXCEPTION);
             // 发送异常消息
-            return new AsyncResult<>(ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
-        }
-    }
-
-    @Override
-    public void pauseContainerTask(String userId, String containerId) {
-        try {
-            // 执行任务
-            Future<ResultVO> future = pauseContainer(containerId);
-            // 获取执行结果，不超过10s
-            ResultVO resultVO = future.get(10, TimeUnit.SECONDS);
-
-            if(resultVO == null) {
-                sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.REQUEST_TIMEOUT));
-            } else {
-                sendMQ(userId, containerId, resultVO);
-            }
-        } catch (Exception e) {
-            log.error("执行暂停容器异步任务出现错误，错误位置：{}，错误栈：{}",
-                    "UserContainerServiceImpl.pauseContainerTask()", HttpClientUtils.getStackTraceAsString(e));
-            sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.REQUEST_ERROR));
+            sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
         }
     }
 
     @Async("taskExecutor")
-    @Transactional(rollbackFor = Exception.class)
-    public Future<ResultVO> pauseContainer(String containerId) {
+    @Transactional(rollbackFor = CustomException.class)
+    @Override
+    public void pauseContainerTask(String userId, String containerId) {
         try {
             dockerClient.pauseContainer(containerId);
             changeStatus(containerId);
@@ -482,40 +396,21 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             projectLogService.saveSuccessLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.PAUSE_CONTAINER);
 
             // 发送成功消息
-            return new AsyncResult<>(ResultVOUtils.success());
+            sendMQ(userId, containerId, ResultVOUtils.successWithMsg("容器" + getName(containerId) + "暂停成功"));
         } catch (Exception e) {
             e.printStackTrace();
-            log.error("暂停容器出现异常，异常位置：{}，错误栈：{}","UserContainerServiceImpl.pauseContainer()",HttpClientUtils.getStackTraceAsString(e));
+            log.error("暂停容器出现异常，异常位置：{}，错误栈：{}","UserContainerServiceImpl.pauseContainerTask()",HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             projectLogService.saveErrorLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.PAUSE_CONTAINER_ERROR,ResultEnum.DOCKER_EXCEPTION);
             // 发送异常消息
-            return new AsyncResult<>(ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
-        }
-    }
-
-    @Override
-    public void restartContainerTask(String userId, String containerId) {
-        try {
-            // 执行任务
-            Future<ResultVO> future = restartContainer(containerId);
-            // 获取执行结果，不超过10s
-            ResultVO resultVO = future.get(10, TimeUnit.SECONDS);
-
-            if(resultVO == null) {
-                sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.REQUEST_TIMEOUT));
-            } else {
-                sendMQ(userId, containerId, resultVO);
-            }
-        } catch (Exception e) {
-            log.error("执行重新启动容器异步任务出现错误，错误位置：{}，错误栈：{}",
-                    "UserContainerServiceImpl.restartContainerTask()", HttpClientUtils.getStackTraceAsString(e));
-            sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.REQUEST_ERROR));
+            sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
         }
     }
 
     @Async("taskExecutor")
-    @Transactional(rollbackFor = Exception.class)
-    public Future<ResultVO> restartContainer(String containerId) {
+    @Transactional(rollbackFor = CustomException.class)
+    @Override
+    public void restartContainerTask(String userId, String containerId) {
         try {
             dockerClient.restartContainer(containerId);
             changeStatus(containerId);
@@ -523,55 +418,36 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             projectLogService.saveSuccessLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.RESTART_CONTAINER);
 
             // 发送成功消息
-            return new AsyncResult<>(ResultVOUtils.success());
+            sendMQ(userId, containerId, ResultVOUtils.successWithMsg("容器" + getName(containerId) + "重启成功"));
         } catch (Exception e) {
             e.printStackTrace();
-            log.error("重启容器出现异常，异常位置：{}，错误栈：{}","UserContainerServiceImpl.restartContainer()",HttpClientUtils.getStackTraceAsString(e));
+            log.error("重启容器出现异常，异常位置：{}，错误栈：{}","UserContainerServiceImpl.restartContainerTask()",HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             projectLogService.saveErrorLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.RESTART_CONTAINER_ERROR,ResultEnum.DOCKER_EXCEPTION);
 
             // 发送异常消息
-            return new AsyncResult<>(ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
-        }
-    }
-
-    @Override
-    public void continueContainerTask(String userId, String containerId) {
-        try {
-            // 执行任务
-            Future<ResultVO> future = continueContainer(containerId);
-            // 获取执行结果，不超过10s
-            ResultVO resultVO = future.get(10, TimeUnit.SECONDS);
-
-            if(resultVO == null) {
-                sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.REQUEST_TIMEOUT));
-            } else {
-                sendMQ(userId, containerId, resultVO);
-            }
-        } catch (Exception e) {
-            log.error("执行恢复容器异步任务出现错误，错误位置：{}，错误栈：{}",
-                    "UserContainerServiceImpl.continueContainerTask()", HttpClientUtils.getStackTraceAsString(e));
-            sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.REQUEST_ERROR));
+            sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
         }
     }
 
     @Async("taskExecutor")
-    @Transactional(rollbackFor = Exception.class)
-    public Future<ResultVO> continueContainer(String containerId) {
+    @Transactional(rollbackFor = CustomException.class)
+    @Override
+    public void continueContainerTask(String userId, String containerId) {
         try {
             dockerClient.unpauseContainer(containerId);
             changeStatus(containerId);
             // 写入日志
             projectLogService.saveSuccessLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.CONTINUE_CONTAINER);
             // 发送成功消息
-            return new AsyncResult<>(ResultVOUtils.success());
+            sendMQ(userId, containerId, ResultVOUtils.successWithMsg("容器" + getName(containerId) + "恢复成功"));
         } catch (Exception e) {
-            log.error("继续容器出现异常，异常位置：{}，错误栈：{}","UserContainerServiceImpl.continueContainer()",HttpClientUtils.getStackTraceAsString(e));
+            log.error("继续容器出现异常，异常位置：{}，错误栈：{}","UserContainerServiceImpl.continueContainerTask()",HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             projectLogService.saveErrorLog(getProjectId(containerId), containerId, ProjectLogTypeEnum.CONTINUE_CONTAINER,ResultEnum.DOCKER_EXCEPTION);
 
             // 发送异常消息
-            return new AsyncResult<>(ResultVOUtils.error(ResultEnum.CONTAINER_START_ERROR));
+            sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
         }
     }
 
@@ -583,12 +459,18 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             return resultVO;
         }
 
+        // 只有启动状态才能查看进程
+        ContainerStatusEnum status = getStatus(containerId);
+        if(status != ContainerStatusEnum.RUNNING) {
+            return ResultVOUtils.error(ResultEnum.CONTAINER_NOT_RUNNING);
+        }
+
         try {
             TopResults results = dockerClient.topContainer(containerId);
             return ResultVOUtils.success(results);
         } catch (Exception e) {
             e.printStackTrace();
-            log.error("继续容器出现异常，异常位置：{}，错误栈：{}","UserContainerServiceImpl.continueContainer()",HttpClientUtils.getStackTraceAsString(e));
+            log.error("查看容器进程出现异常，异常位置：{}，错误栈：{}","UserContainerServiceImpl.continueContainer()",HttpClientUtils.getStackTraceAsString(e));
             return ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION);
         }
     }
@@ -620,21 +502,40 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
         return statusEnum.getCode() == inputStatusCode;
     }
 
+    /**
+     * API查询容器状态
+     * @author jitwxs
+     * @since 2018/7/12 14:19
+     */
     @Override
     public ContainerStatusEnum getStatus(String containerId) {
         try {
             ContainerInfo info = dockerClient.inspectContainer(containerId);
             ContainerState state = info.state();
 
+            ContainerStatusEnum statusEnum;
             if(state.running()) {
                 if(state.paused()) {
-                    return ContainerStatusEnum.PAUSE;
+                    statusEnum = ContainerStatusEnum.PAUSE;
                 } else {
-                    return ContainerStatusEnum.RUNNING;
+                    statusEnum = ContainerStatusEnum.RUNNING;
                 }
             } else {
-                return ContainerStatusEnum.STOP;
+                statusEnum =  ContainerStatusEnum.STOP;
             }
+
+            // 如果查询的状态和数据库不一致，更新数据库状态
+            UserContainerDTO containerDTO = getById(containerId);
+            if(containerDTO != null) {
+                if(statusEnum.getCode() != containerDTO.getStatus()) {
+                    containerDTO.setStatus(statusEnum.getCode());
+                    userContainerMapper.updateById(containerDTO);
+                }
+            }
+
+            return statusEnum;
+        } catch (ContainerNotFoundException e) {
+            return ContainerStatusEnum.REMOVE;
         } catch (Exception e) {
             e.printStackTrace();
             log.error("获取容器状态出现异常，异常位置：{}，错误栈：{}","UserContainerServiceImpl.getStatus()",HttpClientUtils.getStackTraceAsString(e));
@@ -643,8 +544,8 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
     }
 
     @Override
-    public Page<UserContainerDTO> listContainerByUserId(String userId, Page<UserContainer> page) {
-        List<UserContainer> containers = userContainerMapper.listContainerByUserId(page, userId);
+    public Page<UserContainerDTO> listContainerByUserId(String userId, String name, Page<UserContainer> page) {
+        List<UserContainer> containers = userContainerMapper.listContainerByUserIdAndName(page, userId, name);
 
         Page<UserContainerDTO> page1 = new Page<>();
         BeanUtils.copyProperties(page, page1);
@@ -667,6 +568,10 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
         if(statusEnum == null) {
             return ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION);
         }
+        if(statusEnum == ContainerStatusEnum.REMOVE) {
+            userContainerMapper.deleteById(containerId);
+            return ResultVOUtils.success();
+        }
 
         UserContainerDTO containerDTO = getById(containerId);
         if(containerDTO == null) {
@@ -678,11 +583,38 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             userContainerMapper.updateById(containerDTO);
         }
 
-        return ResultVOUtils.success(statusEnum.getCode());
+        return ResultVOUtils.success();
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    public ResultVO changeBelongProject(String containerId, String projectId, String uid) {
+        // 1、鉴权容器
+        ResultVO resultVO = checkPermission(uid, containerId);
+        if(ResultEnum.OK.getCode() != resultVO.getCode()) {
+            return resultVO;
+        }
+
+        // 2、鉴权项目
+        UserProject project = projectMapper.selectById(projectId);
+        if(project == null) {
+            return ResultVOUtils.error(ResultEnum.PROJECT_NOT_EXIST);
+        }
+        if(!project.getUserId().equals(uid)) {
+            return ResultVOUtils.error(ResultEnum.PROJECT_ACCESS_ERROR);
+        }
+
+        // 3、修改所属项目
+        UserContainerDTO containerDTO = getById(containerId);
+        containerDTO.setProjectId(projectId);
+        userContainerMapper.updateById(containerDTO);
+        // 4、清除缓存
+        cleanCache(containerId);
+
+        return ResultVOUtils.success();
+    }
+
+    @Override
+    @Transactional(rollbackFor = CustomException.class)
     public Map<String, Integer> syncStatus(String userId) {
         // 读取数据库容器列表
         List<UserContainer> containers;
@@ -782,12 +714,25 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
     private void sendMQ(String userId, String containerId, ResultVO resultVO) {
         Destination destination = new ActiveMQQueue("MQ_QUEUE_CONTAINER");
         Task task = new Task();
+
+        Map<String, Object> data = new HashMap<>(16);
+        data.put("type", WebSocketTypeEnum.CONTAINER.getCode());
+        data.put("containerId", containerId);
+        resultVO.setData(data);
+
         Map<String,String> map = new HashMap<>(16);
         map.put("uid",userId);
-        map.put("containerId",containerId);
         map.put("data", JsonUtils.objectToJson(resultVO));
         task.setData(map);
 
         mqProducer.send(destination, JsonUtils.objectToJson(task));
+    }
+
+    private void cleanCache(String id) {
+        try {
+            jedisClient.hdel(key, id);
+        } catch (Exception e) {
+            log.error("删除缓存出现异常，异常位置：{}", "UserContainerServiceImpl.cleanCache");
+        }
     }
 }

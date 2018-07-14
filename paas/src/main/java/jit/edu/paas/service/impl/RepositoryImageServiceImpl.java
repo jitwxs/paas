@@ -6,6 +6,8 @@ import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.Image;
 import com.spotify.docker.client.messages.ImageInfo;
+import jit.edu.paas.commons.activemq.MQProducer;
+import jit.edu.paas.commons.activemq.Task;
 import jit.edu.paas.commons.util.*;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.entity.RepositoryImage;
@@ -13,17 +15,22 @@ import jit.edu.paas.domain.entity.SysImage;
 import jit.edu.paas.domain.enums.ImageTypeEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.SysLogTypeEnum;
+import jit.edu.paas.domain.enums.WebSocketTypeEnum;
 import jit.edu.paas.domain.vo.ResultVO;
+import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.mapper.RepositoryImageMapper;
 import jit.edu.paas.service.RepositoryImageService;
 import jit.edu.paas.service.SysImageService;
 import jit.edu.paas.service.SysLogService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.activemq.command.ActiveMQQueue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.jms.Destination;
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;
 
@@ -49,7 +56,7 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
     @Autowired
     private DockerClient dockerClient;
     @Autowired
-    private HttpServletRequest request;
+    private MQProducer mqProducer;
 
     @Value("${docker.registry.url}")
     private String registryUrl;
@@ -129,7 +136,7 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = CustomException.class)
     public ResultVO sync() {
         // 1、遍历数据库
         List<RepositoryImage> dbImage = repositoryImageMapper.selectList(new EntityWrapper<>());
@@ -197,12 +204,20 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
         }
     }
 
+    /**
+     * Push前校验
+     * @author jitwxs
+     * @since 2018/7/13 19:04
+     */
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public ResultVO pushToHub(String sysImageId, String userId) {
+    public ResultVO pushCheck(String sysImageId, String userId) {
+        if(StringUtils.isBlank(sysImageId)) {
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
+        }
+
         SysImage sysImage = sysImageService.getById(sysImageId);
         if(sysImage == null) {
-            return ResultVOUtils.error(ResultEnum.IMAGE_EXCEPTION);
+            return ResultVOUtils.error(ResultEnum.IMAGE_NOT_EXIST);
         }
 
         // 判断镜像类型
@@ -214,20 +229,28 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
             return ResultVOUtils.error(ResultEnum.PERMISSION_ERROR);
         }
 
+        // 判断是否存在
+        // 命名规则：registryUrl/userId/name:tag
+        String newName = registryUrl + "/" + userId + "/" + sysImage.getName() + ":" + sysImage.getTag();
+        if(hasExist(newName)) {
+            return ResultVOUtils.error(ResultEnum.IMAGE_UPLOAD_ERROR_BY_EXIST);
+        }
+
+        return ResultVOUtils.success(sysImage);
+    }
+
+    @Async("taskExecutor")
+    @Transactional(rollbackFor = CustomException.class)
+    @Override
+    public void pushTask(SysImage sysImage, String userId, HttpServletRequest request) {
         try {
             // 1、创建镜像tag
-            // 命名规则：registryUrl/userId/name:tag
             String newName = registryUrl + "/" + userId + "/" + sysImage.getName() + ":" + sysImage.getTag();
-            // 判断是否存在
-            if(hasExist(newName)) {
-                return ResultVOUtils.error(ResultEnum.IMAGE_UPLOAD_ERROR_BY_EXIST);
-            }
-
             dockerClient.tag(sysImage.getFullName(),newName);
             // 2、上传镜像
             dockerClient.push(newName);
             // 3、删除镜像tag
-            dockerClient.removeImage(newName);
+//            dockerClient.removeImage(newName);
             // 4、保存数据库
             RepositoryImage image = imageName2RepositoryImage(newName);
             repositoryImageMapper.insert(image);
@@ -236,20 +259,22 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PUSH_IMAGE_TO_HUB);
 
-            return ResultVOUtils.success();
+            sendMQ(userId, image.getId(), ResultVOUtils.successWithMsg("镜像上传成功"));
         } catch (Exception e) {
             log.error("上传镜像失败，错误位置：{}，错误栈：{}",
-                    "RepositoryImageServiceImpl.pushToHub()", HttpClientUtils.getStackTraceAsString(e));
+                    "RepositoryImageServiceImpl.pushTask()", HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PUSH_IMAGE_TO_HUB,e);
 
-            return ResultVOUtils.error(ResultEnum.PUSH_ERROR);
+            sendMQ(userId, null, ResultVOUtils.error(ResultEnum.PUSH_ERROR));
         }
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public ResultVO pullFromHub(String id) {
+    public ResultVO pullCheck(String id) {
+        if (StringUtils.isBlank(id)) {
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
+        }
         RepositoryImage repositoryImage = getById(id);
         if(repositoryImage == null) {
             return ResultVOUtils.error(ResultEnum.IMAGE_EXCEPTION);
@@ -261,33 +286,39 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
         if(sysImageService.getByFullName(fullName) != null) {
             return ResultVOUtils.error(ResultEnum.PULL_ERROR_BY_EXIST);
         }
+        return ResultVOUtils.success(repositoryImage);
+    }
 
+    @Async("taskExecutor")
+    @Transactional(rollbackFor = CustomException.class)
+    @Override
+    public void pullTask(RepositoryImage repositoryImage, String userId, HttpServletRequest request) {
         try {
             // 1、拉取镜像
-            dockerClient.pull(fullName);
+            dockerClient.pull(repositoryImage.getFullName());
             // 2、插入数据
             SysImage sysImage = repositoryImage2SysImage(repositoryImage);
             sysImageService.insert(sysImage);
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PULL_IMAGE_FROM_HUB);
 
-            return ResultVOUtils.success();
+            sendMQ(userId, repositoryImage.getId(), ResultVOUtils.success());
         } catch (Exception e) {
             log.error("拉取镜像失败，错误位置：{}，错误栈：{}",
-                    "RepositoryImageServiceImpl.pullFromHub()", HttpClientUtils.getStackTraceAsString(e));
+                    "RepositoryImageServiceImpl.pullTask()", HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PULL_IMAGE_FROM_HUB,e);
 
-            return ResultVOUtils.error(ResultEnum.PULL_ERROR);
+            sendMQ(userId, repositoryImage.getId(), ResultVOUtils.error(ResultEnum.PULL_ERROR));
         }
     }
 
+    @Transactional(rollbackFor = CustomException.class)
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public ResultVO deleteFromHub(String id) {
+    public ResultVO deleteImage(String id, HttpServletRequest request) {
         RepositoryImage repositoryImage = getById(id);
         if(repositoryImage == null) {
-            return ResultVOUtils.error(ResultEnum.IMAGE_EXCEPTION);
+            return ResultVOUtils.error(ResultEnum.IMAGE_NOT_EXIST);
         }
 
         String name = repositoryImage.getName();
@@ -456,5 +487,27 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
         }
 
         return splits[1];
+    }
+
+    /**
+     * 发送Hub镜像消息
+     * @author jitwxs
+     * @since 2018/7/13 19:09
+     */
+    private void sendMQ(String userId, String hubImageId, ResultVO resultVO) {
+        Destination destination = new ActiveMQQueue("MQ_QUEUE_HUB_IMAGE");
+        Task task = new Task();
+
+        Map<String, Object> data = new HashMap<>(16);
+        data.put("type", WebSocketTypeEnum.HUB_IMAGE.getCode());
+        data.put("hubImageId", hubImageId);
+        resultVO.setData(data);
+
+        Map<String,String> map = new HashMap<>(16);
+        map.put("uid",userId);
+        map.put("data", JsonUtils.objectToJson(resultVO));
+        task.setData(map);
+
+        mqProducer.send(destination, JsonUtils.objectToJson(task));
     }
 }

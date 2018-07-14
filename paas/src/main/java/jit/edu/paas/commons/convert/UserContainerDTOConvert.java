@@ -24,6 +24,9 @@ public class UserContainerDTOConvert {
     private UserProjectService projectService;
 
     public UserContainerDTO convert(UserContainer container) {
+        if(container == null) {
+            return null;
+        }
         UserContainerDTO dto = new UserContainerDTO();
         BeanUtils.copyProperties(container, dto);
 

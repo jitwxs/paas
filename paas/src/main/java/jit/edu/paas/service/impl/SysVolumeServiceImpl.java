@@ -14,6 +14,7 @@ import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.RoleEnum;
 import jit.edu.paas.domain.enums.SysLogTypeEnum;
 import jit.edu.paas.domain.vo.ResultVO;
+import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.mapper.SysVolumesMapper;
 import jit.edu.paas.mapper.UserContainerMapper;
 import jit.edu.paas.service.SysLogService;
@@ -162,7 +163,7 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = CustomException.class)
     public ResultVO cleanVolumes() {
         ResultVO resultVO = listFromLocal();
         if(resultVO.getCode() != ResultEnum.OK.getCode()) {

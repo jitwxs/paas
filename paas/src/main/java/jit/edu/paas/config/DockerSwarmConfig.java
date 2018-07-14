@@ -13,11 +13,11 @@ import java.net.URI;
  * @since 2018/6/28 14:29
  */
 @Configuration
-public class DockerConfig {
-    @Value("${docker.server.url}")
+public class DockerSwarmConfig {
+    @Value("${docker.swarm.manager.url}")
     private String serverUrl;
 
-    @Bean(name = "dockerClient")
+    @Bean(name = "dockerSwarmClient")
     DockerClient dockerClient() {
         return DefaultDockerClient.builder()
                 .uri(URI.create(serverUrl))

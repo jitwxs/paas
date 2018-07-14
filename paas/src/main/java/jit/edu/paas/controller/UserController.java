@@ -3,18 +3,18 @@ package jit.edu.paas.controller;
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.plugins.Page;
 import jit.edu.paas.commons.component.WrapperComponent;
+import jit.edu.paas.commons.util.HttpClientUtils;
 import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.domain.entity.SysLogin;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.select.UserSelect;
 import jit.edu.paas.domain.vo.ResultVO;
+import jit.edu.paas.service.JwtService;
 import jit.edu.paas.service.SysLoginService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * 用户Controller
@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
  * @author jitwxs
  * @since 2018/6/28 14:23
  */
+@Slf4j
 @RestController
 @RequestMapping("/user")
 public class UserController {
@@ -29,6 +30,8 @@ public class UserController {
     private WrapperComponent wrapperComponent;
     @Autowired
     private SysLoginService loginService;
+    @Autowired
+    private JwtService jwtService;
 
     /**
      * 获取用户列表
@@ -73,5 +76,19 @@ public class UserController {
         int count = loginService.cancelFreezeUser(ids);
 
         return ResultVOUtils.success(count);
+    }
+
+    @GetMapping("/logout")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVO logout(@RequestAttribute String uid) {
+       try {
+           SysLogin sysLogin = loginService.getById(uid);
+           jwtService.deleteToken(sysLogin.getUsername());
+
+           return ResultVOUtils.success();
+       } catch (Exception e) {
+           log.error("退出登录失败，错误位置：{}，错误栈：{}", "UserController.logout()", HttpClientUtils.getStackTraceAsString(e));
+           return ResultVOUtils.error(ResultEnum.OTHER_ERROR);
+       }
     }
 }

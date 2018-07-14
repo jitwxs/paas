@@ -4,8 +4,10 @@ package jit.edu.paas.service;
 import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.IService;
 import jit.edu.paas.domain.entity.RepositoryImage;
+import jit.edu.paas.domain.entity.SysImage;
 import jit.edu.paas.domain.vo.ResultVO;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 
 /**
@@ -51,29 +53,42 @@ public interface RepositoryImageService extends IService<RepositoryImage> {
     ResultVO sync();
 
     /**
+     * Push前校验
+     * @author jitwxs
+     * @since 2018/7/13 19:04
+     */
+    ResultVO pushCheck(String sysImageId, String userId);
+
+    /**
      * 上传本地镜像到Hub中
      * （1）只有普通用户能上传
      * （2）镜像类型属于私有且属于该用户才能上传
-     * @param sysImageId 本地镜像ID
+     * @param sysImage 本地镜像对象
      * @author jitwxs
      * @since 2018/7/5 16:51
      */
-    ResultVO pushToHub(String sysImageId, String userId);
+    void pushTask(SysImage sysImage, String userId ,HttpServletRequest request);
+
+    /**
+     * Pull前校验
+     * @author jitwxs
+     * @since 2018/7/13 19:57
+     */
+    ResultVO pullCheck(String id);
 
     /**
      * 从Hub上拉取镜像到本地
-     * @param id 镜像ID
      * @author jitwxs
-     * @since 2018/7/5 16:53
+     * @since 2018/7/13 19:58
      */
-    ResultVO pullFromHub(String id);
+    void pullTask(RepositoryImage repositoryImage, String userId, HttpServletRequest request);
 
     /**
      * 从Hub上删除镜像
      * @author jitwxs
      * @since 2018/7/5 16:59
      */
-    ResultVO deleteFromHub(String id);
+    ResultVO deleteImage(String id, HttpServletRequest request);
 
     /**
      * 查询镜像的digest

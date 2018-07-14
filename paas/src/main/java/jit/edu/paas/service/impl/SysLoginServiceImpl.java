@@ -11,6 +11,7 @@ import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.RoleEnum;
 import jit.edu.paas.domain.enums.SysLogTypeEnum;
 import jit.edu.paas.domain.vo.ResultVO;
+import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.mapper.SysLoginMapper;
 import jit.edu.paas.service.SysLogService;
 import jit.edu.paas.service.SysLoginService;
@@ -268,7 +269,7 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = CustomException.class)
     public Boolean verifyRegisterEmail(String token) {
         String email;
 

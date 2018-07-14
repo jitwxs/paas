@@ -1,8 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="jit.edu.paas.mapper.UserContainerMapper">
+    <update id="cleanProjectId">
+        UPDATE user_container
+        SET project_id = NULL
+        WHERE
+            project_id = #{projectId}
+    </update>
     <select id="listContainerByUserId" resultType="jit.edu.paas.domain.entity.UserContainer">
-        SELECT * FROM `user_container`, `user_project`
+        SELECT user_container.* FROM `user_container`, `user_project`
         WHERE `user_container`.project_id = `user_project`.id
         <if test="userId != null" >
 		  AND `user_project`.user_id = #{userId}
@@ -30,6 +36,16 @@
             AND p.user_id = #{userId}
         <if test="status != null" >
             AND c.status = #{status}
+        </if>
+    </select>
+    <select id="listContainerByUserIdAndName" resultType="jit.edu.paas.domain.entity.UserContainer">
+        SELECT user_container.* FROM `user_container`, `user_project`
+        WHERE `user_container`.project_id = `user_project`.id
+        <if test="userId != null" >
+            AND `user_project`.user_id = #{userId}
+        </if>
+        <if test="name != null" >
+            AND `user_container`.name like "%"#{name}"%"
         </if>
     </select>
 </mapper>

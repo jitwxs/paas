@@ -52,6 +52,11 @@ public interface JedisClient {
     Boolean hexists(String key, String field);
 
     /**
+     * 返回hash的field的List
+     */
+    Set<String> hkeys(String key);
+
+    /**
      * 返回hash的value的List
      */
     List<String> hvals(String key);

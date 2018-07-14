@@ -73,6 +73,11 @@ public class JedisClientCluster implements JedisClient {
     }
 
     @Override
+    public Set<String> hkeys(String key) {
+        return jedisCluster.hkeys(key);
+    }
+
+    @Override
     public List<String> hvals(String key) {
         return jedisCluster.hvals(key);
     }

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="jit.edu.paas.mapper.SysNetworkMapper">
+
+    <select id="listAllNetwork" resultType="jit.edu.paas.domain.entity.SysNetwork">
+        SELECT
+        *
+        FROM sys_network
+        <if test="hasPublic != null" >
+            WHERE `has_public` = #{hasPublic}
+        </if>
+    </select>
+    <select id="listSelfNetwork" resultType="jit.edu.paas.domain.entity.SysNetwork">
+        SELECT
+        *
+        FROM sys_network
+        WHERE `has_public` = true
+        AND `user_id` = #{userId}
+    </select>
+</mapper>

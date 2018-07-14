@@ -104,6 +104,14 @@ public class JedisClientPool implements JedisClient {
     }
 
     @Override
+    public Set<String> hkeys(String key) {
+        Jedis jedis = jedisPool.getResource();
+        Set<String> result = jedis.hkeys(key);
+        jedis.close();
+        return result;
+    }
+
+    @Override
     public List<String> hvals(String key) {
         Jedis jedis = jedisPool.getResource();
         List<String> result = jedis.hvals(key);

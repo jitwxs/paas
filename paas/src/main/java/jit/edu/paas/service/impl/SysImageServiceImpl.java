@@ -6,43 +6,37 @@ import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.exceptions.ImagePushFailedException;
 import com.spotify.docker.client.messages.*;
+import jit.edu.paas.commons.activemq.MQProducer;
+import jit.edu.paas.commons.activemq.Task;
 import jit.edu.paas.commons.util.*;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.entity.SysImage;
-import jit.edu.paas.domain.enums.ImageTypeEnum;
-import jit.edu.paas.domain.enums.ResultEnum;
-import jit.edu.paas.domain.enums.RoleEnum;
-import jit.edu.paas.domain.enums.SysLogTypeEnum;
+import jit.edu.paas.domain.enums.*;
 import jit.edu.paas.domain.vo.ResultVO;
+import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.mapper.SysImageMapper;
 import jit.edu.paas.service.SysImageService;
 import jit.edu.paas.service.SysLogService;
 import jit.edu.paas.service.SysLoginService;
-import lombok.Cleanup;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.mime.MultipartEntityBuilder;
-import org.apache.http.entity.mime.content.InputStreamBody;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
-import org.apache.http.protocol.HTTP;
-import org.apache.http.util.EntityUtils;
+import org.apache.activemq.command.ActiveMQQueue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
+import javax.jms.Destination;
 import javax.servlet.http.HttpServletRequest;
 import java.io.InputStream;
-import java.nio.charset.Charset;
 import java.util.*;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
@@ -64,9 +58,9 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
     @Autowired
     private JedisClient jedisClient;
     @Autowired
-    private SysLogService sysLogService;
+    private MQProducer mqProducer;
     @Autowired
-    private HttpServletRequest request;
+    private SysLogService sysLogService;
 
     @Value("${docker.server.url}")
     private String serverUrl;
@@ -82,8 +76,10 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
     }
 
     @Override
-    public Page<SysImage> listLocalUserImage(String name, Page<SysImage> page) {
-        return page.setRecords(imageMapper.listLocalUserImage(page, name));
+    public Page<SysImage> listLocalUserImage(String name, boolean filterOpen, Page<SysImage> page) {
+        List<SysImage> images = filterOpen ? imageMapper.listLocalOpenUserImage(page, name) : imageMapper.listLocalUserImage(page, name);
+
+        return page.setRecords(images);
     }
 
     /**
@@ -209,7 +205,7 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
      * @author jitwxs
      * @since 2018/7/3 16:38
      */
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = CustomException.class)
     @Override
     public ResultVO sync() {
         try {
@@ -293,12 +289,12 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
      * @since 2018/6/28 16:15
      */
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public ResultVO removeImage(String id, String userId) {
+    @Transactional(rollbackFor = CustomException.class)
+    public ResultVO removeImage(String id, String userId, HttpServletRequest request) {
         String roleName = loginService.getRoleName(userId);
         SysImage sysImage = getById(id);
         if(sysImage == null) {
-            return ResultVOUtils.error(ResultEnum.IMAGE_EXCEPTION);
+            return ResultVOUtils.error(ResultEnum.IMAGE_NOT_EXIST);
         }
 
         if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
@@ -333,15 +329,10 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         }
     }
 
-    /**
-     * 拉取镜像
-     *
-     * @author hf
-     * @since 2018/6/28 16:15
-     */
+    @Async("taskExecutor")
+    @Transactional(rollbackFor = CustomException.class)
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public ResultVO pullImageFromHub(String name) {
+    public void pullImageTask(String name, String userId, HttpServletRequest request) {
         //若用户未输入版本号 则默认pull最新的版本
         if (!name.contains(":")) {
             name = name + ":latest";
@@ -350,7 +341,7 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         // 判断本地是否有镜像
         try {
             if(dockerClient.listImages(DockerClient.ListImagesParam.byName(name)).size() > 0) {
-                return ResultVOUtils.error(ResultEnum.PULL_ERROR_BY_EXIST);
+                sendMQ(userId, null, ResultVOUtils.error(ResultEnum.PULL_ERROR_BY_EXIST));
             }
             // 如果本地没有，但数据库中有，说明本地与数据库数据不一致，执行同步方法
             if(getByFullName(name) != null) {
@@ -359,7 +350,7 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         } catch (Exception e) {
             log.error("查询本地镜像失败，错误位置：{}，镜像名：{}，错误栈：{}",
                     "SysImageServiceImpl.pullImageFromHub()", name, HttpClientUtils.getStackTraceAsString(e));
-            return ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION);
+            sendMQ(userId, null, ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
         }
 
         // pull 镜像
@@ -373,36 +364,33 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PULL_IMAGE_FROM_DOCKER_HUB, e);
 
-            return ResultVOUtils.error(ResultEnum.PULL_ERROR);
+            sendMQ(userId, null, ResultVOUtils.error(ResultEnum.PULL_ERROR));
         }
 
         // 保存信息
         try {
             List<Image> images = dockerClient.listImages(DockerClient.ListImagesParam.byName(name));
             if(images.size() ==0) {
-                return ResultVOUtils.error(ResultEnum.INSPECT_ERROR);
+                sendMQ(userId, null, ResultVOUtils.error(ResultEnum.INSPECT_ERROR));
             }
             Image image = images.get(0);
 
             SysImage sysImage = imageToSysImage(image, image.repoTags().get(0));
             imageMapper.insert(sysImage);
 
-            return ResultVOUtils.success();
+            sendMQ(userId, null, ResultVOUtils.successWithMsg("镜像拉取成功"));
         } catch (Exception e) {
             log.error("获取镜像详情失败，错误位置：{}，镜像名：{}，错误栈：{}",
                     "SysImageServiceImpl.pullImageFromHub()", name, HttpClientUtils.getStackTraceAsString(e));
-            return ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION);
+
+            sendMQ(userId, null, ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
         }
     }
 
-    /**
-     * push镜像
-     * @author hf
-     * @since 2018/6/28 16:15
-     */
+    @Async("taskExecutor")
+    @Transactional(rollbackFor = CustomException.class)
     @Override
-    @Transactional(rollbackFor = Exception.class)
-    public ResultVO pushImage(String id, String username, String password) {
+    public void pushImageTask(String id, String username, String password, String userId, HttpServletRequest request) {
         RegistryAuth registryAuth = RegistryAuth.builder()
                 .username(username)
                 .password(password)
@@ -418,7 +406,7 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         } catch (Exception e) {
             log.error("Tag镜像异常，错误位置：{}，错误栈：{}",
                     "SysImageServiceImpl.pushImage", HttpClientUtils.getStackTraceAsString(e));
-            return ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION);
+            sendMQ(userId, null, ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
         }
 
         try {
@@ -426,13 +414,15 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             dockerClient.push(imageName, registryAuth);
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PUSH_IMAGE_TO_DOCKER_HUB);
+        } catch (ImagePushFailedException ipe) {
+            sendMQ(userId, null, ResultVOUtils.error(ResultEnum.PUSH_ERROR));
         } catch (Exception e) {
             log.error("push镜像异常，错误位置：{}，错误栈：{}",
                     "SysImageServiceImpl.pushImage", HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PUSH_IMAGE_TO_DOCKER_HUB, e);
 
-            return ResultVOUtils.error(ResultEnum.PUSH_ERROR);
+            sendMQ(userId, null, ResultVOUtils.error(ResultEnum.OTHER_ERROR));
         }
 
         try {
@@ -443,7 +433,7 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
                     "SysImageServiceImpl.pushImage", HttpClientUtils.getStackTraceAsString(e));
         }
 
-        return ResultVOUtils.success(imageName);
+        sendMQ(userId, null, ResultVOUtils.successWithMsg("镜像上传成功，名称为" + imageName));
     }
 
     /**
@@ -466,51 +456,14 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
     }
 
     /**
-     * 导入镜像
-     *
-     * @author hf
-     * @since 2018/7/2 8:15
+     * 导入镜像任务
+     * @author jitwxs
+     * @since 2018/7/13 17:23
      */
+    @Async("taskExecutor")
+    @Transactional(rollbackFor = CustomException.class)
     @Override
-    public ResultVO importImage(String uid, HttpServletRequest request) {
-        StandardMultipartHttpServletRequest req;
-        try {
-            req = (StandardMultipartHttpServletRequest) request;
-        } catch (Exception e) {
-            return ResultVOUtils.error(ResultEnum.UPLOAD_TYPE_ERROR);
-        }
-
-        // 遍历普通参数，取出镜像名和tag（默认latest）
-        String imageName = "", tag = "latest";
-        boolean flag = false;
-        Enumeration<String> names = req.getParameterNames();
-        while (names.hasMoreElements()) {
-            String key = names.nextElement();
-            String val = req.getParameter(key);
-            if("name".equals(key)) {
-                flag = true;
-                imageName = val;
-            }
-            if("tag".equals(key)) {
-                tag = val;
-            }
-        }
-        // 遍历文件参数
-        Iterator<String> iterator = req.getFileNames();
-        if(!flag || !iterator.hasNext()) {
-            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
-        }
-
-        // 拼接完整名：repo/userId/imageName:tag
-        String fullName = "local/" + uid + "/" + imageName + ":" + tag;
-        // 判断镜像是否存在
-        if(getByFullName(fullName) != null) {
-            return ResultVOUtils.error(ResultEnum.IMPORT_ERROR_BY_NAME);
-        }
-
-        // 取出文件，只取一个
-        MultipartFile file = req.getFile(iterator.next());
-
+    public void importImageTask(MultipartFile file, String fullName, String uid, HttpServletRequest request) {
         // 导入镜像
         try(InputStream inputStream = file.getInputStream()) {
             dockerClient.create(fullName,inputStream);
@@ -524,14 +477,14 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.IMPORT_IMAGE);
 
-            return ResultVOUtils.success();
+            sendMQ(uid, null, ResultVOUtils.successWithMsg("镜像导入成功"));
         } catch (Exception e) {
             log.error("导入镜像失败，错误位置：{}，镜像名：{}，错误栈：{}",
                     "SysImageServiceImpl.pullImageFromHub()", fullName, HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.IMPORT_IMAGE, e);
 
-            return ResultVOUtils.error(ResultEnum.IMPORT_ERROR);
+            sendMQ(uid, null, ResultVOUtils.error(ResultEnum.IMPORT_ERROR));
         }
     }
 
@@ -558,95 +511,6 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             log.error("查看镜像源码文件异常，错误位置：{}，错误栈：{}",
                     "SysImageServiceImpl.imageFile", HttpClientUtils.getStackTraceAsString(e));
             return ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION);
-        }
-    }
-
-    /**
-     * Dockerfile建立镜像
-     * @author jitwxs
-     * @since 2018/7/6 17:16
-     */
-    @Override
-    public ResultVO buildImage(String userId, HttpServletRequest request) {
-        StandardMultipartHttpServletRequest req;
-        try {
-            req = (StandardMultipartHttpServletRequest) request;
-        } catch (Exception e) {
-            return ResultVOUtils.error(ResultEnum.UPLOAD_TYPE_ERROR);
-        }
-
-        // 1、遍历普通参数，取出镜像名和tag（默认latest）
-        String imageName = "", tag = "latest";
-        boolean flag = false;
-        Enumeration<String> names = req.getParameterNames();
-        while (names.hasMoreElements()) {
-            String key = names.nextElement();
-            String val = req.getParameter(key);
-            if("name".equals(key)) {
-                flag = true;
-                imageName = val;
-            }
-            if("tag".equals(key)) {
-                tag = val;
-            }
-        }
-        // 2、遍历文件参数
-        Iterator<String> iterator = req.getFileNames();
-        if(!flag || !iterator.hasNext()) {
-            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
-        }
-
-        // 取出文件，只取一个
-        MultipartFile file = req.getFile(iterator.next());
-        // 判断后缀名是否是tar.gz文件
-        String fileName = file.getOriginalFilename();
-        if(!fileName.endsWith(".tar.gz")) {
-            return ResultVOUtils.error(ResultEnum.BUILD_ERROR_BY_SUFFIX);
-        }
-
-        // 3、拼接完整名：repo/userId/imageName:tag
-        String fullName = "local/" + userId + "/" + imageName + ":" + tag;
-        // 判断镜像是否存在
-        if(getByFullName(fullName) != null) {
-            return ResultVOUtils.error(ResultEnum.IMPORT_ERROR_BY_NAME);
-        }
-
-        // 4、构建Image
-        try {
-            @Cleanup CloseableHttpClient httpclient = HttpClients.createDefault();
-            // 请求url
-            String uri = serverUrl + "/build?t=" + fullName;
-            HttpPost httpPost = new HttpPost(uri);
-            RequestConfig requestConfig = RequestConfig.custom().setConnectTimeout(200000).setSocketTimeout(200000).build();
-            httpPost.setConfig(requestConfig);
-            // 设置请求头
-            httpPost.setHeader(HTTP.CONTENT_TYPE, "application/x-tar");
-            // 将dockerFile放入请求中
-            InputStreamBody body = new InputStreamBody(file.getInputStream(), fullName);
-            HttpEntity reqEntity = MultipartEntityBuilder.create().addPart("file", body).build();
-            httpPost.setEntity(reqEntity);
-
-            // 执行请求
-            @Cleanup CloseableHttpResponse response = httpclient.execute(httpPost);
-            // 判断返回码
-            int code = response.getStatusLine().getStatusCode();
-            if(code != 200) {
-                // 获取响应体
-                String respContent = "";
-                HttpEntity entity = response.getEntity();
-                if (null != entity) {
-                    Charset respCharset = ContentType.getOrDefault(entity).getCharset();
-                    respContent = EntityUtils.toString(entity, respCharset);
-                    EntityUtils.consume(entity);
-                }
-                log.error("build镜像错误，错误位置：{}，错误码：{}，响应体：{}",
-                       "SysImageServiceImpl.buildImage()",code, respContent);
-                return ResultVOUtils.error(ResultEnum.NETWORK_ERROR);
-            }
-
-            return ResultVOUtils.success();
-        } catch (Exception e) {
-            return ResultVOUtils.error(ResultEnum.BUILD_ERROR);
         }
     }
 
@@ -701,7 +565,7 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
     public ResultVO listExportPorts(String imageId, String userId) {
         SysImage sysImage = getById(imageId);
         if(sysImage == null) {
-            return ResultVOUtils.error(ResultEnum.IMAGE_EXCEPTION);
+            return ResultVOUtils.error(ResultEnum.IMAGE_NOT_EXIST);
         }
 
         // 鉴权
@@ -758,6 +622,13 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             }
         }
         return false;
+    }
+
+    @Override
+    public Page<SysImage> selfImage(String userId, Page<SysImage> page) {
+        List<SysImage> records = imageMapper.listSelfImage(userId, page);
+
+        return page.setRecords(records);
     }
 
     /**
@@ -882,5 +753,27 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         sysImage.setCreateDate(new Date());
 
         return sysImage;
+    }
+
+    /**
+     * 发送系统镜像消息
+     * @author jitwxs
+     * @since 2018/7/9 18:34
+     */
+    private void sendMQ(String userId, String imageId, ResultVO resultVO) {
+        Destination destination = new ActiveMQQueue("MQ_QUEUE_SYS_IMAGE");
+        Task task = new Task();
+
+        Map<String, Object> data = new HashMap<>(16);
+        data.put("type", WebSocketTypeEnum.SYS_IMAGE.getCode());
+        data.put("imageId", imageId);
+        resultVO.setData(data);
+
+        Map<String,String> map = new HashMap<>(16);
+        map.put("uid",userId);
+        map.put("data", JsonUtils.objectToJson(resultVO));
+        task.setData(map);
+
+        mqProducer.send(destination, JsonUtils.objectToJson(task));
     }
 }

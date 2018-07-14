@@ -1,7 +1,6 @@
 package jit.edu.paas.exception;
 
 import com.spotify.docker.client.exceptions.DockerTimeoutException;
-import jit.edu.paas.commons.util.HttpClientUtils;
 import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.vo.ResultVO;
@@ -19,7 +18,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = CustomException.class)
     public ResultVO customException(CustomException e) {
-        log.error("其他错误，错误栈：{}", HttpClientUtils.getStackTraceAsString(e));
+//        log.error("其他错误，错误栈：{}", HttpClientUtils.getStackTraceAsString(e));
         return ResultVOUtils.error(e.getCode(), e.getMessage());
     }
 
@@ -30,7 +29,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(value = Exception.class)
     public ResultVO exception(Exception e) {
-        log.error("其他错误，错误栈：{}", HttpClientUtils.getStackTraceAsString(e));
+//        log.error("其他错误，错误栈：{}", HttpClientUtils.getStackTraceAsString(e));
         return ResultVOUtils.error(ResultEnum.OTHER_ERROR.getCode(), e.getMessage());
     }
 }

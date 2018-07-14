@@ -3,8 +3,9 @@
 <mapper namespace="jit.edu.paas.mapper.RepositoryImageMapper">
 
     <select id="listRepositoryFromDb" resultType="jit.edu.paas.domain.entity.RepositoryImage">
-        SELECT DISTINCT NAME
+        SELECT DISTINCT
+            name
         FROM
-            `repository_image`
+        `repository_image`
     </select>
 </mapper>

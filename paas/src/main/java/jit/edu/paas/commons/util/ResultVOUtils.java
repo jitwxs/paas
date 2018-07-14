@@ -13,6 +13,14 @@ public class ResultVOUtils {
         return new ResultVO(ResultEnum.OK.getCode(),ResultEnum.OK.getMessage(), data);
     }
 
+    public static ResultVO successWithMsg(String message) {
+        return success(message, null);
+    }
+
+    public static ResultVO success(String message, Object data) {
+        return new ResultVO(ResultEnum.OK.getCode(), message, data);
+    }
+
     public static ResultVO success() {
         return success(null);
     }

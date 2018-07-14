@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -67,14 +68,28 @@ public class ContainerController {
     }
 
     /**
+     * 获取容器状态（包含状态同步）
+     * @author jitwxs
+     * @since 2018/7/13 14:34
+     */
+    @GetMapping("/status/{id}")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVO getStatus(@PathVariable String id) {
+        ContainerStatusEnum status = containerService.getStatus(id);
+
+        return ResultVOUtils.success(status.getCode());
+    }
+
+    /**
      * 获取容器列表
      * 普通用户获取本人容器，系统管理员获取所有容器
+     * @param name 容器名
      * @author jitwxs
      * @since 2018/7/9 11:19
      */
     @GetMapping("/list")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO listContainer(@RequestAttribute String uid, Page<UserContainer> page) {
+    public ResultVO listContainer(@RequestAttribute String uid, String name, Page<UserContainer> page) {
         // 鉴权
         String roleName = loginService.getRoleName(uid);
         // 角色无效
@@ -85,9 +100,9 @@ public class ContainerController {
         Page<UserContainerDTO> selectPage = null;
 
         if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
-            selectPage = containerService.listContainerByUserId(uid, page);
+            selectPage = containerService.listContainerByUserId(uid, name, page);
         } else if(RoleEnum.ROLE_SYSTEM.getMessage().equals(roleName)) {
-            selectPage = containerService.listContainerByUserId(null, page);
+            selectPage = containerService.listContainerByUserId(null, name, page);
         }
 
         return ResultVOUtils.success(selectPage);
@@ -100,7 +115,7 @@ public class ContainerController {
      * @author jitwxs
      * @since 2018/7/1 15:16
      */
-    @GetMapping("/list/project/{projectId}")
+    @GetMapping("/project/{projectId}/list")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVO listContainerByProject(@RequestAttribute String uid, @PathVariable String projectId, Page<UserContainer> page) {
         // 1、鉴权
@@ -137,8 +152,9 @@ public class ContainerController {
      */
     @PostMapping("/create")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResultVO createContainer(@RequestAttribute String uid, String imageId, String containerName, String projectId,
-                                    Map<String,Integer> portMap, String[] cmd, String[] env, String[] destination){
+    public ResultVO createContainer(String imageId, String containerName, String projectId,
+                                    Map<String,Integer> portMap, String[] cmd, String[] env, String[] destination,
+                                    @RequestAttribute String uid, HttpServletRequest request){
         // 输入验证
         if(StringUtils.isBlank(imageId,containerName,projectId)) {
             return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
@@ -148,8 +164,8 @@ public class ContainerController {
         if(ResultEnum.OK.getCode() != resultVO.getCode()) {
             return resultVO;
         } else {
-            containerService.createContainerTask(uid, imageId, cmd, portMap, containerName, projectId, env, destination);
-            return ResultVOUtils.success("正在创建容器");
+            containerService.createContainerTask(uid, imageId, cmd, portMap, containerName, projectId, env, destination, request);
+            return ResultVOUtils.success("开始创建容器");
         }
     }
 
@@ -165,7 +181,7 @@ public class ContainerController {
 
         if(ResultEnum.OK.getCode() == resultVO.getCode()) {
             containerService.startContainerTask(uid,containerId);
-            return ResultVOUtils.success("正在启动容器");
+            return ResultVOUtils.success("开始启动容器");
         } else {
             return resultVO;
         }
@@ -183,7 +199,7 @@ public class ContainerController {
 
         if(ResultEnum.OK.getCode() == resultVO.getCode()) {
             containerService.pauseContainerTask(uid, containerId);
-            return ResultVOUtils.success("正在暂停容器");
+            return ResultVOUtils.success("开始暂停容器");
         } else {
             return resultVO;
         }
@@ -201,7 +217,7 @@ public class ContainerController {
 
         if(ResultEnum.OK.getCode() == resultVO.getCode()) {
             containerService.continueContainerTask(uid, containerId);
-            return ResultVOUtils.success("正在恢复容器");
+            return ResultVOUtils.success("开始恢复容器");
         } else {
             return resultVO;
         }
@@ -219,7 +235,7 @@ public class ContainerController {
 
         if(ResultEnum.OK.getCode() == resultVO.getCode()) {
             containerService.stopContainerTask(uid, containerId);
-            return ResultVOUtils.success("正在停止容器");
+            return ResultVOUtils.success("开始停止容器");
         } else {
             return resultVO;
         }
@@ -237,7 +253,7 @@ public class ContainerController {
 
         if(ResultEnum.OK.getCode() == resultVO.getCode()) {
             containerService.killContainerTask(uid, containerId);
-            return ResultVOUtils.success("正在强制停止容器");
+            return ResultVOUtils.success("开始强制停止容器");
         } else {
             return resultVO;
         }
@@ -255,7 +271,7 @@ public class ContainerController {
 
         if(ResultEnum.OK.getCode() == resultVO.getCode()) {
             containerService.restartContainerTask(uid, containerId);
-            return ResultVOUtils.success("正在重启容器");
+            return ResultVOUtils.success("开始重启容器");
         } else {
             return resultVO;
         }
@@ -279,16 +295,32 @@ public class ContainerController {
      */
     @DeleteMapping("/delete/{containerId}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO removeContainer(@RequestAttribute String uid, @PathVariable String containerId){
+    public ResultVO removeContainer(@PathVariable String containerId, @RequestAttribute String uid, HttpServletRequest request){
         ResultVO resultVO = containerService.hasAllowOp(uid, containerId, ContainerOpEnum.DELETE);
 
         if(ResultEnum.OK.getCode() == resultVO.getCode()) {
-            containerService.removeContainerTask(uid, containerId);
-            return ResultVOUtils.success("正在删除容器");
+            containerService.removeContainerTask(uid, containerId, request);
+            return ResultVOUtils.success("开始删除容器");
         } else {
             return resultVO;
         }
     }
+
+    /**
+     * 修改容器所属项目
+     * @param projectId 新项目ID
+     * @author jitwxs
+     * @since 2018/7/14 8:35
+     */
+    @PostMapping("/changeProject")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResultVO changeBelongProject(String containerId, String projectId, @RequestAttribute String uid) {
+        if(StringUtils.isBlank(containerId, projectId)) {
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
+        }
+        return containerService.changeBelongProject(containerId, projectId, uid);
+    }
+
 
     /**
      * 调用终端
@@ -308,9 +340,11 @@ public class ContainerController {
         if(container == null) {
             return ResultVOUtils.error(ResultEnum.CONTAINER_NOT_FOUND);
         }
+
         // 只有启动状态容器才能调用Terminal
-        if(!containerService.hasEqualStatus(container.getStatus(),ContainerStatusEnum.RUNNING)) {
-            return ResultVOUtils.error(ResultEnum.CONTAINER_STATUS_REFUSE);
+        ContainerStatusEnum status = containerService.getStatus(containerId);
+        if(status != ContainerStatusEnum.RUNNING) {
+            return ResultVOUtils.error(ResultEnum.CONTAINER_NOT_RUNNING);
         }
 
         // 鉴权

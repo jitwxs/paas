@@ -8,14 +8,17 @@ import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.commons.util.JsonUtils;
 import jit.edu.paas.commons.util.jedis.JedisClient;
+import jit.edu.paas.domain.dto.UserProjectDTO;
 import jit.edu.paas.domain.entity.UserContainer;
 import jit.edu.paas.domain.entity.UserProject;
 import jit.edu.paas.domain.enums.ProjectLogTypeEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.RoleEnum;
 import jit.edu.paas.domain.enums.SysLogTypeEnum;
+import jit.edu.paas.domain.select.UserProjectSelect;
 import jit.edu.paas.domain.vo.ProjectLogVO;
 import jit.edu.paas.domain.vo.ResultVO;
+import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.mapper.ProjectLogMapper;
 import jit.edu.paas.mapper.UserContainerMapper;
 import jit.edu.paas.mapper.UserProjectMapper;
@@ -24,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -66,27 +70,27 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
         try {
             String res = jedisClient.hget(key, projectId);
             if(StringUtils.isNotBlank(res)) {
-                UserProject project = JsonUtils.jsonToObject(res, UserProject.class);
-                if(project != null) {
-                    return project.getName();
+                UserProjectDTO projectDTO = JsonUtils.jsonToObject(res, UserProjectDTO.class);
+                if(projectDTO != null) {
+                    return projectDTO.getName();
                 }
             }
         } catch (Exception e) {
             log.error("缓存读取异常，错误位置：UserProjectServiceImpl.getProjectName()");
         }
 
-        UserProject project = projectMapper.selectById(projectId);
+        UserProjectDTO projectDTO = projectMapper.getById(projectId);
 
-        if(project == null) {
+        if(projectDTO == null) {
             return null;
         }
 
         try {
-            jedisClient.hset(key, projectId, JsonUtils.objectToJson(project));
+            jedisClient.hset(key, projectId, JsonUtils.objectToJson(projectDTO));
         } catch (Exception e) {
             log.error("缓存存储异常，错误位置：UserProjectServiceImpl.getProjectById()");
         }
-        return project.getName();
+        return projectDTO.getName();
     }
 
     @Override
@@ -94,9 +98,9 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
         try {
             String res = jedisClient.hget(key, id);
             if(StringUtils.isNotBlank(res)) {
-                UserProject project = JsonUtils.jsonToObject(res, UserProject.class);
-                if(project != null) {
-                    return ResultVOUtils.success(project);
+                UserProjectDTO projectDTO = JsonUtils.jsonToObject(res, UserProjectDTO.class);
+                if(projectDTO != null) {
+                    return ResultVOUtils.success(projectDTO);
                 } else {
                     cleanCache(id);
                 }
@@ -105,14 +109,14 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
             log.error("缓存读取异常，错误位置：UserProjectServiceImpl.getProjectById()");
         }
 
-        UserProject project = projectMapper.selectById(id);
+        UserProjectDTO projectDTO = projectMapper.getById(id);
 
-        if(project == null) {
+        if(projectDTO == null) {
             return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
 
         try {
-            jedisClient.hset(key, id, JsonUtils.objectToJson(project));
+            jedisClient.hset(key, id, JsonUtils.objectToJson(projectDTO));
         } catch (Exception e) {
             log.error("缓存存储异常，错误位置：UserProjectServiceImpl.getProjectById()");
         }
@@ -120,12 +124,19 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
         // 鉴权（管理员查看所有，用户查看自己）
         String roleName = loginService.getRoleName(userId);
         if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
-            if(!userId.equals(project.getUserId())) {
+            if(!userId.equals(projectDTO.getUserId())) {
                 return ResultVOUtils.error(ResultEnum.PERMISSION_ERROR);
             }
         }
 
-        return ResultVOUtils.success(project);
+        return ResultVOUtils.success(projectDTO);
+    }
+
+    @Override
+    public Page<UserProjectDTO> list(UserProjectSelect projectSelect, Page<UserProjectDTO> page) {
+        List<UserProjectDTO> list = projectMapper.list(projectSelect, page);
+
+        return page.setRecords(list);
     }
 
     @Override
@@ -177,6 +188,7 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
     }
 
     @Override
+    @Transactional(rollbackFor = CustomException.class)
     public ResultVO deleteProject(String id, String userId) {
         ResultVO resultVO = getProjectById(id, userId);
         if(resultVO.getCode() != ResultEnum.OK.getCode()) {
@@ -184,10 +196,13 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
         }
 
         try {
+            // 1、删除项目
             projectMapper.deleteById(id);
-            // 清理缓存
+            // 2、清理缓存
             cleanCache(id);
-            // 写入日志
+            // 3、所属容器的项目设为空
+            containerMapper.cleanProjectId(id);
+            // 4、写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.DELETE_PROJECT);
 
             return ResultVOUtils.success();
@@ -234,18 +249,18 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
         try {
             String res = jedisClient.hget(key, projectId);
             if(StringUtils.isNotBlank(res)) {
-                UserProject project = JsonUtils.jsonToObject(res, UserProject.class);
-                return project.getUserId();
+                UserProjectDTO projectDTO = JsonUtils.jsonToObject(res, UserProjectDTO.class);
+                return projectDTO == null ? null : projectDTO.getUserId();
             }
         } catch (Exception e) {
             log.error("缓存读取异常，错误位置：UserProjectServiceImpl.getProjectById()");
         }
 
-        UserProject project = projectMapper.selectById(projectId);
+        UserProjectDTO projectDTO = projectMapper.getById(projectId);
 
-        if(project != null) {
+        if(projectDTO != null) {
             try {
-                jedisClient.hset(key, projectId, JsonUtils.objectToJson(project));
+                jedisClient.hset(key, projectId, JsonUtils.objectToJson(projectDTO));
             } catch (Exception e) {
                 log.error("缓存存储异常，错误位置：UserProjectServiceImpl.getProjectById()");
             }

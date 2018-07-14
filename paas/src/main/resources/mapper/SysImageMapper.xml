@@ -9,13 +9,23 @@
             AND `name` like "%"#{name}"%"
         </if>
     </select>
-
-    <select id="listLocalUserImage" resultType="jit.edu.paas.domain.entity.SysImage">
+    <select id="listLocalOpenUserImage" resultType="jit.edu.paas.domain.entity.SysImage">
         SELECT * FROM `sys_image`
         WHERE `type` = 2
         AND `has_open` = 1
         <if test="name != null" >
             AND `name` like "%"#{name}"%"
         </if>
+    </select>
+    <select id="listLocalUserImage" resultType="jit.edu.paas.domain.entity.SysImage">
+        SELECT * FROM `sys_image`
+        WHERE `type` = 2
+        <if test="name != null" >
+            AND `name` like "%"#{name}"%"
+        </if>
+    </select>
+    <select id="listSelfImage" resultType="jit.edu.paas.domain.entity.SysImage">
+        SELECT * FROM `sys_image`
+        WHERE `user_id` = #{userId}
     </select>
 </mapper>

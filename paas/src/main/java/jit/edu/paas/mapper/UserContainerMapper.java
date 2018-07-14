@@ -18,10 +18,12 @@ import java.util.List;
 public interface UserContainerMapper extends BaseMapper<UserContainer> {
     /**
      * 获取某一用户所有容器
+     * @param name 容器名
      * @author jitwxs
      * @since 2018/7/9 11:24
      */
-    List<UserContainer> listContainerByUserId(Pagination page, @Param("userId") String userId);
+    List<UserContainer> listContainerByUserIdAndName(Pagination page, @Param("userId") String userId, @Param("name") String name);
+
     /**
      * 获取某一用户所有容器
      * @author jitwxs
@@ -43,4 +45,11 @@ public interface UserContainerMapper extends BaseMapper<UserContainer> {
      * @since 2018/7/10 0:16
      */
     Integer countByUserId(@Param("userId") String userId, @Param("status") Integer status);
+
+    /**
+     * 设置容器所属项目为NULL
+     * @author jitwxs
+     * @since 2018/7/12 14:47
+     */
+    Integer cleanProjectId(String projectId);
 }
