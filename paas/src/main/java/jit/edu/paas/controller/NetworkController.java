@@ -103,31 +103,31 @@ public class NetworkController {
 
     /**
      * 连接网络
-     * @param serviceId 服务ID
+     * @param containerId 容器ID
      * @author jitwxs
      * @since 2018/7/14 20:41
      */
     @PostMapping("/connect")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResultVO connectNetwork(String serviceId, String networkId, @RequestAttribute String uid) {
-        if(StringUtils.isBlank(serviceId, networkId)) {
+    public ResultVO connectNetwork(String containerId, String networkId, @RequestAttribute String uid) {
+        if(StringUtils.isBlank(containerId, networkId)) {
             return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
-        return networkService.connectNetwork(networkId, serviceId, uid);
+        return networkService.connectNetwork(networkId, containerId, uid);
     }
 
     /**
      * 取消连接网络
-     * @param serviceId 服务ID
+     * @param containerId 容器ID
      * @author jitwxs
      * @since 2018/7/14 20:41
      */
     @PostMapping("/disConnect")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResultVO disConnectNetwork(String serviceId, String networkId, @RequestAttribute String uid) {
-        if(StringUtils.isBlank(serviceId, networkId)) {
+    public ResultVO disConnectNetwork(String containerId, String networkId, @RequestAttribute String uid) {
+        if(StringUtils.isBlank(containerId, networkId)) {
             return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
-        return networkService.disConnectNetwork(networkId, serviceId, uid);
+        return networkService.disConnectNetwork(networkId, containerId, uid);
     }
 }

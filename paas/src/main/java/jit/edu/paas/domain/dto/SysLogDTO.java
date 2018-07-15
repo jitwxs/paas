@@ -14,4 +14,9 @@ public class SysLogDTO extends SysLog {
      * 用户名
      */
     private String username;
+
+    /**
+     * 是否有异常
+     */
+    private Boolean hasException;
 }

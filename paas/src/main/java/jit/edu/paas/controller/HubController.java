@@ -24,8 +24,8 @@ import java.util.List;
  * @since 2018-07-05
  */
 @RestController
-@RequestMapping("/repository/image")
-public class RepositoryImageController {
+@RequestMapping("/hub")
+public class HubController {
     @Autowired
     private RepositoryImageService repositoryImageService;
 

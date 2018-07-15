@@ -5,6 +5,7 @@
     <select id="listSystemLog" resultType="jit.edu.paas.domain.dto.SysLogDTO">
         SELECT
             `log`.*,
+            !ISNULL(`log`.exception) AS has_exception,
             `login`.username
         FROM
             `sys_log` AS `log`,

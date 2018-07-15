@@ -760,8 +760,8 @@
 				"env": "[MYSQL_ROOT_PASSWORD=123456]",
 				"destination": ["/usr/local/aa"],
 				"portMap": {
-					"80": 8888,
-					"221": 9999
+					"80": "8888",
+					"221": "9999"
 				}
 			}
 
@@ -774,7 +774,7 @@
 				"cmd": "执行命令，字符串数组，选填",
 				"env": "环境变量，字符串数组，选填",
 				"destination": "内部目录，字符串数组，选填",
-				"portMap": "端口Map，数字字符串-->数字，暴露端口必填，其余端口选填
+				"portMap": "端口Map<String, String>，暴露端口必填，其余端口选填
 			}
 
 + Response 200 (application/json)
@@ -1914,7 +1914,7 @@
 			  "data": null
 			}
 
-# Group 网络管理（集群）
+# Group 网络管理
 
 ## 网络列表（管理员） [GET /network/listAll{?hasPublic,current,size,orderByField,asc}]
 
@@ -2130,6 +2130,60 @@
 			  "data": null
 			}
 
+## 连接网络（用户） [POST /network/connect]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+
+	+ Body
+
+			{
+				"containerId": fba35fda5b0f274ef5132a5ace51406871d18e4111a7755cb1d78c8c9a4fd6f2,
+				"networkId": 87c070ce8c5b4d9b9a177aaacee3d3e37cc675e9204f480857f32e609c9343a8
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
+
+## 取消连接网络（用户） [POST /network/disConnect]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+
+	+ Body
+
+			{
+				"containerId": fba35fda5b0f274ef5132a5ace51406871d18e4111a7755cb1d78c8c9a4fd6f2,
+				"networkId": 87c070ce8c5b4d9b9a177aaacee3d3e37cc675e9204f480857f32e609c9343a8
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
+
 ## 网络同步（管理员） [GET /network/sync]
 
 + Request
@@ -2165,9 +2219,400 @@
 		      "delete": "删除记录数"
 		    }
 
+# Group 服务管理
+
+## 服务列表 [GET /service/list{?current,size,orderByField,asc}]
+
++ Parameters
+
+    + current (number, optional) - 页码，默认为1
+    + size (number, optional) - 页面容量，默认为10
+    + orderByField (string, optional) - 排序字段
+    + asc (boolean, optional) - 升序：true；降序：false
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+	
+	+ Schema
+
+			说明：管理员获取所有服务列表，普通用户获取个人服务列表
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "total": 1,
+			    "size": 10,
+			    "pages": 1,
+			    "current": 1,
+			    "records": [
+			      {
+			        "id": "qjm4luj57mnto57rmm9hkpu2e",
+			        "projectId": "aabakfsvakiuw1213",
+			        "name": "my-nginx",
+			        "replicas": 3,
+			        "command": null,
+			        "port": "8080",
+			        "image": "nginx",
+			        "status": 1,
+			        "env": null,
+			        "createDate": "2018-07-07 15:06:01",
+			        "updateDate": "2018-07-07 15:06:01",
+			        "projectName": "项目1",
+			        "statusName": "服务运行"
+			      }
+			    ]
+			  }
+			}
+
+## 项目服务列表 [GET /service/{projectId}/list{?current,size,orderByField,asc}]
+
++ Parameters
+
+	+ projectId (string, required) - 项目id，必填
+    + current (number, optional) - 页码，默认为1
+    + size (number, optional) - 页面容量，默认为10
+    + orderByField (string, optional) - 排序字段
+    + asc (boolean, optional) - 升序：true；降序：false
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+	
+	+ Schema
+
+			说明：管理员获取任意项目服务列表，普通用户获取个人项目服务列表
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "total": 1,
+			    "size": 10,
+			    "pages": 1,
+			    "current": 1,
+			    "records": [
+			      {
+			        "id": "qjm4luj57mnto57rmm9hkpu2e",
+			        "projectId": "aabakfsvakiuw1213",
+			        "name": "my-nginx",
+			        "replicas": 3,
+			        "command": null,
+			        "port": "8080",
+			        "image": "nginx",
+			        "status": 1,
+			        "env": null,
+			        "createDate": "2018-07-07 15:06:01",
+			        "updateDate": "2018-07-07 15:06:01",
+			        "projectName": "项目1",
+			        "statusName": "服务运行"
+			      }
+			    ]
+			  }
+			}
+
+## 获取服务 [GET /service/{id}]
+
++ Parameters
+
+    + id (string, required) - 服务ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+	
+	+ Schema
+
+			描述：获取单条服务记录
+			示例：/service/qjm4luj57mnto57rmm9hkpu2e
+
++ Response 200 (application/json)
+    
+    + Body
+
+			{
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "id": "qjm4luj57mnto57rmm9hkpu2e",
+			    "projectId": "aabakfsvakiuw1213",
+			    "name": "my-nginx",
+			    "replicas": 3,
+			    "command": null,
+			    "port": "8080",
+			    "image": "nginx",
+			    "status": 1,
+			    "env": null,
+			    "createDate": "2018-07-07 15:06:01",
+			    "updateDate": "2018-07-07 15:06:01",
+			    "projectName": "项目1",
+			    "statusName": "服务运行"
+			  }
+			}
+
+## 服务详情 [GET /service/inspect/{id}]
+
++ Parameters
+
+    + id (string, required) - 服务ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+			{
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "ID": "ty96r15ym9plybgzqiib48shu",
+			    "Version": {
+			      "Index": 3223
+			    },
+			    "CreatedAt": "2018-07-15T01:35:24.370+0000",
+			    "UpdatedAt": "2018-07-15T01:35:24.375+0000",
+			    "Spec": {
+			      "Name": "my-nginx",
+			      "Labels": {},
+			      "TaskTemplate": {
+			        "ContainerSpec": {
+			          "Image": "nginx:latest@sha256:a65beb8c90a08b22a9ff6a219c2f363e16c477b6d610da28fe9cba37c2c3a2ac",
+			          "Hostname": null,
+			          "Labels": {},
+			          "Command": null,
+			          "Args": null,
+			          "Env": null,
+			          "Dir": null,
+			          "User": null,
+			          "Groups": null,
+			          "TTY": null,
+			          "Mounts": null,
+			          "StopGracePeriod": null,
+			          "Healthcheck": null,
+			          "Hosts": null,
+			          "Secrets": null,
+			          "Configs": null,
+			          "DNSConfig": {
+			            "Nameservers": null,
+			            "Search": null,
+			            "Options": null
+			          }
+			        },
+			        "Resources": {
+			          "Limits": {
+			            "NanoCPUs": null,
+			            "MemoryBytes": null
+			          },
+			          "Reservations": {
+			            "NanoCPUs": null,
+			            "MemoryBytes": null
+			          }
+			        },
+			        "RestartPolicy": null,
+			        "Placement": {
+			          "Constraints": null,
+			          "Preferences": null
+			        },
+			        "Networks": null,
+			        "LogDriver": null
+			      },
+			      "Mode": {
+			        "Replicated": {
+			          "Replicas": 1
+			        },
+			        "Global": null
+			      },
+			      "UpdateConfig": null,
+			      "Networks": null,
+			      "EndpointSpec": {
+			        "Mode": "vip",
+			        "Ports": [
+			          {
+			            "Name": null,
+			            "Protocol": "tcp",
+			            "TargetPort": 80,
+			            "PublishedPort": 6666,
+			            "PublishMode": "ingress"
+			          }
+			        ]
+			      }
+			    },
+			    "Endpoint": {
+			      "Spec": {
+			        "Mode": "vip",
+			        "Ports": [
+			          {
+			            "Name": null,
+			            "Protocol": "tcp",
+			            "TargetPort": 80,
+			            "PublishedPort": 6666,
+			            "PublishMode": "ingress"
+			          }
+			        ]
+			      },
+			      "ExposedPorts": null,
+			      "Ports": [
+			        {
+			          "Name": null,
+			          "Protocol": "tcp",
+			          "TargetPort": 80,
+			          "PublishedPort": 6666,
+			          "PublishMode": "ingress"
+			        }
+			      ],
+			      "VirtualIPs": [
+			        {
+			          "NetworkID": "t2ye8lph77t8to5eiu2tw0y0p",
+			          "Addr": "10.255.0.5/16"
+			        }
+			      ]
+			    },
+			    "UpdateStatus": null
+			  }
+			}
+
+## 服务日志 [GET /log/{id}]
+
++ Parameters
+
+    + id (string, required) - 服务ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+			{
+			  "code": 0,
+			  "message": "成功",
+			  "data": ""
+			}
+
+## 删除服务 - WebSocket [DELETE /service/delete/{id}]
+
++ Parameters
+
+    + id (string, required) - 服务ID
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": "开始删除服务"
+			}
+
+			{
+				"info": null,
+				"data": {
+					"uid": "agfag13131",
+					"data": "{\"code\":0,\"message\":\"删除服务成功\",\"data\":{\"type\":3,\"serviceId\":\"tx6tvjzote80f7osukx8mqu27\"}}"
+				}
+			}
+
+## 创建服务 - WebSocket [POST /service/create/]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Body
+
+	        {
+				"imageId": "e38bc07ac18ee64e6d59cf2eafcdddf9cec2364dfe129fe0af75f1b0194e0c96",
+				"serviceName": "myNginx",
+				"projectId": "b2b09405f54c4cf3a9e70b4ec298b31a",
+				"cmd": "[a,b]",
+				"env": "[qq,xx]",
+				"source": "",
+				"replicas": 1,
+				"portMap": {
+					"80": "8888",
+					"221": "9999"
+				},
+				"labels": {
+					"auther": "jitwxs"
+				}
+			}
+
+	+ Schema
+
+            {
+				"imageId": "镜像ID，字符串，必填",
+				"serviceName": "服务名，字符串，必填，由数字和字母组成",
+				"projectId": "项目ID，字符串，必填",
+				"cmd": "执行命令，字符串数组，选填",
+				"env": "环境变量，字符串数组，选填",
+				"replicas": "横向扩展个数，数字，选填，默认为1"
+				"source": "外部目录，字符串，选填",
+				"destination": "内部目录，字符串，选填",
+				"portMap": "端口Map<String, String>，暴露端口必填，其余端口选填",
+				"labels": "标签Map<String, String>，选填"
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+			{
+			  "code": 0,
+			  "message": "成功",
+			  "data": "开始创建服务"
+			}
+
+			{
+			    "info": null,
+			    "data": {
+			        "uid": "f4f4bb152cf54fec94eb0d2b22d25f71",
+			        "data": "{\"code\":0,\"message\":\"服务创建成功\",\"data\":{\"type\":3,\"serviceId\":\"u35nanea8kax0j5tdfblk6kmm\"}}"
+			    }
+			}
+
 # Group Hub管理
 
-## 镜像名称列表 [GET /repository/image/list{?current,size,orderByField,asc}]
+## 镜像名称列表 [GET /hub/list{?current,size,orderByField,asc}]
 
 + Parameters
 
@@ -2226,7 +2671,7 @@
 			  }
 			}
 
-## 镜像Tag列表 [GET /repository/image/{name}/list]
+## 镜像Tag列表 [GET /hub/list/name{?name}]
 
 + Parameters
 
@@ -2274,7 +2719,7 @@
 			  ]
 			}
 
-## 上传镜像 - WebSocket [POST /repository/image/push]
+## 上传镜像 - WebSocket [POST /hub/push]
 
 + Request
 
@@ -2313,7 +2758,7 @@
 			    }
 			}
 
-## 拉取镜像 - WebSocket [POST /repository/image/pull]
+## 拉取镜像 - WebSocket [POST /hub/pull]
 
 + Request
 
@@ -2352,7 +2797,7 @@
 			    }
 			}
 
-## 删除镜像 （管理员） [DELETE /repository/image/delete/{id}]
+## 删除镜像 （管理员） [DELETE /hub/delete/{id}]
 
 + Parameters
 
@@ -2379,7 +2824,7 @@
 			  "data": null
 			}
 
-## 镜像同步（管理员） [GET /repository/image/sync]
+## 镜像同步（管理员） [GET /hub/sync]
 
 + Request
 
@@ -2412,11 +2857,15 @@
 
 # Group 数据卷管理
 
-## 查看数据卷  [GET /volumes/{containerId}/list]
+## 查看容器数据卷  [GET /volumes/{containerId}/list{?current,size,orderByField,asc}]
 
 + Parameters
 
     + containerId (string, required) - 容器ID
+    + current (number, optional) - 页码，默认为1
+    + size (number, optional) - 页面容量，默认为10
+    + orderByField (string, optional) - 排序字段
+    + asc (boolean, optional) - 升序：true；降序：false
 
 + Request
 
@@ -2427,7 +2876,7 @@
 
 	+ Schema
 
-            /volumes/list/e2ae80b9d4cf4f09433e9957b5f62b40ee562d1b62837165502c4d5f7996d3c5
+            /volumes/e2ae80b9d4cf4f09433e9957b5f62b40ee562d1b62837165502c4d5f7996d3c5/list
 
 + Response 200 (application/json)
     
@@ -2436,26 +2885,32 @@
 	        {
 			  "code": 0,
 			  "message": "成功",
-			  "data": [
-			    {
-			      "id": "22710dba2e16487795655e68e56be8e9",
-			      "containerId": "e2ae80b9d4cf4f09433e9957b5f62b40ee562d1b62837165502c4d5f7996d3c5",
-			      "name": "5707b93721f8913e39315d3eec3e77f8096949fe80c1a61a78b5213fae8add42",
-			      "destination": "/usr/local/hello",
-			      "source": "/var/lib/docker/volumes/5707b93721f8913e39315d3eec3e77f8096949fe80c1a61a78b5213fae8add42/_data",
-			      "createDate": "2018-07-05 11:06:55",
-			      "updateDate": null
-			    },
-			    {
-			      "id": "f6658faa690441189cdf3f34c5546167",
-			      "containerId": "e2ae80b9d4cf4f09433e9957b5f62b40ee562d1b62837165502c4d5f7996d3c5",
-			      "name": "7cdf905d9f1f90d9a1166b34fdde554c3fc6edaa30b1fe936180478f1ad999f7",
-			      "destination": "/usr/local/world",
-			      "source": "/var/lib/docker/volumes/7cdf905d9f1f90d9a1166b34fdde554c3fc6edaa30b1fe936180478f1ad999f7/_data",
-			      "createDate": "2018-07-05 11:06:55",
-			      "updateDate": null
-			    }
-			  ]
+			  "data": {
+			    "total": 2,
+			    "size": 10,
+			    "pages": 1,
+			    "current": 1,
+			    "records": [
+			      {
+			        "id": "22710dba2e16487795655e68e56be8e9",
+			        "containerId": "e2ae80b9d4cf4f09433e9957b5f62b40ee562d1b62837165502c4d5f7996d3c5",
+			        "name": "5707b93721f8913e39315d3eec3e77f8096949fe80c1a61a78b5213fae8add42",
+			        "destination": "/usr/local/hello",
+			        "source": "/var/lib/docker/volumes/5707b93721f8913e39315d3eec3e77f8096949fe80c1a61a78b5213fae8add42/_data",
+			        "createDate": "2018-07-05 11:06:55",
+			        "updateDate": null
+			      },
+			      {
+			        "id": "f6658faa690441189cdf3f34c5546167",
+			        "containerId": "e2ae80b9d4cf4f09433e9957b5f62b40ee562d1b62837165502c4d5f7996d3c5",
+			        "name": "7cdf905d9f1f90d9a1166b34fdde554c3fc6edaa30b1fe936180478f1ad999f7",
+			        "destination": "/usr/local/world",
+			        "source": "/var/lib/docker/volumes/7cdf905d9f1f90d9a1166b34fdde554c3fc6edaa30b1fe936180478f1ad999f7/_data",
+			        "createDate": "2018-07-05 11:06:55",
+			        "updateDate": null
+			      }
+			    ]
+			  }
 			}
 
 	+ Schema
@@ -2839,7 +3294,8 @@
 			        "param": null,
 			        "exception": null,
 			        "createDate": "2018-07-07 16:16:40",
-			        "username": "sys"
+			        "username": "sys",
+			        "hasException": false
 			      }
 			    ]
 			  }
@@ -3116,6 +3572,43 @@
 			  "data": false
 			}
 
+## Portainer监控（管理员） [GET /monitor/portainer]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": "192.168.100.30:9000"
+			}
+
+## Visualizer监控（管理员） [GET /monitor/visualizer]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": "192.168.100.42:8080"
+			}
 
 # Group 端口管理
 
@@ -3410,20 +3903,27 @@
 			    "14": "请求超时",
 			    "15": "请求错误",
 			    "16": "上传类型错误",
-			    "17": "其他错误",
-			    "20": "用户名或密码错误",
-			    "21": "用户被冻结，请联系管理员",
-			    "22": "注册失败，用户名已注册",
-			    "23": "注册失败，邮箱已注册",
-			    "24": "邮件发送错误",
-			    "25": "邮件验证错误，用户已注册或验证时间已过期",
-			    "30": "创建项目失败",
-			    "31": "删除项目失败",
-			    "32": "仓储已经存在",
-			    "33": "Docker超时",
-			    "34": "Docker异常",
-			    "35": "获取监控数据错误",
-			    "40": "镜像异常",
+			    "17": "数据更新错误",
+			    "18": "数据插入错误",
+			    "19": "数据删除错误",
+			    "20": "其他错误",
+			    "21": "用户名或密码错误",
+			    "22": "用户被冻结，请联系管理员",
+			    "23": "注册失败，用户名已注册",
+			    "24": "注册失败，邮箱已注册",
+			    "25": "邮件发送错误",
+			    "27": "邮件验证错误，用户已注册或验证时间已过期",
+			    "28": "token未被服务器接受，请重新登陆",
+			    "29": "token已过期，请重新登陆",
+			    "30": "token读取失败，请重试",
+			    "31": "创建项目失败",
+			    "32": "删除项目失败",
+			    "33": "项目不存在",
+			    "34": "没有权限访问项目",
+			    "35": "Docker超时",
+			    "36": "Docker异常",
+			    "37": "获取监控数据错误",
+			    "40": "镜像不存在",
 			    "41": "查看镜像信息错误,未找到此镜像",
 			    "42": "导入镜像错误，镜像名本地已存在",
 			    "43": "导入镜像错误，文件上传失败或导入异常",
@@ -3431,10 +3931,11 @@
 			    "45": "pull镜像错误，本地已存在",
 			    "46": "pull镜像失败",
 			    "47": "镜像上传失败，公有镜像不支持上传",
-			    "48": "镜像上传失败，镜像已经上传",
+			    "48": "镜像上传失败，镜像已经存在",
 			    "49": "删除Hub上镜像失败",
 			    "50": "删除镜像错误，没有权限",
 			    "51": "删除镜像错误，有容器正在使用该镜像",
+			    "52": "镜像异常",
 			    "60": "输入端口错误，请检查端口是否合法、是否可用，暴露端口是否均设置",
 			    "61": "容器不存在",
 			    "62": "容器状态拒绝操作",
@@ -3443,10 +3944,26 @@
 			    "65": "容器正运行，操作被拒绝",
 			    "66": "容器已经暂停，操作被拒绝",
 			    "67": "容器已经停止，操作被拒绝",
-			    "68": "容器状态错误",
+			    "68": "容器尚未运行，操作被拒绝",
+			    "69": "容器状态错误",
 			    "70": "获取数据卷列表失败",
 			    "71": "数据卷不存在",
-			    "72": "数据卷上传失败"
+			    "72": "数据卷上传失败",
+			    "80": "网络名已存在",
+			    "81": "网络名不合法，只能为字母或数字",
+			    "82": "Host网络已存在，只允许存在一个",
+			    "83": "公共网络创建失败",
+			    "84": "用户网络创建失败",
+			    "85": "网络不存在",
+			    "86": "删除网络错误",
+			    "87": "连接网络错误",
+			    "88": "取消连接网络错误",
+			    "89": "网络连接拒绝，没有权限",
+			    "90": "网络取消连接拒绝，没有权限",
+			    "91": "服务不存在",
+			    "92": "服务查询失败",
+			    "93": "服务名不合法，只能为字母或数字",
+			    "94": "服务名不合法，已经存在"
 			  }
 			}
 
@@ -3471,7 +3988,6 @@
 			    "11": "删除项目",
 			    "20": "创建容器",
 			    "21": "删除容器",
-			    "22": "同步镜像",
 			    "23": "删除镜像",
 			    "24": "从DockerHub拉取镜像",
 			    "25": "上传镜像到DockerHub",
@@ -3481,9 +3997,14 @@
 			    "40": "上传镜像到Hub",
 			    "41": "拉取镜像从Hub",
 			    "42": "删除Hub上镜像",
-			    "43": "同步Hub上镜像",
 			    "50": "清理数据卷",
-			    "60": "冻结用户"
+			    "60": "创建公共网络",
+			    "61": "创建公共网络失败",
+			    "62": "删除网络失败",
+			    "80": "冻结用户",
+			    "81": "取消冻结用户",
+			    "90": "删除服务",
+			    "91": "创建服务"
 			  }
 			}
 
@@ -3521,7 +4042,11 @@
 			    "32": "删除容器",
 			    "33": "删除容器失败",
 			    "34": "重启容器",
-			    "35": "重启容器失败"
+			    "35": "重启容器失败",
+			    "36": "删除服务",
+			    "37": "删除服务失败",
+			    "38": "新建服务",
+			    "39": "新建服务失败"
 			  }
 			}
 
@@ -3565,7 +4090,9 @@
 			  "message": "成功",
 			  "data": {
 			    "0": "容器操作",
-			    "1": "镜像操作"
+			    "1": "系统镜像操作",
+			    "2": "Hub镜像操作",
+			    "3": "服务操作"
 			  }
 			}
 

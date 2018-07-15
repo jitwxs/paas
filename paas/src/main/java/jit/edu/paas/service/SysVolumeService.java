@@ -1,5 +1,6 @@
 package jit.edu.paas.service;
 
+import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.IService;
 import jit.edu.paas.domain.entity.SysVolume;
 import jit.edu.paas.domain.vo.ResultVO;
@@ -19,7 +20,7 @@ public interface SysVolumeService extends IService<SysVolume> {
      /**
      * 获取挂载列表
      */
-    ResultVO listByContainerId(String containerId, String uid);
+    ResultVO listByContainerId(Page<SysVolume> page, String containerId, String uid);
 
     /**
      * 查看挂载信息

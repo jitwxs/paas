@@ -1,7 +1,5 @@
 package jit.edu.paas.controller;
 
-import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.messages.Network;
 import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.domain.entity.SysLogin;
@@ -20,7 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.List;
 
 /**
  * 鉴权Controller
@@ -38,9 +35,6 @@ public class AuthController {
     private String nginxServer;
     @Value("${server.addr}")
     private String serverAddress;
-
-    @Autowired
-    private DockerClient dockerClient;
 
     /**
      * 验证密码是否正确
@@ -127,6 +121,32 @@ public class AuthController {
                     "</html>");
         } catch (IOException e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * 失败方法
+     * @author jitwxs
+     * @since 2018/6/28 9:16
+     */
+    @RequestMapping("/error")
+    public ResultVO loginError(HttpServletRequest request) {
+        // 如果Spring Security中有异常，输出
+        AuthenticationException exception =
+                (AuthenticationException)request.getSession().getAttribute("SPRING_SECURITY_LAST_EXCEPTION");
+        if(exception != null) {
+            return ResultVOUtils.error(ResultEnum.AUTHORITY_ERROR.getCode(), exception.toString());
+        }
+
+        // 其次从ERR_MSG中取
+        Object obj = request.getAttribute("ERR_MSG");
+        if(obj instanceof ResultVO) {
+            return (ResultVO)obj;
+        }
+        if(obj instanceof ResultEnum) {
+            return ResultVOUtils.error((ResultEnum)obj);
+        } else {
+            return ResultVOUtils.error(ResultEnum.OTHER_ERROR);
         }
     }
 }

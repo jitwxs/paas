@@ -30,6 +30,15 @@ public class UserService implements Serializable {
      */
     private String name;
     /**
+     * 服务完整名（实际存储）
+     */
+    @TableField(exist = false)
+    private String fullName;
+    /**
+     * 用户ID
+     */
+    private String userId;
+    /**
      * 横向扩展数量
      */
     private Integer replicas;
@@ -46,10 +55,6 @@ public class UserService implements Serializable {
      */
     private String image;
     /**
-     * 服务状态
-     */
-    private Integer status;
-    /**
      * 环境变量
      */
     private String env;
@@ -64,4 +69,8 @@ public class UserService implements Serializable {
     @TableField(update = "now()")
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date updateDate;
+
+    public String getFullName() {
+        return this.userId + "-" + this.name;
+    }
 }

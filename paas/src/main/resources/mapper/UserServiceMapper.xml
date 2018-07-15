@@ -8,4 +8,13 @@
             AND `user_project`.user_id = #{userId}
         </if>
     </select>
+    <select id="hasBelong" resultType="java.lang.Boolean">
+        SELECT
+            Count( * )
+        FROM
+            `user_service`
+        WHERE
+            id = #{serviceId}
+            AND user_id = #{userId}
+    </select>
 </mapper>

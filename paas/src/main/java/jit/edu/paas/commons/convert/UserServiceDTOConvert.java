@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.plugins.Page;
 import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.domain.dto.UserServiceDTO;
 import jit.edu.paas.domain.entity.UserService;
-import jit.edu.paas.domain.enums.UserServiceStatusEnum;
 import jit.edu.paas.service.UserProjectService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,11 +30,6 @@ public class UserServiceDTOConvert {
         if(StringUtils.isNotBlank(projectId)) {
             String projectName = projectService.getProjectName(projectId);
             dto.setProjectName(projectName);
-        }
-
-        Integer status = userService.getStatus();
-        if(status != null) {
-            dto.setStatusName(UserServiceStatusEnum.getMessage(status));
         }
 
         return dto;

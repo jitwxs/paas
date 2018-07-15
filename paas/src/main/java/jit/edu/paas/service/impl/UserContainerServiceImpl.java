@@ -155,7 +155,8 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
     }
 
     @Override
-    public ResultVO createContainerCheck(String userId, String imageId, Map<String, Integer> portMap, String projectId) {
+    public ResultVO createContainerCheck(String userId, String imageId,
+                                         Map<String, String> portMap, String projectId) {
         // 1、Project鉴权
         Boolean b = projectMapper.hasBelong(projectId, userId);
         if(!b) {
@@ -188,7 +189,7 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
     @Async("taskExecutor")
     @Transactional(rollbackFor = CustomException.class)
     @Override
-    public void createContainerTask(String userId, String imageId, String[] cmd, Map<String, Integer> portMap,
+    public void createContainerTask(String userId, String imageId, String[] cmd, Map<String, String> portMap,
                                     String containerName, String projectId, String[] env, String[] destination, HttpServletRequest request) {
         SysImage image = imageService.getById(imageId);
         UserContainer uc = new UserContainer();
@@ -201,7 +202,9 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             Set<String> realExportPorts = new HashSet<>();
             Map<String, List<PortBinding>> portBindings = new HashMap<>(16);
 
-            portMap.forEach((k,v) -> {
+            for(Map.Entry<String, String> entry : portMap.entrySet()) {
+                String k = entry.getKey();
+                int v = Integer.parseInt(entry.getValue());
                 realExportPorts.add(k);
                 // 捆绑端口
                 List<PortBinding> hostPorts = new ArrayList<>();
@@ -209,7 +212,8 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
                 Integer hostPort = portService.hasUse(v) ? portService.randomPort() : v;
                 hostPorts.add(PortBinding.of("0.0.0.0", hostPort));
                 portBindings.put(k, hostPorts);
-            });
+            }
+
 
             uc.setPort(JsonUtils.objectToJson(portBindings));
 
@@ -497,11 +501,6 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
         return ResultVOUtils.success();
     }
 
-    @Override
-    public boolean hasEqualStatus(int inputStatusCode, ContainerStatusEnum statusEnum) {
-        return statusEnum.getCode() == inputStatusCode;
-    }
-
     /**
      * API查询容器状态
      * @author jitwxs
@@ -650,7 +649,7 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
      * @author jitwxs
      * @since 2018/7/7 16:47
      */
-    private boolean checkPorts(List<String> exportPorts, Map<String,Integer> map) {
+    private boolean checkPorts(List<String> exportPorts, Map<String,String> map) {
         // 校验NULL
         if(CollectionUtils.isListEmpty(exportPorts) && map == null) {
             return true;
@@ -676,9 +675,9 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
         return hasPortIllegal(map);
     }
 
-    private boolean hasPortIllegal(Map<String,Integer> map) {
-        for (Map.Entry<String, Integer> entry : map.entrySet()) {
-            Integer value = entry.getValue();
+    private boolean hasPortIllegal(Map<String,String> map) {
+        for (Map.Entry<String, String> entry : map.entrySet()) {
+            Integer value = Integer.parseInt(entry.getValue());
 
             // 判断数字
             try {

@@ -17,9 +17,16 @@ import java.util.List;
  */
 public interface UserServiceMapper extends BaseMapper<UserService> {
     /**
-     * 获取某一用户所有容器 (分页）
+     * 获取某一用户所有服务 (分页）
      * @author hf
      * @since 2018/7/13 10:50
      */
     List<UserService> listServiceByUserId(Pagination page, @Param("userId") String userId);
+
+    /**
+     * 服务是否属于某一用户
+     * @author jitwxs
+     * @since 2018/7/15 14:48
+     */
+    boolean hasBelong(@Param("serviceId") String serviceId, @Param("userId") String userId);
 }

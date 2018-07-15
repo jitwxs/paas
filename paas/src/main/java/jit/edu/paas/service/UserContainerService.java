@@ -50,14 +50,14 @@ public interface UserContainerService extends IService<UserContainer> {
      * @author jitwxs
      * @since 2018/7/10 20:11
      */
-    ResultVO createContainerCheck(String userId, String imageId,Map<String, Integer> portMap, String projectId);
+    ResultVO createContainerCheck(String userId, String imageId,Map<String, String> portMap, String projectId);
 
     /**
      * 创建容器任务
      * @author hf
      * @since 2018/7/1 16:00
      */
-    void createContainerTask(String userId, String imageId, String[] cmd, Map<String, Integer> portMap,
+    void createContainerTask(String userId, String imageId, String[] cmd, Map<String, String> portMap,
                              String containerName, String projectId, String[] env, String[] destination, HttpServletRequest request);
 
     /**
@@ -117,13 +117,6 @@ public interface UserContainerService extends IService<UserContainer> {
     ResultVO topContainer(String userId, String containerId);
 
     ResultVO checkPermission(String userId, String containerId);
-
-    /**
-     * 判断输入状态是否等于指定状态
-     * @author jitwxs
-     * @since 2018/7/9 9:41
-     */
-    boolean hasEqualStatus(int inputStatusCode, ContainerStatusEnum statusEnum);
 
     /**
      * 获取容器状态

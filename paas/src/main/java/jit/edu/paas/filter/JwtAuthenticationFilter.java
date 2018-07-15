@@ -47,7 +47,7 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
 
             if(obj instanceof ResultVO) {
                 //如果属于ResultVO，表示有错误
-                request.setAttribute("ERR_TOKEN", obj);
+                request.setAttribute("ERR_MSG", obj);
                 // 转发到错误Url
                 request.getRequestDispatcher("/auth/error").forward(request, response);
             } else if(obj instanceof UsernamePasswordAuthenticationToken) {

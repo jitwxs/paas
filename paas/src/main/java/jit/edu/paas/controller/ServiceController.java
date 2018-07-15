@@ -20,8 +20,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.Map;
 
+/**
+ * 服务Controller
+ * @author jitwxs
+ * @since 2018/7/15 9:15
+ */
 @RestController
 @RequestMapping("/service")
 public class ServiceController {
@@ -38,24 +44,22 @@ public class ServiceController {
 
     /**
      * 获取服务
-     * @author
+     * @author jitwxs
      * @since 2018/7/13 09:25
      */
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVO getById(@RequestAttribute String uid, @PathVariable String id) {
-        ResultVO resultVO = userServiceService.checkPermission(uid,id);
-        if(ResultEnum.OK.getCode() != resultVO.getCode()) {
-            return resultVO;
+        if(StringUtils.isBlank(uid, id)) {
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
-        UserServiceDTO serviceDTO = userServiceService.getById(id);
 
-        return ResultVOUtils.success(serviceDTO);
+        return userServiceService.checkPermission(uid,id);
     }
 
     /**
      * 获取服务列表
-     * 普通用户获取本人容器，系统管理员获取所有容器
+     * 普通用户获取本人服务，系统管理员获取所有服务
      * @author hf
      * @since 2018/7/13 11:19
      */
@@ -64,7 +68,6 @@ public class ServiceController {
     public ResultVO listService(@RequestAttribute String uid, Page<UserService> page) {
         // 鉴权
         String roleName = loginService.getRoleName(uid);
-
         // 角色无效
         if(StringUtils.isBlank(roleName)) {
             return ResultVOUtils.error(ResultEnum.AUTHORITY_ERROR);
@@ -86,7 +89,7 @@ public class ServiceController {
      * @author hf
      * @since 2018/7/13 15:16
      */
-    @GetMapping("/list/project/{projectId}")
+    @GetMapping("{projectId}/list")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVO listServiceByProject(@RequestAttribute String uid, @PathVariable String projectId, Page<UserService> page) {
         // 1、鉴权
@@ -127,53 +130,6 @@ public class ServiceController {
     }
 
     /**
-     * 创建服务【WebSocket】
-     * @param imageId 镜像ID 必填
-     * @param serviceName 容器名 必填
-     * @param projectId 所属项目 必填
-     * @param portMap 端口映射
-     * @param cmd 执行命令，如若为空，使用默认的命令
-     * @param env 环境变量
-     * @destination 容器内部目录
-     * @author jitwxs
-     * @since 2018/7/1 15:52
-     */
-    @PostMapping("/create")
-    @PreAuthorize("hasRole('ROLE_USER')")
-    public ResultVO createContainer(@RequestAttribute String uid, String imageId, String serviceName, String projectId,
-                                    Map<String,Integer> portMap, String[] cmd, String[] env, String source,String destination,int replicas,Map<String,String> lables){
-        // 输入验证
-        if(StringUtils.isBlank(imageId,serviceName,projectId)) {
-            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
-        }
-        // 创建校验（引用创建容器前的校验）
-        ResultVO resultVO = containerService.createContainerCheck(uid, imageId, portMap, projectId);
-        if(ResultEnum.OK.getCode() != resultVO.getCode()) {
-            return resultVO;
-        } else {
-            userServiceService.createServiceTask(uid,imageId,cmd, portMap,replicas, serviceName, projectId,env,source,destination,lables);
-            return ResultVOUtils.success("正在创建服务");
-        }
-    }
-
-    /**
-     * 删除容器【WebSocket】
-     * @author jitwxs
-     * @since 2018/7/1 16:05
-     */
-    @DeleteMapping("/delete/{serviceId}")
-    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO removeContainer(@RequestAttribute String uid, @PathVariable String serviceId){
-        ResultVO resultVO = userServiceService.checkPermission(uid,serviceId);
-        if(ResultEnum.OK.getCode() == resultVO.getCode()) {
-            userServiceService.removeServiceTask(uid,serviceId);
-            return ResultVOUtils.success("正在删除服务");
-        } else {
-            return resultVO;
-        }
-    }
-
-    /**
      * 查询服务日志信息
      * @author hf
      * @since 2018/7/13 15:39
@@ -188,5 +144,67 @@ public class ServiceController {
         LogStream serviceLog = userServiceService.logById(id);
 
         return serviceLog != null ? ResultVOUtils.success(serviceLog.readFully()) : ResultVOUtils.error(ResultEnum.SERVICE_INSPECT_ERROR) ;
+    }
+
+    /**
+     * 删除服务【WebSocket】
+     * @author jitwxs
+     * @since 2018/7/1 16:05
+     */
+    @DeleteMapping("/delete/{id}")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVO deleteServiceTask(@RequestAttribute String uid, @PathVariable String id, HttpServletRequest request) {
+        // 鉴权
+        ResultVO resultVO = userServiceService.checkPermission(uid, id);
+        if (ResultEnum.OK.getCode() != resultVO.getCode()) {
+            return resultVO;
+        }
+
+        userServiceService.deleteServiceTask(uid, id, request);
+        return ResultVOUtils.success("开始删除服务");
+    }
+
+    /**
+     * 创建服务【WebSocket】
+     * @param imageId 镜像ID 必填
+     * @param serviceName 服务名 必填
+     * @param projectId 所属项目 必填
+     * @param portMap 端口映射
+     * @param cmd 执行命令，如若为空，使用默认的命令
+     * @param env 环境变量
+     * @param source 服务外部目录
+     * @param destination 服务内部目录
+     * @param labels 标签
+     * @param replicas 横向扩展个数，默认为1
+     * @author jitwxs
+     * @since 2018/7/1 15:52
+     */
+    @PostMapping("/create")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResultVO createContainer(String imageId, String serviceName, String projectId,
+                                    Map<String,String> portMap, String[] cmd, String[] env, String source,
+                                    String destination, @RequestParam(defaultValue = "1") int replicas, Map<String,String> labels,
+                                    @RequestAttribute String uid, HttpServletRequest request){
+        // 输入验证
+        if (StringUtils.isBlank(imageId, serviceName, projectId)) {
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
+        }
+
+        // ServiceName校验
+        ResultVO resultVO1 = userServiceService.checkServiceName(serviceName, uid);
+        if (ResultEnum.OK.getCode() != resultVO1.getCode()) {
+            return resultVO1;
+        }
+
+        // 创建校验
+        ResultVO resultVO = containerService.createContainerCheck(uid, imageId, portMap, projectId);
+        if (ResultEnum.OK.getCode() != resultVO.getCode()) {
+            return resultVO;
+        }
+
+        // 创建服务
+        userServiceService.createServiceTask(uid, imageId, cmd, portMap, replicas, serviceName, projectId,
+                env, source, destination, labels, request);
+        return ResultVOUtils.success("开始创建服务");
     }
 }

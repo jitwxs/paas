@@ -10,6 +10,7 @@ import jit.edu.paas.service.MonitorService;
 import jit.edu.paas.service.SysLogService;
 import jit.edu.paas.service.UserContainerService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -27,6 +28,12 @@ public class MonitorController {
     private UserContainerService containerService;
     @Autowired
     private MonitorService monitorService;
+
+    @Value("${docker.server.address}")
+    private String serverAddress;
+
+    @Value("${docker.swarm.manager.address}")
+    private String swarmManagerAddress;
 
     /**
      * 获取容器实时监控【粒度：5s】
@@ -119,5 +126,29 @@ public class MonitorController {
     public ResultVO listSystemLog(SysLogSelect sysLogSelect, Page<SysLogDTO> page) {
         Page<SysLogDTO> selectPage = sysLogService.listSystemLog(sysLogSelect, page);
         return ResultVOUtils.success(selectPage);
+    }
+
+    /**
+     * portainer监控
+     * @author jitwxs
+     * @since 2018/7/15 9:01
+     */
+    @GetMapping("/portainer")
+    @PreAuthorize("hasRole('ROLE_SYSTEM')")
+    public ResultVO portainer() {
+        String url = serverAddress + ":9000";
+        return ResultVOUtils.success(url);
+    }
+
+    /**
+     * visualizer监控
+     * @author jitwxs
+     * @since 2018/7/15 9:01
+     */
+    @GetMapping("/visualizer")
+    @PreAuthorize("hasRole('ROLE_SYSTEM')")
+    public ResultVO visualizer() {
+        String url = swarmManagerAddress + ":8080";
+        return ResultVOUtils.success(url);
     }
 }

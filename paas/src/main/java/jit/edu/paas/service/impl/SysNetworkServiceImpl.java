@@ -15,6 +15,7 @@ import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.mapper.SysNetworkMapper;
 import jit.edu.paas.mapper.UserContainerMapper;
+import jit.edu.paas.mapper.UserServiceMapper;
 import jit.edu.paas.service.SysLogService;
 import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.service.SysNetworkService;
@@ -43,11 +44,13 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
     @Autowired
     private SysNetworkMapper networkMapper;
     @Autowired
+    private UserContainerMapper containerMapper;
+    @Autowired
     private SysLoginService loginService;
     @Autowired
     private SysLogService sysLogService;
     @Autowired
-    private DockerClient dockerSwarmClient;
+    private DockerClient dockerClient;
 
     @Override
     public SysNetwork getById(String id) {
@@ -119,10 +122,10 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
             }
 
             NetworkConfig config = builder.build();
-            dockerSwarmClient.createNetwork(config);
+            dockerClient.createNetwork(config);
 
             // 保存数据库
-            List<Network> networks = dockerSwarmClient.listNetworks(DockerClient.ListNetworksParam.byNetworkName(name));
+            List<Network> networks = dockerClient.listNetworks(DockerClient.ListNetworksParam.byNetworkName(name));
             if(networks == null || networks.size() == 0) {
                 return ResultVOUtils.error(ResultEnum.PUBLIC_NETWORK_CREATE_ERROR);
             }
@@ -178,10 +181,10 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
             }
 
             NetworkConfig config = builder.build();
-            dockerSwarmClient.createNetwork(config);
+            dockerClient.createNetwork(config);
 
             // 保存数据库
-            List<Network> networks = dockerSwarmClient.listNetworks(DockerClient.ListNetworksParam.byNetworkName(name));
+            List<Network> networks = dockerClient.listNetworks(DockerClient.ListNetworksParam.byNetworkName(name));
             if(networks == null || networks.size() == 0) {
                 return ResultVOUtils.error(ResultEnum.USER_NETWORK_CREATE_ERROR);
             }
@@ -226,10 +229,13 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
         if(ResultEnum.OK.getCode() != resultVO.getCode()) {
             return resultVO;
         }
-        // TODO 校验服务所属
+        // 校验容器所属
+        if(!containerMapper.hasBelongSb(containerId, userId)) {
+            return ResultVOUtils.error(ResultEnum.NETWORK_CONNECT_REFUSED);
+        }
 
         try {
-            dockerSwarmClient.connectToNetwork(containerId, networkId);
+            dockerClient.connectToNetwork(containerId, networkId);
 
             return ResultVOUtils.success();
         } catch (Exception e) {
@@ -247,10 +253,13 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
             return resultVO;
         }
 
-        // TODO 校验服务所属
+        // 校验容器所属
+        if(!containerMapper.hasBelongSb(containerId, userId)) {
+            return ResultVOUtils.error(ResultEnum.NETWORK_CONNECT_REFUSED);
+        }
 
         try {
-            dockerSwarmClient.disconnectFromNetwork(containerId, networkId);
+            dockerClient.disconnectFromNetwork(containerId, networkId);
 
             return ResultVOUtils.success();
         } catch (Exception e) {
@@ -292,7 +301,7 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
         // TODO 判断是否有活跃容器
 
         try {
-            dockerSwarmClient.removeNetwork(networkId);
+            dockerClient.removeNetwork(networkId);
             networkMapper.deleteById(networkId);
 
             return ResultVOUtils.success();
@@ -310,7 +319,7 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
     public ResultVO sync() {
         try {
             // 1、查询本地和数据库网络列表
-            List<Network> localNetworks = dockerSwarmClient.listNetworks();
+            List<Network> localNetworks = dockerClient.listNetworks();
             List<SysNetwork> dbNetworks = networkMapper.selectList(new EntityWrapper<>());
 
             int addCount = 0, deleteCount = 0, errorCount = 0;

@@ -1,5 +1,7 @@
 package jit.edu.paas.controller;
 
+import com.baomidou.mybatisplus.plugins.Page;
+import jit.edu.paas.domain.entity.SysVolume;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.service.SysVolumeService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,8 +28,8 @@ public class VolumesController {
      */
     @GetMapping("/{containerId}/list")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO listByContainerId(@RequestAttribute String uid, @PathVariable String containerId) {
-        return sysVolumeService.listByContainerId(containerId, uid);
+    public ResultVO listByContainerId(Page<SysVolume> page, @RequestAttribute String uid, @PathVariable String containerId) {
+        return sysVolumeService.listByContainerId(page, containerId, uid);
     }
 
     /**

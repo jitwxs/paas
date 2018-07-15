@@ -153,7 +153,7 @@ public class ContainerController {
     @PostMapping("/create")
     @PreAuthorize("hasRole('ROLE_USER')")
     public ResultVO createContainer(String imageId, String containerName, String projectId,
-                                    Map<String,Integer> portMap, String[] cmd, String[] env, String[] destination,
+                                    Map<String,String> portMap, String[] cmd, String[] env, String[] destination,
                                     @RequestAttribute String uid, HttpServletRequest request){
         // 输入验证
         if(StringUtils.isBlank(imageId,containerName,projectId)) {

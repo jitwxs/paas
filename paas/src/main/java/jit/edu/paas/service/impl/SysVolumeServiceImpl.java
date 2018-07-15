@@ -1,6 +1,7 @@
 package jit.edu.paas.service.impl;
 
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
+import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import com.google.common.collect.ImmutableList;
 import com.spotify.docker.client.DockerClient;
@@ -107,7 +108,7 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
     }
 
     @Override
-    public ResultVO listByContainerId(String containerId, String uid) {
+    public ResultVO listByContainerId(Page<SysVolume> page, String containerId, String uid) {
         // 1、鉴权
         String roleName = loginService.getRoleName(uid);
         if(StringUtils.isBlank(roleName)) {
@@ -119,8 +120,8 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
             }
         }
 
-        List<SysVolume> list = volumesMapper.selectList(new EntityWrapper<SysVolume>().eq("container_id",containerId));
-        return ResultVOUtils.success(list);
+        List<SysVolume> list = volumesMapper.selectByContainerId(containerId, page);
+        return ResultVOUtils.success(page.setRecords(list));
     }
 
     @Override

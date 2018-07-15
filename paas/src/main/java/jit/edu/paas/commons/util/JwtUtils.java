@@ -77,7 +77,7 @@ public class JwtUtils {
                     .parseClaimsJws(token.replace(TOKEN_PREFIX,""))
                     .getBody();
         } catch (Exception e) {
-            System.out.println("Token验证失败");
+//            System.out.println("Token验证失败");
             return null;
         }
     }
@@ -89,7 +89,7 @@ public class JwtUtils {
                     .parseClaimsJws(token.replace(TOKEN_PREFIX,""))
                     .getBody();
         } catch (Exception e) {
-            System.out.println("Token验证失败");
+//            System.out.println("Token验证失败");
             return null;
         }
     }

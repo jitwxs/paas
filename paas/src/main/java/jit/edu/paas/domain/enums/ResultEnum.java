@@ -72,8 +72,12 @@ public enum ResultEnum {
     DELETE_NETWORK_ERROR("删除网络错误",86),
     CONNECT_NETWORK_ERROR("连接网络错误",87),
     DIS_CONNECT_NETWORK_ERROR("取消连接网络错误",88),
-    SERVICE_NOT_FOUND("服务不存在",90),
-    SERVICE_INSPECT_ERROR("服务查询失败",91);
+    NETWORK_CONNECT_REFUSED("网络连接拒绝，没有权限",89),
+    NETWORK_DIS_CONNECT_REFUSED("网络取消连接拒绝，没有权限",90),
+    SERVICE_NOT_FOUND("服务不存在",91),
+    SERVICE_INSPECT_ERROR("服务查询失败",92),
+    SERVICE_NAME_ILLEGAL("服务名不合法，只能为字母或数字",93),
+    SERVICE_NAME_EXIST("服务名不合法，已经存在",94);
 
     private String message;
     private int code;
