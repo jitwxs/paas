@@ -11,19 +11,24 @@ import jit.edu.paas.commons.socket.FileTransferClient;
 import jit.edu.paas.commons.util.*;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.entity.SysVolume;
+import jit.edu.paas.domain.entity.UserContainer;
+import jit.edu.paas.domain.entity.UserService;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.RoleEnum;
 import jit.edu.paas.domain.enums.SysLogTypeEnum;
+import jit.edu.paas.domain.enums.VolumeTypeEnum;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.mapper.SysVolumesMapper;
 import jit.edu.paas.mapper.UserContainerMapper;
+import jit.edu.paas.mapper.UserServiceMapper;
 import jit.edu.paas.service.SysLogService;
 import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.service.SysVolumeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -39,6 +44,8 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
     @Autowired
     private DockerClient dockerClient;
     @Autowired
+    private DockerClient dockerSwarmClient;
+    @Autowired
     private SysLoginService loginService;
     @Autowired
     private SysLogService sysLogService;
@@ -46,6 +53,8 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
     private SysVolumesMapper volumesMapper;
     @Autowired
     private UserContainerMapper containerMapper;
+    @Autowired
+    private UserServiceMapper serviceMapper;
     @Autowired
     private HttpServletRequest request;
 
@@ -108,42 +117,54 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
     }
 
     @Override
-    public ResultVO listByContainerId(Page<SysVolume> page, String containerId, String uid) {
+    public SysVolume getBySource(String source) {
+        List<SysVolume> list = volumesMapper.selectList(new EntityWrapper<SysVolume>().eq("source", source));
+        SysVolume volume = CollectionUtils.getListFirst(list);
+        if(volume == null) {
+            return null;
+        }
+        return volume;
+    }
+
+    @Override
+    public ResultVO listByObjId(Page<SysVolume> page, String objId, String uid) {
         // 1、鉴权
         String roleName = loginService.getRoleName(uid);
         if(StringUtils.isBlank(roleName)) {
             return ResultVOUtils.error(ResultEnum.AUTHORITY_ERROR);
         }
         if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
-            if(!containerMapper.hasBelongSb(containerId, uid)) {
+            if(!containerMapper.hasBelongSb(objId, uid)) {
                 return ResultVOUtils.error(ResultEnum.PERMISSION_ERROR);
             }
         }
 
-        List<SysVolume> list = volumesMapper.selectByContainerId(containerId, page);
+        List<SysVolume> list = volumesMapper.selectByObjId(objId, page);
         return ResultVOUtils.success(page.setRecords(list));
     }
 
     @Override
     public ResultVO inspectVolumes(String id, String uid) {
         SysVolume sysVolume = getById(id);
-        if(sysVolume == null) {
-            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
-        }
 
-        // 鉴权
-        String roleName = loginService.getRoleName(uid);
-        if(StringUtils.isBlank(roleName)) {
-            return ResultVOUtils.error(ResultEnum.AUTHORITY_ERROR);
-        }
-        if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
-            if(!containerMapper.hasBelongSb(sysVolume.getContainerId(), uid)) {
-                return ResultVOUtils.error(ResultEnum.PERMISSION_ERROR);
-            }
+        ResultVO resultVO = checkPermission(uid, sysVolume);
+        if(ResultEnum.OK.getCode() != resultVO.getCode()) {
+            return resultVO;
         }
 
         try {
-            Volume volume = dockerClient.inspectVolume(sysVolume.getName());
+            Volume volume;
+            int type = sysVolume.getType();
+
+            // 根据数据卷类型查询
+            if(type == VolumeTypeEnum.CONTAINER.getCode()) {
+                volume = dockerClient.inspectVolume(sysVolume.getName());
+            } else if(type == VolumeTypeEnum.SERVICE.getCode()) {
+                volume = dockerSwarmClient.inspectVolume(sysVolume.getName());
+            } else {
+                throw new CustomException(ResultEnum.OTHER_ERROR.getCode(), "数据卷类型不被接收");
+            }
+
             return ResultVOUtils.success(volume);
         } catch (Exception e) {
             log.error("获取数据卷详情异常，错误位置：{}", "SysVolumeServiceImpl.inspectVolumes()");
@@ -152,9 +173,19 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
     }
 
     @Override
-    public ResultVO listFromLocal() {
+    public ResultVO listFromLocal(VolumeTypeEnum enums) {
         try {
-            VolumeList volumeList = dockerClient.listVolumes();
+            VolumeList volumeList;
+
+            // 根据数据卷类型查询
+            if(enums == VolumeTypeEnum.CONTAINER) {
+                volumeList = dockerClient.listVolumes();
+            } else if(enums == VolumeTypeEnum.SERVICE) {
+                volumeList = dockerSwarmClient.listVolumes();
+            } else {
+                throw new CustomException(ResultEnum.OTHER_ERROR.getCode(), "数据卷类型不被接收");
+            }
+
             return ResultVOUtils.success(volumeList);
         } catch (Exception e) {
             log.error("获取本地数据卷异常，错误位置：{}，错误栈：{}",
@@ -164,36 +195,105 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
     }
 
     @Override
-    @Transactional(rollbackFor = CustomException.class)
-    public ResultVO cleanVolumes() {
-        ResultVO resultVO = listFromLocal();
-        if(resultVO.getCode() != ResultEnum.OK.getCode()) {
-            return resultVO;
+    public SysVolume createVolumes(String name, VolumeTypeEnum enums) {
+        Volume.Builder builder = Volume.builder();
+
+        if(StringUtils.isNotBlank(name)) {
+            builder.name(name);
+        }
+        builder.driver("local");
+
+        try {
+            Volume created;
+
+            // 根据数据卷类型创建
+            if(enums == VolumeTypeEnum.CONTAINER) {
+                created = dockerClient.createVolume(builder.build());
+            } else if(enums == VolumeTypeEnum.SERVICE) {
+                created = dockerSwarmClient.createVolume(builder.build());
+            } else {
+                throw new CustomException(ResultEnum.OTHER_ERROR.getCode(), "数据卷类型不被接收");
+            }
+
+            // 保存数据库
+            SysVolume sysVolume = volume2SysVolume(created);
+            volumesMapper.insert(sysVolume);
+
+            return sysVolume;
+        } catch (Exception e) {
+            log.error("生成数据卷失败，错误位置：{}，错误栈：{}",
+                    "SysVolumeServiceImpl.createVolumes()", HttpClientUtils.getStackTraceAsString(e));
+            return null;
+        }
+    }
+
+    @Override
+    public boolean bind(String id, String objId, String destination, VolumeTypeEnum enums) {
+        // 判断是否可用
+        boolean b = volumesMapper.hasUser(id);
+        if(!b) {
+            return false;
         }
 
-        int successCount = 0, failCount = 0;
-        ImmutableList<Volume> volumes = ((VolumeList) resultVO.getData()).volumes();
-        if(volumes != null) {
-            for(Volume volume : volumes) {
-                try {
-                    dockerClient.removeVolume(volume.name());
+        try {
+            SysVolume sysVolume = volumesMapper.selectById(id);
+            sysVolume.setObjId(objId);
+            sysVolume.setDestination(destination);
+            sysVolume.setType(enums.getCode());
 
-                    // 删除数据
-                    SysVolume dbVolume = getByName(volume.name());
-                    if(dbVolume != null) {
-                        volumesMapper.deleteById(dbVolume.getId());
+            volumesMapper.updateById(sysVolume);
+
+            return true;
+        } catch (Exception e) {
+            log.error("绑定失败，错误位置：{}，错误栈：{}",
+                    "SysVolumeServiceImpl.bind()", HttpClientUtils.getStackTraceAsString(e));
+            return false;
+        }
+    }
+
+    @Override
+    @Transactional(rollbackFor = CustomException.class)
+    public ResultVO cleanVolumes(VolumeTypeEnum enums) {
+        List<SysVolume> volumes = volumesMapper.selectList(new EntityWrapper<SysVolume>().eq("type", enums.getCode()));
+        int successCount = 0, errorCount = 0;
+
+        // 根据类型删除
+        if(enums == VolumeTypeEnum.CONTAINER) {
+            for(SysVolume volume : volumes) {
+                // 如果容器不存在，清理数据
+                UserContainer container = containerMapper.selectById(volume.getObjId());
+                if(container == null) {
+                    try {
+                        volumesMapper.deleteById(volume.getId());
+                        dockerClient.removeVolume(volume.getName());
+                        successCount++;
+                    } catch (Exception e) {
+                        errorCount++;
                     }
-
-                    successCount++;
-                } catch (Exception e) {
-                    failCount++;
                 }
             }
+        } else if(enums == VolumeTypeEnum.SERVICE) {
+            for(SysVolume volume : volumes) {
+                // 如果容器不存在，清理数据
+                UserService userService = serviceMapper.selectById(volume.getObjId());
+                if(userService == null) {
+                    try {
+                        volumesMapper.deleteById(volume.getId());
+                        dockerSwarmClient.removeVolume(volume.getName());
+                        successCount++;
+                    } catch (Exception e) {
+                        errorCount++;
+                    }
+                }
+            }
+        } else {
+            return ResultVOUtils.error(ResultEnum.OTHER_ERROR.getCode(), "数据卷类型不被接收");
         }
+
 
         Map<String, Integer> map = new HashMap<>(16);
         map.put("success", successCount);
-        map.put("fail", failCount);
+        map.put("error", errorCount);
         // 写入日志
         sysLogService.saveLog(request, SysLogTypeEnum.CLEAN_VOLUMES);
 
@@ -271,12 +371,38 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
             return ResultVOUtils.error(ResultEnum.AUTHORITY_ERROR);
         }
 
-        if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
-            if(!containerMapper.hasBelongSb(volume.getContainerId(), uid)) {
-                return ResultVOUtils.error(ResultEnum.PERMISSION_ERROR);
-            }
+        // 管理员无需鉴权
+        if(RoleEnum.ROLE_SYSTEM.getMessage().equals(roleName)) {
+            return ResultVOUtils.success();
         }
 
-        return ResultVOUtils.success();
+
+        Integer type = volume.getType();
+
+        // 容器鉴权
+        if(VolumeTypeEnum.CONTAINER.getCode() == type) {
+            if(!containerMapper.hasBelongSb(volume.getObjId(), uid)) {
+                return ResultVOUtils.error(ResultEnum.PERMISSION_ERROR);
+            }
+            return ResultVOUtils.success();
+        }
+
+        // 服务鉴权
+        if(VolumeTypeEnum.SERVICE.getCode() == type) {
+            if(!serviceMapper.hasBelong(volume.getObjId(), uid)) {
+                return ResultVOUtils.error(ResultEnum.PERMISSION_ERROR);
+            }
+            return ResultVOUtils.success();
+        }
+
+        return ResultVOUtils.error(ResultEnum.AUTHORITY_ERROR);
+    }
+
+    private SysVolume volume2SysVolume(Volume volume) {
+        SysVolume sysVolume = new SysVolume();
+        sysVolume.setName(volume.name());
+        sysVolume.setSource(volume.mountpoint());
+
+        return sysVolume;
     }
 }

@@ -1,8 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="jit.edu.paas.mapper.SysVolumesMapper">
-    <select id="selectByContainerId" resultType="jit.edu.paas.domain.entity.SysVolume">
+    <select id="selectByObjId" resultType="jit.edu.paas.domain.entity.SysVolume">
         SELECT * FROM sys_volume
-        WHERE  container_id = #{containerId}
+        WHERE  obj_id = #{objId}
+    </select>
+    <select id="hasUser" resultType="java.lang.Boolean">
+        SELECT
+            count( * )
+        FROM
+            `sys_volume`
+        WHERE
+            ISNULL( obj_id )
+            AND ISNULL( destination )
+            AND id = #{id}
     </select>
 </mapper>

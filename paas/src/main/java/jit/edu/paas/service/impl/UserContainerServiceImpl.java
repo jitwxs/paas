@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import com.google.common.collect.ImmutableList;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.ContainerNotFoundException;
+import com.spotify.docker.client.exceptions.DockerTimeoutException;
 import com.spotify.docker.client.messages.*;
 import jit.edu.paas.commons.activemq.MQProducer;
 import jit.edu.paas.commons.activemq.Task;
@@ -30,16 +31,12 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.jms.Destination;
 import javax.servlet.http.HttpServletRequest;
-import java.lang.reflect.Array;
 import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -190,7 +187,8 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
     @Transactional(rollbackFor = CustomException.class)
     @Override
     public void createContainerTask(String userId, String imageId, String[] cmd, Map<String, String> portMap,
-                                    String containerName, String projectId, String[] env, String[] destination, HttpServletRequest request) {
+                                    String containerName, String projectId, String[] env, String[] destination,
+                                    HttpServletRequest request) {
         SysImage image = imageService.getById(imageId);
         UserContainer uc = new UserContainer();
         HostConfig hostConfig;
@@ -213,7 +211,6 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
                 hostPorts.add(PortBinding.of("0.0.0.0", hostPort));
                 portBindings.put(k, hostPorts);
             }
-
 
             uc.setPort(JsonUtils.objectToJson(portBindings));
 
@@ -257,10 +254,12 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
                 ImmutableList<ContainerMount> info = dockerClient.inspectContainer(creation.id()).mounts();
                 for(int i = 0;i<destination.length;i++){
                     SysVolume sysVolume = new SysVolume();
-                    sysVolume.setContainerId(creation.id());
+                    sysVolume.setObjId(creation.id());
                     sysVolume.setDestination(destination[i]);
                     sysVolume.setName(info.get(i).name());
                     sysVolume.setSource(info.get(i).source());
+                    sysVolume.setType(VolumeTypeEnum.CONTAINER.getCode());
+
                     sysVolumesMapper.insert(sysVolume);
                 }
             }
@@ -535,11 +534,15 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             return statusEnum;
         } catch (ContainerNotFoundException e) {
             return ContainerStatusEnum.REMOVE;
+        } catch (DockerTimeoutException te) {
+            log.error("获取容器状态超时，异常位置：{}，容器ID：{}",
+                    "UserContainerServiceImpl.getStatus()", containerId);
         } catch (Exception e) {
             e.printStackTrace();
-            log.error("获取容器状态出现异常，异常位置：{}，错误栈：{}","UserContainerServiceImpl.getStatus()",HttpClientUtils.getStackTraceAsString(e));
-            return null;
+            log.error("获取容器状态出现异常，异常位置：{}，错误栈：{}",
+                    "UserContainerServiceImpl.getStatus()",HttpClientUtils.getStackTraceAsString(e));
         }
+        return null;
     }
 
     @Override

@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.exceptions.DockerTimeoutException;
 import com.spotify.docker.client.exceptions.ImagePushFailedException;
 import com.spotify.docker.client.messages.*;
 import jit.edu.paas.commons.activemq.MQProducer;
@@ -25,18 +26,14 @@ import org.apache.activemq.command.ActiveMQQueue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
 import javax.jms.Destination;
 import javax.servlet.http.HttpServletRequest;
 import java.io.InputStream;
 import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 /**
  * <p>
@@ -272,7 +269,10 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             map.put("error", errorCount);
 
             return ResultVOUtils.success(map);
-        } catch (Exception e) {
+        } catch (DockerTimeoutException te) {
+            log.error("同步镜像超时，错误位置：{}","SysImageServiceImpl.sync");
+            return ResultVOUtils.error(ResultEnum.DOCKER_TIMEOUT);
+        }  catch (Exception e) {
             log.error("Docker同步镜像异常，错误位置：{},错误栈：{}",
                     "SysImageServiceImpl.sync", HttpClientUtils.getStackTraceAsString(e));
 

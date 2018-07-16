@@ -2,10 +2,15 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="jit.edu.paas.mapper.RepositoryImageMapper">
 
-    <select id="listRepositoryFromDb" resultType="jit.edu.paas.domain.entity.RepositoryImage">
-        SELECT DISTINCT
-            name
+    <select id="listHubImageVO" resultType="jit.edu.paas.domain.vo.HubImageVO">
+        SELECT
+            `hub`.name AS name,
+            `login`.username AS username ,
+            `hub`.repo AS repo
         FROM
-        `repository_image`
+            `repository_image` AS `hub`,
+            `sys_login` AS `login`
+        WHERE
+            `hub`.user_id = `login`.id
     </select>
 </mapper>

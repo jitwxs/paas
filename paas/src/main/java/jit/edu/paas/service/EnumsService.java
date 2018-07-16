@@ -55,4 +55,11 @@ public interface EnumsService {
      * @since 2018/7/1 20:02
      */
     Map<Integer, String > listContainerStatus();
+
+    /**
+     * 获取数据卷类型
+     * @author jitwxs
+     * @since 2018/7/16 14:47
+     */
+    Map<Integer, String > listVolumes();
 }

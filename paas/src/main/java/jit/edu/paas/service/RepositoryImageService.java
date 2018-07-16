@@ -1,10 +1,10 @@
 package jit.edu.paas.service;
 
 
-import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.IService;
 import jit.edu.paas.domain.entity.RepositoryImage;
 import jit.edu.paas.domain.entity.SysImage;
+import jit.edu.paas.domain.vo.HubImageVO;
 import jit.edu.paas.domain.vo.ResultVO;
 
 import javax.servlet.http.HttpServletRequest;
@@ -21,15 +21,14 @@ import java.util.List;
 public interface RepositoryImageService extends IService<RepositoryImage> {
     RepositoryImage getById(String id);
 
-    List<RepositoryImage> listByName(String name);
-
     /**
-     * 获取数据库镜像列表
-     * 返回的是name的列表
+     * 获取所有镜像名列表
      * @author jitwxs
-     * @since 2018/7/5 21:04
+     * @since 2018/7/15 16:38
      */
-    Page<RepositoryImage> listRepositoryFromDb(Page<RepositoryImage> page);
+    List<HubImageVO> listHubImageVO();
+
+    List<RepositoryImage> listByName(String name);
 
     /**
      * 列出Hub上仓库

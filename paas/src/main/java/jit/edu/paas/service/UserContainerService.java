@@ -58,7 +58,8 @@ public interface UserContainerService extends IService<UserContainer> {
      * @since 2018/7/1 16:00
      */
     void createContainerTask(String userId, String imageId, String[] cmd, Map<String, String> portMap,
-                             String containerName, String projectId, String[] env, String[] destination, HttpServletRequest request);
+                             String containerName, String projectId, String[] env, String[]destination,
+                             HttpServletRequest request);
 
     /**
      * 开启容器任务

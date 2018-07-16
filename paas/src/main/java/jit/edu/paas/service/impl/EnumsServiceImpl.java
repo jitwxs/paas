@@ -78,4 +78,13 @@ public class EnumsServiceImpl implements EnumsService {
         }
         return map;
     }
+
+    @Override
+    public Map<Integer, String> listVolumes() {
+        Map<Integer, String> map = new TreeMap<>(Integer::compareTo);
+        for (VolumeTypeEnum s : VolumeTypeEnum.values()) {
+            map.put(s.getCode(), s.getMessage());
+        }
+        return map;
+    }
 }

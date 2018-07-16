@@ -10,6 +10,7 @@ import lombok.Getter;
 @Getter
 public enum ResultEnum {
     OK("成功",0),
+    JSON_ERROR("JSON解析错误", 9),
     AUTHORITY_ERROR("鉴权错误", 10),
     PERMISSION_ERROR("权限错误", 11),
     PARAM_ERROR("参数错误", 12),
@@ -70,14 +71,17 @@ public enum ResultEnum {
     USER_NETWORK_CREATE_ERROR("用户网络创建失败",84),
     NETWORK_NOT_EXIST("网络不存在",85),
     DELETE_NETWORK_ERROR("删除网络错误",86),
-    CONNECT_NETWORK_ERROR("连接网络错误",87),
-    DIS_CONNECT_NETWORK_ERROR("取消连接网络错误",88),
-    NETWORK_CONNECT_REFUSED("网络连接拒绝，没有权限",89),
-    NETWORK_DIS_CONNECT_REFUSED("网络取消连接拒绝，没有权限",90),
-    SERVICE_NOT_FOUND("服务不存在",91),
-    SERVICE_INSPECT_ERROR("服务查询失败",92),
-    SERVICE_NAME_ILLEGAL("服务名不合法，只能为字母或数字",93),
-    SERVICE_NAME_EXIST("服务名不合法，已经存在",94);
+    DELETE_NETWORK_ERROR_BY_BRIDGE("Bridge网络不支持删除，为预定义网络",87),
+    CONNECT_NETWORK_ERROR("连接网络错误",88),
+    DIS_CONNECT_NETWORK_ERROR("取消连接网络错误",89),
+    NETWORK_CONNECT_REFUSED("网络连接拒绝，没有权限",90),
+    NETWORK_DIS_CONNECT_REFUSED("网络取消连接拒绝，没有权限",91),
+    DELETE_NETWORK_ERROR_BY_USED("删除网络错误,请先清空网络内容器",92),
+    SERVICE_NOT_FOUND("服务不存在",100),
+    SERVICE_INSPECT_ERROR("服务查询失败",101),
+    SERVICE_NAME_ILLEGAL("服务名不合法，只能为字母或数字",102),
+    SERVICE_NAME_EXIST("服务名不合法，已经存在",103),
+    SERVICE_SCALE_ERROR("服务横向扩展失败",104);
 
     private String message;
     private int code;

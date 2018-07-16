@@ -7,15 +7,16 @@ import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.Network;
 import com.spotify.docker.client.messages.NetworkConfig;
 import jit.edu.paas.commons.util.*;
+import jit.edu.paas.domain.entity.ContainerNetwork;
 import jit.edu.paas.domain.entity.SysNetwork;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.RoleEnum;
 import jit.edu.paas.domain.enums.SysLogTypeEnum;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.exception.CustomException;
+import jit.edu.paas.mapper.ContainerNetworkMapper;
 import jit.edu.paas.mapper.SysNetworkMapper;
 import jit.edu.paas.mapper.UserContainerMapper;
-import jit.edu.paas.mapper.UserServiceMapper;
 import jit.edu.paas.service.SysLogService;
 import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.service.SysNetworkService;
@@ -45,6 +46,8 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
     private SysNetworkMapper networkMapper;
     @Autowired
     private UserContainerMapper containerMapper;
+    @Autowired
+    private ContainerNetworkMapper containerNetworkMapper;
     @Autowired
     private SysLoginService loginService;
     @Autowired
@@ -235,6 +238,11 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
         }
 
         try {
+            if (dockerClient.inspectNetwork(networkId) == null || networkMapper.selectById(networkId) == null) {
+                sync();
+                return ResultVOUtils.error(ResultEnum.NETWORK_NOT_EXIST);
+            }
+            containerNetworkMapper.insert(new ContainerNetwork(containerId, networkId));
             dockerClient.connectToNetwork(containerId, networkId);
 
             return ResultVOUtils.success();
@@ -260,6 +268,7 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
 
         try {
             dockerClient.disconnectFromNetwork(containerId, networkId);
+            containerNetworkMapper.delete(new EntityWrapper<ContainerNetwork>().eq("containerId",containerId).and().eq("networkId",networkId));
 
             return ResultVOUtils.success();
         } catch (Exception e) {
@@ -275,6 +284,16 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
         if(network == null) {
             return ResultVOUtils.error(ResultEnum.NETWORK_NOT_EXIST);
         }
+
+        // Bridge网络无法删除
+        if("bridge".equals(network.getDriver().toLowerCase())) {
+            return ResultVOUtils.error(ResultEnum.DELETE_NETWORK_ERROR_BY_BRIDGE);
+        }
+
+        if (containerNetworkMapper.selectList(new EntityWrapper<ContainerNetwork>().eq("networkId", id)) != null) {
+            return ResultVOUtils.error(ResultEnum.DELETE_NETWORK_ERROR_BY_USED);
+        }
+
         String roleName = loginService.getRoleName(userId);
 
         if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
@@ -298,7 +317,6 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
         if(ResultEnum.OK.getCode() != resultVO.getCode()) {
             return resultVO;
         }
-        // TODO 判断是否有活跃容器
 
         try {
             dockerClient.removeNetwork(networkId);

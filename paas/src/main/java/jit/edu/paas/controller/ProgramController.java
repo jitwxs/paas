@@ -54,18 +54,10 @@ public class ProgramController {
      */
     @PostMapping("/delete")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVO deleteProgram(String ids) {
-        String[] split = ids.split(",");
-        int[] idArray = new int[split.length];
-
-        for(int i=0; i< split.length; i++) {
-            idArray[i] = Integer.parseInt(split[i]);
-        }
-
-        if(idArray.length == 0) {
+    public ResultVO deleteProgram(Integer[] ids) {
+        if(ids == null) {
             return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
-
-        return programService.deleteByIds(idArray);
+        return programService.deleteByIds(ids);
     }
 }

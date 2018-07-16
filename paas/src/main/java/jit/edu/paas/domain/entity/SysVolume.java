@@ -20,9 +20,9 @@ public class SysVolume {
     @TableId(type = IdType.UUID)
     private String id;
     /**
-     * 挂载容器id
+     * 目标Id
      */
-    private String containerId;
+    private String objId;
     /**
      * 挂载名称
      */
@@ -35,6 +35,10 @@ public class SysVolume {
      *挂载目录
      */
     private String source;
+    /**
+     * 类别
+     */
+    private Integer type;
     /**
      * 创建时间
      */

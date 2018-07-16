@@ -96,4 +96,15 @@ public class EnumsController {
     public ResultVO listContainerStatus() {
         return ResultVOUtils.success(enumsService.listContainerStatus());
     }
+
+    /**
+     * 获取所有数据卷类型
+     * @author jitwxs
+     * @since 2018/7/1 20:03
+     */
+    @GetMapping("/volumes")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVO listVolumes() {
+        return ResultVOUtils.success(enumsService.listVolumes());
+    }
 }

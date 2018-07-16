@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.plugins.Page;
 import com.spotify.docker.client.LogStream;
 import com.spotify.docker.client.messages.swarm.Service;
 import jit.edu.paas.commons.convert.UserServiceDTOConvert;
+import jit.edu.paas.commons.util.CollectionUtils;
+import jit.edu.paas.commons.util.JsonUtils;
 import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.domain.dto.UserServiceDTO;
@@ -16,11 +18,13 @@ import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.service.UserContainerService;
 import jit.edu.paas.service.UserProjectService;
 import jit.edu.paas.service.UserServiceService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -28,6 +32,7 @@ import java.util.Map;
  * @author jitwxs
  * @since 2018/7/15 9:15
  */
+@Slf4j
 @RestController
 @RequestMapping("/service")
 public class ServiceController {
@@ -147,6 +152,27 @@ public class ServiceController {
     }
 
     /**
+     * 服务横向扩展
+     * @author jitwxs
+     * @since 2018/7/16 10:11
+     */
+    @PostMapping("/scale")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVO scaleService(@RequestAttribute String uid, String id , Integer num) {
+        if(StringUtils.isBlank(id) || num == null) {
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
+        }
+
+        ResultVO resultVO = userServiceService.checkPermission(uid,id);
+        if(ResultEnum.OK.getCode() != resultVO.getCode()) {
+            return resultVO;
+        }
+
+        return userServiceService.scale(id, num);
+    }
+
+
+    /**
      * 删除服务【WebSocket】
      * @author jitwxs
      * @since 2018/7/1 16:05
@@ -169,21 +195,20 @@ public class ServiceController {
      * @param imageId 镜像ID 必填
      * @param serviceName 服务名 必填
      * @param projectId 所属项目 必填
-     * @param portMap 端口映射
-     * @param cmd 执行命令，如若为空，使用默认的命令
-     * @param env 环境变量
-     * @param source 服务外部目录
-     * @param destination 服务内部目录
-     * @param labels 标签
+     * @param portMapStr 端口映射
+     * @param cmdStr 执行命令，如若为空，使用默认的命令，多个使用分号连接
+     * @param envStr 环境变量，多个使用分号连接
+     * @param destinationStr 服务内部目录，多个使用分号连接
+     * @param labelsStr 标签
      * @param replicas 横向扩展个数，默认为1
      * @author jitwxs
      * @since 2018/7/1 15:52
      */
     @PostMapping("/create")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResultVO createContainer(String imageId, String serviceName, String projectId,
-                                    Map<String,String> portMap, String[] cmd, String[] env, String source,
-                                    String destination, @RequestParam(defaultValue = "1") int replicas, Map<String,String> labels,
+    public ResultVO createService(String imageId, String serviceName, String projectId,
+                                    String portMapStr, String cmdStr, String envStr, String destinationStr,
+                                  @RequestParam(defaultValue = "1") int replicas, String labelsStr,
                                     @RequestAttribute String uid, HttpServletRequest request){
         // 输入验证
         if (StringUtils.isBlank(imageId, serviceName, projectId)) {
@@ -196,6 +221,26 @@ public class ServiceController {
             return resultVO1;
         }
 
+        // 前端传递map字符串
+        Map<String, String> portMap = new HashMap<>(16);
+        Map<String, String> labels = new HashMap<>(16);
+        if(StringUtils.isNotBlank(portMapStr)) {
+            try {
+                portMap = JsonUtils.jsonToMap(portMapStr);
+                labels = JsonUtils.jsonToMap(labelsStr);
+                // 解决前台发送空map问题
+                CollectionUtils.removeNullEntry(portMap);
+                CollectionUtils.removeNullEntry(labels);
+            } catch (Exception e) {
+                log.error("Json格式解析错误，错误位置：{}，错误信息：{}", "ServiceController.createService()", e.getMessage());
+                return ResultVOUtils.error(ResultEnum.JSON_ERROR);
+            }
+        }
+        // 字符串数字转换
+        String[] cmd = CollectionUtils.str2Array(cmdStr, ";"),
+                env = CollectionUtils.str2Array(envStr, ";"),
+                destination = CollectionUtils.str2Array(destinationStr, ";");
+
         // 创建校验
         ResultVO resultVO = containerService.createContainerCheck(uid, imageId, portMap, projectId);
         if (ResultEnum.OK.getCode() != resultVO.getCode()) {
@@ -204,7 +249,7 @@ public class ServiceController {
 
         // 创建服务
         userServiceService.createServiceTask(uid, imageId, cmd, portMap, replicas, serviceName, projectId,
-                env, source, destination, labels, request);
+                env, destination, labels, request);
         return ResultVOUtils.success("开始创建服务");
     }
 }

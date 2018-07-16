@@ -2,8 +2,8 @@ package jit.edu.paas.mapper;
 
 
 import com.baomidou.mybatisplus.mapper.BaseMapper;
-import com.baomidou.mybatisplus.plugins.pagination.Pagination;
 import jit.edu.paas.domain.entity.RepositoryImage;
+import jit.edu.paas.domain.vo.HubImageVO;
 
 import java.util.List;
 
@@ -17,10 +17,9 @@ import java.util.List;
  */
 public interface RepositoryImageMapper extends BaseMapper<RepositoryImage> {
     /**
-     * 获取数据库镜像列表
-     * 返回的是name的列表
+     * 获取所有仓储镜像名列表
      * @author jitwxs
      * @since 2018/7/5 21:08
      */
-    List<RepositoryImage> listRepositoryFromDb(Pagination page);
+    List<HubImageVO> listHubImageVO();
 }

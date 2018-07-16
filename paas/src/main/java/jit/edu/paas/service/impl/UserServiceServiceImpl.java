@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import com.google.common.collect.ImmutableList;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.LogStream;
-import com.spotify.docker.client.messages.PortBinding;
+import com.spotify.docker.client.messages.ContainerMount;
 import com.spotify.docker.client.messages.ServiceCreateResponse;
 import com.spotify.docker.client.messages.mount.Mount;
 import com.spotify.docker.client.messages.mount.VolumeOptions;
@@ -59,8 +59,6 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
     @Autowired
     private UserProjectMapper projectMapper;
     @Autowired
-    private SysVolumesMapper sysVolumesMapper;
-    @Autowired
     private SysLoginService loginService;
     @Autowired
     private SysImageService imageService;
@@ -68,6 +66,8 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
     private SysLogService sysLogService;
     @Autowired
     private ProjectLogService projectLogService;
+    @Autowired
+    private SysVolumeService volumeService;
     @Autowired
     private MQProducer mqProducer;
     @Autowired
@@ -175,12 +175,42 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
         }
     }
 
+    @Transactional(rollbackFor = CustomException.class)
+    @Override
+    public ResultVO scale(String serviceId, Integer num) {
+        try {
+            UserServiceDTO serviceDTO = getById(serviceId);
+            ServiceSpec.Builder builder = ServiceSpec.builder();
+            builder.name(serviceDTO.getFullName());
+            // 更新横向扩展数目
+            builder.mode(ServiceMode.withReplicas(num));
+            // 设置任务模板
+            TaskSpec.Builder taskBuilder = TaskSpec.builder();
+
+            ContainerSpec.Builder containerBuilder = ContainerSpec.builder();
+            containerBuilder.image(serviceDTO.getImage());
+
+            taskBuilder.containerSpec(containerBuilder.build());
+            builder.taskTemplate(taskBuilder.build());
+
+            dockerSwarmClient.updateService(serviceId,dockerSwarmClient.inspectService(serviceId).version().index(),builder.build());
+            // 更新数据库
+            serviceDTO.setReplicas(num);
+            userServiceMapper.updateById(serviceDTO);
+
+            return ResultVOUtils.success();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResultVOUtils.error(ResultEnum.SERVICE_SCALE_ERROR);
+        }
+    }
+
     @Async("taskExecutor")
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public void createServiceTask(String userId,String imageId, String[] cmd, Map<String,String> portMap,int replicas,
-                                  String serviceName, String projectId, String[] env, String source,
-                                  String destination,Map<String,String> labels, HttpServletRequest request) {
+    public void createServiceTask(String userId, String imageId, String[] cmd, Map<String,String> portMap, int replicas,
+                                  String serviceName, String projectId, String[] env, String[] destination,
+                                  Map<String,String> labels, HttpServletRequest request) {
         SysImage image = imageService.getById(imageId);
         UserService us = new UserService();
         ServiceSpec.Builder builder = ServiceSpec.builder();
@@ -196,16 +226,24 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
             us.setCommand(Arrays.toString(cmd));
         }
 
-        // TODO 后期修改为随机数据卷source
         // 设置destination
-        if(StringUtils.isNotBlank(destination)) {
-            Mount.Builder mountBuilder = Mount.builder();
-            mountBuilder.type("volume");
-            mountBuilder.source(source);
-            mountBuilder.target(destination);
-            mountBuilder.volumeOptions(VolumeOptions.builder().build());
-            containerBuilder.mounts(mountBuilder.build());
+        if(CollectionUtils.isNotArrayEmpty(destination)) {
+            List<Mount> mounts = new ArrayList<>();
+            for(String d : destination) {
+                // 创建数据卷
+                SysVolume volumes = volumeService.createVolumes(null, VolumeTypeEnum.SERVICE);
+
+                Mount.Builder mountBuilder = Mount.builder();
+                mountBuilder.type("volume");
+                mountBuilder.source(volumes.getSource());
+                mountBuilder.target(d);
+                mountBuilder.volumeOptions(VolumeOptions.builder().build());
+
+                mounts.add(mountBuilder.build());
+            }
+            containerBuilder.mounts(mounts);
         }
+
         // 设置环境变量
         if(CollectionUtils.isNotArrayEmpty(env)) {
             containerBuilder.env(env);
@@ -263,15 +301,16 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
             us.setReplicas(replicas);
 
             // 为数据库中的sysvolumes插入
-            if(StringUtils.isNotBlank(destination)) {
+            if(CollectionUtils.isNotArrayEmpty(destination)) {
                 ImmutableList<Mount> info = dockerSwarmClient.inspectService(creation.id()).spec().taskTemplate().containerSpec().mounts();
-                if (info != null) {
-                    SysVolume sysVolume = new SysVolume();
-                    sysVolume.setContainerId(creation.id());
-                    sysVolume.setDestination(destination);
-                    sysVolume.setName(info.get(0).target());
-                    sysVolume.setSource(info.get(0).source());
-                    sysVolumesMapper.insert(sysVolume);
+                if(info != null) {
+                    for(Mount mount : info) {
+                        String source = mount.source();
+                        SysVolume sysVolume = volumeService.getBySource(source);
+                        if(sysVolume != null) {
+                            volumeService.bind(sysVolume.getId(), creation.id(), mount.target(), VolumeTypeEnum.SERVICE);
+                        }
+                    }
                 }
             }
 

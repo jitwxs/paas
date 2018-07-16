@@ -756,10 +756,10 @@
 				"imageId": "e38bc07ac18ee64e6d59cf2eafcdddf9cec2364dfe129fe0af75f1b0194e0c96",
 				"containerName": "testContainer",
 				"projectId": "b2b09405f54c4cf3a9e70b4ec298b31a",
-				"cmd": "[/bin/bash]",
-				"env": "[MYSQL_ROOT_PASSWORD=123456]",
-				"destination": ["/usr/local/aa"],
-				"portMap": {
+				"cmdStr": "/bin/bash",
+				"envStr": "MYSQL_ROOT_PASSWORD=123456",
+				"destinationStr": "/usr/local/aa",
+				"portMapStr": {
 					"80": "8888",
 					"221": "9999"
 				}
@@ -768,13 +768,13 @@
 	+ Schema
 
             {
-				"imageId": "镜像ID，字符串，必填",
-				"containerName": "容器名，字符串，必填",
-				"projectId": "项目ID，字符串，必填",
-				"cmd": "执行命令，字符串数组，选填",
-				"env": "环境变量，字符串数组，选填",
-				"destination": "内部目录，字符串数组，选填",
-				"portMap": "端口Map<String, String>，暴露端口必填，其余端口选填
+				"imageId": 镜像ID，字符串，必填,
+				"containerName": 容器名，字符串，必填,
+				"projectId": 项目ID，字符串，必填,
+				"cmdStr": 执行命令，如若为空，使用默认的命令，多个分号连接,
+				"envStr": 环境变量，多个分号连接,
+				"destinationStr": 容器内部目录，多个分号连接，选填,
+				"portMapStr": 端口映射，Map<String,String> JSON字符串，内部端口必填
 			}
 
 + Response 200 (application/json)
@@ -2262,7 +2262,6 @@
 			        "command": null,
 			        "port": "8080",
 			        "image": "nginx",
-			        "status": 1,
 			        "env": null,
 			        "createDate": "2018-07-07 15:06:01",
 			        "updateDate": "2018-07-07 15:06:01",
@@ -2315,7 +2314,6 @@
 			        "command": null,
 			        "port": "8080",
 			        "image": "nginx",
-			        "status": 1,
 			        "env": null,
 			        "createDate": "2018-07-07 15:06:01",
 			        "updateDate": "2018-07-07 15:06:01",
@@ -2359,7 +2357,6 @@
 			    "command": null,
 			    "port": "8080",
 			    "image": "nginx",
-			    "status": 1,
 			    "env": null,
 			    "createDate": "2018-07-07 15:06:01",
 			    "updateDate": "2018-07-07 15:06:01",
@@ -2549,7 +2546,7 @@
 				}
 			}
 
-## 创建服务 - WebSocket [POST /service/create/]
+## 创建服务 - WebSocket（用户） [POST /service/create/]
 
 + Request
 
@@ -2564,15 +2561,15 @@
 				"imageId": "e38bc07ac18ee64e6d59cf2eafcdddf9cec2364dfe129fe0af75f1b0194e0c96",
 				"serviceName": "myNginx",
 				"projectId": "b2b09405f54c4cf3a9e70b4ec298b31a",
-				"cmd": "[a,b]",
-				"env": "[qq,xx]",
-				"source": "",
+				"cmdStr": "a;b",
+				"envStr": "qq;xx",
+				"destinationStr: "/usr/local/a;/usr/local/b"
 				"replicas": 1,
-				"portMap": {
+				"portMapStr": {
 					"80": "8888",
 					"221": "9999"
 				},
-				"labels": {
+				"labelsStr": {
 					"auther": "jitwxs"
 				}
 			}
@@ -2583,13 +2580,12 @@
 				"imageId": "镜像ID，字符串，必填",
 				"serviceName": "服务名，字符串，必填，由数字和字母组成",
 				"projectId": "项目ID，字符串，必填",
-				"cmd": "执行命令，字符串数组，选填",
-				"env": "环境变量，字符串数组，选填",
+				"cmdStr": "执行命令，多个分号分隔，选填",
+				"envStr": "环境变量，多个分号分隔，选填",
+				"destinationStr": "内部目录，多个分号分隔，选填",
 				"replicas": "横向扩展个数，数字，选填，默认为1"
-				"source": "外部目录，字符串，选填",
-				"destination": "内部目录，字符串，选填",
-				"portMap": "端口Map<String, String>，暴露端口必填，其余端口选填",
-				"labels": "标签Map<String, String>，选填"
+				"portMapStr": "端口Map<String, String> JSON字符串，暴露端口必填，其余端口选填",
+				"labelsStr": "标签Map<String, String> JSON字符串，选填"
 			}
 
 + Response 200 (application/json)
@@ -2610,16 +2606,42 @@
 			    }
 			}
 
+## 横向扩展 [POST /service/scale]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Body
+
+	        {
+			  "id": "9h7oy6ey1f49d916u3wse4u26",
+			  "num": 2
+			}
+
+	+ Schema
+
+			{
+				"id": 服务ID，字符串，必填,
+				"num": 横向扩展数目，数字，必填
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
+
 # Group Hub管理
 
-## 镜像名称列表 [GET /hub/list{?current,size,orderByField,asc}]
-
-+ Parameters
-
-    + current (number, optional) - 页码，默认为1
-    + size (number, optional) - 页面容量，默认为10
-    + orderByField (string, optional) - 排序字段
-    + asc (boolean, optional) - 升序：true；降序：false
+## 镜像名称列表 [GET /hub/list]
 
 + Request
 
@@ -2639,36 +2661,23 @@
 	        {
 			  "code": 0,
 			  "message": "成功",
-			  "data": {
-			    "total": 2,
-			    "size": 10,
-			    "pages": 1,
-			    "current": 1,
-			    "records": [
-			      {
-			        "id": null,
-			        "fullName": null,
-			        "name": "a",
-			        "tag": null,
-			        "userId": null,
-			        "digest": null,
-			        "repo": null,
-			        "createDate": null,
-			        "updateDate": null
-			      },
-			      {
-			        "id": null,
-			        "fullName": null,
-			        "name": "b",
-			        "tag": null,
-			        "userId": null,
-			        "digest": null,
-			        "repo": null,
-			        "createDate": null,
-			        "updateDate": null
-			      }
-			    ]
-			  }
+			  "data": [
+			    {
+			      "name": "f4f4bb152cf54fec94eb0d2b22d25f71/my-busybox",
+			      "username": "sya",
+			      "repo": "192.168.100.94:5000",
+			      "showName": "my-busybox"
+			    }
+			  ]
+			}
+
+	+ Schema
+
+	        {
+				"name": "镜像名，查询Tag时使用",
+				"username": "上传用户",
+				"repo": "所在仓库",
+				"showName": "镜像名，展示用"
 			}
 
 ## 镜像Tag列表 [GET /hub/list/name{?name}]
@@ -2857,11 +2866,11 @@
 
 # Group 数据卷管理
 
-## 查看容器数据卷  [GET /volumes/{containerId}/list{?current,size,orderByField,asc}]
+## 查看容器/服务数据卷  [GET /volumes/{objId}/list{?current,size,orderByField,asc}]
 
 + Parameters
 
-    + containerId (string, required) - 容器ID
+    + objId (string, required) - 容器或服务ID
     + current (number, optional) - 页码，默认为1
     + size (number, optional) - 页面容量，默认为10
     + orderByField (string, optional) - 排序字段
@@ -3006,7 +3015,11 @@
 				"error": "失败文件数"
 			}
 
-## 获取本地数据卷（管理员） [GET /volumes/list]
+## 获取本地数据卷（管理员） [GET /volumes/list/{type}]
+
++ Parameters
+
+    + type (number, required) - 数据卷类型，数字，必填
 
 + Request
 
@@ -3049,7 +3062,11 @@
 			  }
 			}
 
-## 清理本地数据卷（管理员） [DELETE /volumes/clean]
+## 清理本地数据卷（管理员） [DELETE /volumes/clean/{type}]
+
++ Parameters
+
+    + type (number, required) - 数据卷类型，数字，必填
 
 + Request
 
@@ -4117,5 +4134,27 @@
 			    "1": "容器运行",
 			    "2": "容器暂停",
 			    "3": "容器被删除"
+			  }
+			}
+
+## 数据卷类型列表 [GET /enums/volumes]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "1": "容器数据卷",
+			    "2": "服务数据卷"
 			  }
 			}

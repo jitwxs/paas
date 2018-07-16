@@ -16,6 +16,7 @@ import jit.edu.paas.domain.enums.ImageTypeEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.SysLogTypeEnum;
 import jit.edu.paas.domain.enums.WebSocketTypeEnum;
+import jit.edu.paas.domain.vo.HubImageVO;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.mapper.RepositoryImageMapper;
@@ -93,6 +94,11 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
     }
 
     @Override
+    public List<HubImageVO> listHubImageVO() {
+        return repositoryImageMapper.listHubImageVO();
+    }
+
+    @Override
     public List<RepositoryImage> listByName(String name) {
         String field = NAME_PREFIX + name;
         try {
@@ -119,11 +125,6 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
         return list;
     }
 
-    @Override
-    public Page<RepositoryImage> listRepositoryFromDb(Page<RepositoryImage> page) {
-        // 注意！！ 分页 total 是经过插件自动 回写 到传入 page 对象
-        return page.setRecords(repositoryImageMapper.listRepositoryFromDb(page));
-    }
 
     @Override
     public List<String> listRepositoryFromHub() throws Exception {

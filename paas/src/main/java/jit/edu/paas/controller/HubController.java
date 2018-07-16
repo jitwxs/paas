@@ -1,7 +1,6 @@
 package jit.edu.paas.controller;
 
 
-import com.baomidou.mybatisplus.plugins.Page;
 import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.domain.entity.RepositoryImage;
 import jit.edu.paas.domain.entity.SysImage;
@@ -37,8 +36,8 @@ public class HubController {
      */
     @GetMapping("/list")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO listName(Page<RepositoryImage> page) {
-        return ResultVOUtils.success(repositoryImageService.listRepositoryFromDb(page));
+    public ResultVO listName() {
+        return ResultVOUtils.success(repositoryImageService.listHubImageVO());
     }
 
     /**

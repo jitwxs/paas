@@ -1,7 +1,10 @@
 package jit.edu.paas.controller;
 
 import com.baomidou.mybatisplus.plugins.Page;
+import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.domain.entity.SysVolume;
+import jit.edu.paas.domain.enums.ResultEnum;
+import jit.edu.paas.domain.enums.VolumeTypeEnum;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.service.SysVolumeService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,14 +25,14 @@ public class VolumesController {
     private SysVolumeService sysVolumeService;
 
     /**
-     * 列出某一容器所有数据卷
+     * 列出某一容器/服务所有数据卷
      * @author jitwxs
      * @since 2018/7/4 17:32
      */
-    @GetMapping("/{containerId}/list")
+    @GetMapping("/{objId}/list")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO listByContainerId(Page<SysVolume> page, @RequestAttribute String uid, @PathVariable String containerId) {
-        return sysVolumeService.listByContainerId(page, containerId, uid);
+    public ResultVO listByObjId(Page<SysVolume> page, @RequestAttribute String uid, @PathVariable String objId) {
+        return sysVolumeService.listByObjId(page, objId, uid);
     }
 
     /**
@@ -48,10 +51,15 @@ public class VolumesController {
      * @author jitwxs
      * @since 2018/7/5 13:02
      */
-    @GetMapping("/list")
+    @GetMapping("/list/{type}")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVO listFromLocal() {
-        return sysVolumeService.listFromLocal();
+    public ResultVO listFromLocal(@PathVariable Integer type) {
+        VolumeTypeEnum enums = VolumeTypeEnum.getEnum(type);
+        if(enums == null) {
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
+        }
+
+        return sysVolumeService.listFromLocal(enums);
     }
 
     /**
@@ -59,10 +67,15 @@ public class VolumesController {
      * @author jitwxs
      * @since 2018/7/4 17:36
      */
-    @DeleteMapping("/clean")
+    @DeleteMapping("/clean/{type}")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVO cleanVolumes(){
-        return sysVolumeService.cleanVolumes();
+    public ResultVO cleanVolumes(@PathVariable Integer type) {
+        VolumeTypeEnum enums = VolumeTypeEnum.getEnum(type);
+        if(enums == null) {
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
+        }
+
+        return sysVolumeService.cleanVolumes(enums);
     }
 
     /**

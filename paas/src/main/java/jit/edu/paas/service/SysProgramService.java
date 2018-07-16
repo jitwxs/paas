@@ -19,5 +19,5 @@ public interface SysProgramService extends IService<SysProgram> {
      * @author jitwxs
      * @since 2018/7/13 17:37
      */
-    ResultVO deleteByIds(int[] ids);
+    ResultVO deleteByIds(Integer[] ids);
 }

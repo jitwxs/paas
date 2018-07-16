@@ -63,8 +63,8 @@ public interface UserServiceService extends IService<UserService> {
      * @since 2018/7/1 16:00
      */
     void createServiceTask(String userId, String imageId, String[] cmd, Map<String,String> portMap, int replicas,
-                           String serviceName, String projectId, String[] env, String source,
-                           String destination, Map<String,String> labels, HttpServletRequest request);
+                           String serviceName, String projectId, String[] env, String[] destination,
+                           Map<String,String> labels, HttpServletRequest request);
 
     /**
      * 删除服务任务
@@ -79,4 +79,12 @@ public interface UserServiceService extends IService<UserService> {
      * @since 2018/7/13 9:25
      */
     LogStream logById(String id);
+
+    /**
+     * 服务横向扩展
+     * @param num 横向扩展数目
+     * @author jitwxs
+     * @since 2018/7/16 10:12
+     */
+    ResultVO scale(String serviceId, Integer num);
 }
