@@ -62,4 +62,11 @@ public interface EnumsService {
      * @since 2018/7/16 14:47
      */
     Map<Integer, String > listVolumes();
+
+    /**
+     * 获取通知类型
+     * @author jitwxs
+     * @since 2018/7/16 14:47
+     */
+    Map<Integer, String> listNotice();
 }

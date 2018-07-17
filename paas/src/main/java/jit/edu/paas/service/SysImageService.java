@@ -69,6 +69,8 @@ public interface SysImageService extends IService<SysImage> {
      */
     ResultVO removeImage(String id, String userId, HttpServletRequest request);
 
+
+    ResultVO pullImageCheck(String name, String userId);
     /**
      * 从DockerHub上拉取镜像任务
      * @author jitwxs

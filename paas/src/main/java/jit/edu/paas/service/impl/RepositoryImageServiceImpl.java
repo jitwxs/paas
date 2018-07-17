@@ -303,14 +303,14 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PULL_IMAGE_FROM_HUB);
 
-            sendMQ(userId, repositoryImage.getId(), ResultVOUtils.success());
+            sendMQ(userId, sysImage.getId(), ResultVOUtils.success());
         } catch (Exception e) {
             log.error("拉取镜像失败，错误位置：{}，错误栈：{}",
                     "RepositoryImageServiceImpl.pullTask()", HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PULL_IMAGE_FROM_HUB,e);
 
-            sendMQ(userId, repositoryImage.getId(), ResultVOUtils.error(ResultEnum.PULL_ERROR));
+            sendMQ(userId, null, ResultVOUtils.error(ResultEnum.PULL_ERROR));
         }
     }
 
@@ -495,13 +495,19 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
      * @author jitwxs
      * @since 2018/7/13 19:09
      */
-    private void sendMQ(String userId, String hubImageId, ResultVO resultVO) {
+    private void sendMQ(String userId, String imageId, ResultVO resultVO) {
         Destination destination = new ActiveMQQueue("MQ_QUEUE_HUB_IMAGE");
         Task task = new Task();
 
         Map<String, Object> data = new HashMap<>(16);
         data.put("type", WebSocketTypeEnum.HUB_IMAGE.getCode());
-        data.put("hubImageId", hubImageId);
+        data.put("imageId", imageId);
+        // 获取暴露端口
+        ResultVO resultVO1 = sysImageService.listExportPorts(imageId, userId);
+        if(ResultEnum.OK.getCode() == resultVO1.getCode()) {
+            data.put("exportPort", resultVO1.getData());
+        }
+
         resultVO.setData(data);
 
         Map<String,String> map = new HashMap<>(16);

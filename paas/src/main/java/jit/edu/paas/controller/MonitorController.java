@@ -123,8 +123,11 @@ public class MonitorController {
      */
     @GetMapping("/log")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVO listSystemLog(SysLogSelect sysLogSelect, Page<SysLogDTO> page) {
-        Page<SysLogDTO> selectPage = sysLogService.listSystemLog(sysLogSelect, page);
+    public ResultVO listSystemLog(SysLogSelect sysLogSelect,
+                                  @RequestParam(defaultValue = "1") Integer current,
+                                  @RequestParam(defaultValue = "10") Integer size) {
+        Page<SysLogDTO> selectPage = sysLogService.listSystemLog(sysLogSelect,
+                new Page<>(current, size, "create_date", false));
         return ResultVOUtils.success(selectPage);
     }
 

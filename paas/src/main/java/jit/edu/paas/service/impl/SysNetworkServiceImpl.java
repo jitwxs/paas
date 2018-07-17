@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.exceptions.NotFoundException;
 import com.spotify.docker.client.messages.Network;
 import com.spotify.docker.client.messages.NetworkConfig;
 import jit.edu.paas.commons.util.*;
@@ -139,6 +140,8 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
             sysLogService.saveLog(request, SysLogTypeEnum.CREATE_PUBLIC_NETWORK);
 
             return ResultVOUtils.success();
+        } catch (NotFoundException fe){
+            return ResultVOUtils.error(ResultEnum.CREATE_NETWORK_ERROR_BY_DRIVER);
         } catch (Exception e) {
             log.error("创建公共网络出现错误，错误位置：{}，错误栈：{}",
                     "SysNetworkServiceImpl.createPublicNetwork()", HttpClientUtils.getStackTraceAsString(e));

@@ -50,7 +50,8 @@ public enum ResultEnum {
     DELETE_HUB_IMAGE_ERROR("删除Hub上镜像失败",49),
     DELETE_IMAGE_PERMISSION_ERROR("删除镜像错误，没有权限",50),
     DELETE_IMAGE_BY_CONTAINER_ERROR("删除镜像错误，有容器正在使用该镜像",51),
-    IMAGE_EXCEPTION("镜像异常",52),
+    IMAGE_ERROR_BY_USED("删除镜像错误，有容器正在使用",52),
+    IMAGE_EXCEPTION("镜像异常",53),
     INPUT_PORT_ERROR("输入端口错误，请检查端口是否合法、是否可用，暴露端口是否均设置",60),
     CONTAINER_NOT_FOUND("容器不存在",61),
     CONTAINER_STATUS_REFUSE("容器状态拒绝操作",62),
@@ -64,6 +65,7 @@ public enum ResultEnum {
     VOLUME_LIST_ERROR("获取数据卷列表失败",70),
     VOLUME_NOT_EXIST("数据卷不存在",71),
     VOLUME_UPLOAD_ERROR("数据卷上传失败",72),
+    VOLUME_NOT_SUPPORT_VIEW("该数据卷不支持查看",73),
     NETWORK_NAME_EXIST("网络名已存在",80),
     NETWORK_NAME_ILLEGAL("网络名不合法，只能为字母或数字",81),
     NETWORK_HOST_EXIST("Host网络已存在，只允许存在一个",82),
@@ -76,12 +78,18 @@ public enum ResultEnum {
     DIS_CONNECT_NETWORK_ERROR("取消连接网络错误",89),
     NETWORK_CONNECT_REFUSED("网络连接拒绝，没有权限",90),
     NETWORK_DIS_CONNECT_REFUSED("网络取消连接拒绝，没有权限",91),
-    DELETE_NETWORK_ERROR_BY_USED("删除网络错误,请先清空网络内容器",92),
+    CREATE_NETWORK_ERROR_BY_DRIVER("公共网络创建失败，Driver无效",92),
+    DELETE_NETWORK_ERROR_BY_USED("删除网络错误,请先清空网络内容器或服务",93),
     SERVICE_NOT_FOUND("服务不存在",100),
     SERVICE_INSPECT_ERROR("服务查询失败",101),
     SERVICE_NAME_ILLEGAL("服务名不合法，只能为字母或数字",102),
     SERVICE_NAME_EXIST("服务名不合法，已经存在",103),
-    SERVICE_SCALE_ERROR("服务横向扩展失败",104);
+    SERVICE_SCALE_ERROR("服务横向扩展失败",104),
+    NOTICE_TITLE_OR_CONTENT_BLANK("通知标题或内容不能为空",110),
+    NOTICE_TITLE_LENGTH_THAN_50("通知标题不能超过50个字符",111),
+    NOTICE_TYPE_ERROR("通知类型错误",112),
+    NOTICE_RECEIVER_NOT_EMPTY("通知接收用户不能为空",113),
+    NOTICE_READ_ERROR("读取通知错误",114);
 
     private String message;
     private int code;

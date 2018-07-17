@@ -1,20 +1,20 @@
 package jit.edu.paas.commons.websocket;
 
+import jit.edu.paas.commons.util.JsonUtils;
 import jit.edu.paas.commons.util.SpringBeanFactoryUtils;
 import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.time.FastDateFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.websocket.OnClose;
-import javax.websocket.OnError;
-import javax.websocket.OnOpen;
-import javax.websocket.Session;
+import javax.websocket.*;
 import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -36,6 +36,8 @@ public class WebSocketServer {
     private final String ID_PREFIX = "UID:";
 
     private Session session;
+
+    FastDateFormat format = FastDateFormat.getInstance("yyyy-MM-dd HH:mm:ss");
 
     /**
      * 连接建立成功调用的方法
@@ -92,6 +94,18 @@ public class WebSocketServer {
     @OnError
     public void onError(Throwable error) {
         log.error("WebSocket连接出错");
+    }
+
+    @OnMessage
+    public void onMessage(String message) {
+//        log.info("{}({})：{}",this.session.getId(), format.format(new Date()), message);
+        try {
+            Map<String, String> map = new HashMap<>(16);
+            map.put("info", "heart");
+            sendMessage(JsonUtils.objectToJson(map), this.session.getId());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

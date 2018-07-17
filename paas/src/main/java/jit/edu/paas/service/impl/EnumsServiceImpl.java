@@ -87,4 +87,13 @@ public class EnumsServiceImpl implements EnumsService {
         }
         return map;
     }
+
+    @Override
+    public Map<Integer, String> listNotice() {
+        Map<Integer, String> map = new TreeMap<>(Integer::compareTo);
+        for (NoticeTypeEnum s : NoticeTypeEnum.values()) {
+            map.put(s.getCode(), s.getMessage());
+        }
+        return map;
+    }
 }

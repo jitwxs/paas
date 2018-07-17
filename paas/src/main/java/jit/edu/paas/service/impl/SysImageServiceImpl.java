@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.exceptions.ConflictException;
 import com.spotify.docker.client.exceptions.DockerTimeoutException;
 import com.spotify.docker.client.exceptions.ImagePushFailedException;
 import com.spotify.docker.client.messages.*;
@@ -319,7 +320,9 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             sysLogService.saveLog(request, SysLogTypeEnum.DELETE_IMAGE);
 
             return ResultVOUtils.success();
-        } catch (Exception e) {
+        } catch (ConflictException e){
+            return ResultVOUtils.error(ResultEnum.IMAGE_ERROR_BY_USED);
+        }catch (Exception e) {
             log.error("Docker删除镜像异常，错误位置：{},错误栈：{}"
                     ,"SysImageServiceImpl.removeImage",HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
@@ -329,10 +332,11 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         }
     }
 
-    @Async("taskExecutor")
-    @Transactional(rollbackFor = CustomException.class)
     @Override
-    public void pullImageTask(String name, String userId, HttpServletRequest request) {
+    public ResultVO pullImageCheck(String name, String userId) {
+        if(StringUtils.isBlank(name)) {
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
+        }
         //若用户未输入版本号 则默认pull最新的版本
         if (!name.contains(":")) {
             name = name + ":latest";
@@ -341,7 +345,7 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         // 判断本地是否有镜像
         try {
             if(dockerClient.listImages(DockerClient.ListImagesParam.byName(name)).size() > 0) {
-                sendMQ(userId, null, ResultVOUtils.error(ResultEnum.PULL_ERROR_BY_EXIST));
+                return ResultVOUtils.error(ResultEnum.PULL_ERROR_BY_EXIST);
             }
             // 如果本地没有，但数据库中有，说明本地与数据库数据不一致，执行同步方法
             if(getByFullName(name) != null) {
@@ -350,10 +354,15 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         } catch (Exception e) {
             log.error("查询本地镜像失败，错误位置：{}，镜像名：{}，错误栈：{}",
                     "SysImageServiceImpl.pullImageFromHub()", name, HttpClientUtils.getStackTraceAsString(e));
-            sendMQ(userId, null, ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
+            return ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION);
         }
+        return ResultVOUtils.success();
+    }
 
-        // pull 镜像
+    @Async("taskExecutor")
+    @Transactional(rollbackFor = CustomException.class)
+    @Override
+    public void pullImageTask(String name, String userId, HttpServletRequest request) {
         try {
             dockerClient.pull(name);
             // 写入日志
@@ -378,7 +387,7 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             SysImage sysImage = imageToSysImage(image, image.repoTags().get(0));
             imageMapper.insert(sysImage);
 
-            sendMQ(userId, null, ResultVOUtils.successWithMsg("镜像拉取成功"));
+            sendMQ(userId, sysImage.getId(), ResultVOUtils.successWithMsg("镜像拉取成功"));
         } catch (Exception e) {
             log.error("获取镜像详情失败，错误位置：{}，镜像名：{}，错误栈：{}",
                     "SysImageServiceImpl.pullImageFromHub()", name, HttpClientUtils.getStackTraceAsString(e));
@@ -767,6 +776,12 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         Map<String, Object> data = new HashMap<>(16);
         data.put("type", WebSocketTypeEnum.SYS_IMAGE.getCode());
         data.put("imageId", imageId);
+        // 获取暴露端口
+        ResultVO resultVO1 = listExportPorts(imageId, userId);
+        if(ResultEnum.OK.getCode() == resultVO1.getCode()) {
+            data.put("exportPort", resultVO1.getData());
+        }
+
         resultVO.setData(data);
 
         Map<String,String> map = new HashMap<>(16);

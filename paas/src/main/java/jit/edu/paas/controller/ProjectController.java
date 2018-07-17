@@ -6,7 +6,6 @@ import jit.edu.paas.domain.dto.UserProjectDTO;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.RoleEnum;
 import jit.edu.paas.domain.select.UserProjectSelect;
-import jit.edu.paas.domain.vo.ProjectLogVO;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.service.UserProjectService;
@@ -113,7 +112,9 @@ public class ProjectController {
      */
     @GetMapping("/log")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO getProjectLog(@RequestAttribute String uid, String projectId, Integer type, Page<ProjectLogVO> page) {
+    public ResultVO getProjectLog(@RequestAttribute String uid, String projectId, Integer type,
+                                  @RequestParam(defaultValue = "1") Integer current,
+                                  @RequestParam(defaultValue = "10") Integer size) {
         // 鉴权
         String roleName = loginService.getRoleName(uid);
         if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
@@ -123,6 +124,6 @@ public class ProjectController {
             }
         }
 
-        return projectService.listProjectLog(projectId, type, page);
+        return projectService.listProjectLog(projectId, type, new Page<>(current, size, "create_date", false));
     }
 }

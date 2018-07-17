@@ -143,7 +143,7 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
     @Async("taskExecutor")
     @Transactional(rollbackFor = CustomException.class)
     @Override
-    public void deleteServiceTask(String userId, String serviceId, HttpServletRequest request) {
+    public void deleteServiceTask(String userId, String serviceId,HttpServletRequest request) {
         try {
             dockerSwarmClient.removeService(serviceId);
             // 删除数据

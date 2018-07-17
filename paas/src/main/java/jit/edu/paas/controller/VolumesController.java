@@ -2,6 +2,7 @@ package jit.edu.paas.controller;
 
 import com.baomidou.mybatisplus.plugins.Page;
 import jit.edu.paas.commons.util.ResultVOUtils;
+import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.domain.entity.SysVolume;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.VolumeTypeEnum;
@@ -29,9 +30,12 @@ public class VolumesController {
      * @author jitwxs
      * @since 2018/7/4 17:32
      */
-    @GetMapping("/{objId}/list")
+    @GetMapping("/list/obj")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO listByObjId(Page<SysVolume> page, @RequestAttribute String uid, @PathVariable String objId) {
+    public ResultVO listByObjId(Page<SysVolume> page, @RequestAttribute String uid, String objId) {
+        if(StringUtils.isBlank(objId)) {
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
+        }
         return sysVolumeService.listByObjId(page, objId, uid);
     }
 
@@ -40,10 +44,25 @@ public class VolumesController {
      * @author jitwxs
      * @since 2018/7/4 17:32
      */
-    @GetMapping("/inspect/{id}")
+    @GetMapping("/inspect/id/{id}")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO inspectVolumes(@RequestAttribute String uid, @PathVariable String id){
+    public ResultVO inspectVolumesById(@RequestAttribute String uid, @PathVariable String id){
         return sysVolumeService.inspectVolumes(id, uid);
+    }
+
+    /**
+     * 获取数据卷详情
+     * @author jitwxs
+     * @since 2018/7/4 17:32
+     */
+    @GetMapping("/inspect/name/{name}")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVO inspectVolumesByName(@RequestAttribute String uid, @PathVariable String name) {
+        SysVolume sysVolume = sysVolumeService.getByName(name);
+        if(sysVolume == null) {
+            return ResultVOUtils.error(ResultEnum.VOLUME_NOT_SUPPORT_VIEW);
+        }
+        return sysVolumeService.inspectVolumes(sysVolume.getId(), uid);
     }
 
     /**

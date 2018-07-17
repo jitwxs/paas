@@ -278,7 +278,7 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             sysLogService.saveLog(request, SysLogTypeEnum.CREATE_CONTAINER);
             projectLogService.saveSuccessLog(projectId,uc.getId(),ProjectLogTypeEnum.CREATE_CONTAINER);
 
-            sendMQ(userId, null, ResultVOUtils.successWithMsg("容器"+containerName+"创建成功"));
+            sendMQ(userId, null, ResultVOUtils.successWithMsg("容器【"+containerName+"】创建成功"));
         } catch (Exception e) {
             log.error("创建容器出现异常，异常位置：{}，错误栈：{}",
                     "UserContainerServiceImpl.createContainerTask()", HttpClientUtils.getStackTraceAsString(e));

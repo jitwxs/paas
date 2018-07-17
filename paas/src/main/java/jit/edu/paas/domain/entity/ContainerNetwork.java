@@ -27,6 +27,10 @@ public class ContainerNetwork implements Serializable {
      */
     private String networkId;
     /**
+     * 服务Id
+     */
+    private String serviceId;
+    /**
      * 创建时间
      */
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
@@ -34,6 +38,11 @@ public class ContainerNetwork implements Serializable {
 
     public ContainerNetwork(String containerId,String networkId) {
         this.containerId = containerId;
+        this.networkId = networkId;
+    }
+
+    public ContainerNetwork(String serviceId, String networkId, String containerId) {
+        this.serviceId = serviceId;
         this.networkId = networkId;
     }
 }

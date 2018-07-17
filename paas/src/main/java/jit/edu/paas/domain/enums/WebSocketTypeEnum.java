@@ -12,7 +12,8 @@ public enum WebSocketTypeEnum {
     CONTAINER("容器操作", 0),
     SYS_IMAGE("系统镜像操作", 1),
     HUB_IMAGE("Hub镜像操作", 2),
-    SERVICE("服务操作", 3);
+    SERVICE("服务操作", 3),
+    NOTICE("通知操作", 4);
 
     private String message;
     private int code;

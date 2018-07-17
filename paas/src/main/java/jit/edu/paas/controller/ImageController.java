@@ -136,8 +136,9 @@ public class ImageController {
     @PostMapping("/pull")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVO pullImage(@RequestAttribute String uid, String imageName, HttpServletRequest request) {
-        if(StringUtils.isBlank(imageName)) {
-            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
+        ResultVO resultVO = imageService.pullImageCheck(imageName, uid);
+        if(ResultEnum.OK.getCode() != resultVO.getCode()) {
+            return resultVO;
         }
 
         imageService.pullImageTask(imageName, uid, request);
