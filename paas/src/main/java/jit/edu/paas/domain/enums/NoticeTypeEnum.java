@@ -22,9 +22,13 @@ public enum NoticeTypeEnum {
      */
     SERVICE_NOTICE("服务通知", 3),
     /**
+     * 镜像通知
+     */
+    IMAGE_NOTICE("镜像通知", 4),
+    /**
      * 其他通知
      */
-    OTHER_NOTICE("其他通知", 4);
+    OTHER_NOTICE("其他通知", 5);
 
     private String message;
     private int code;

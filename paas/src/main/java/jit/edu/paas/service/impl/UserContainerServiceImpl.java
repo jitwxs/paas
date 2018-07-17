@@ -60,6 +60,8 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
     private SysLogService sysLogService;
     @Autowired
     private ProjectLogService projectLogService;
+    @Autowired
+    private NoticeService noticeService;
 
     @Autowired
     private SysVolumesMapper sysVolumesMapper;
@@ -278,6 +280,11 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             sysLogService.saveLog(request, SysLogTypeEnum.CREATE_CONTAINER);
             projectLogService.saveSuccessLog(projectId,uc.getId(),ProjectLogTypeEnum.CREATE_CONTAINER);
 
+            // 发送通知
+            List<String> receiverList = new ArrayList<>();
+            receiverList.add(userId);
+            noticeService.sendUserTask("创建容器", "创建容器【" + containerName + "】成功", 2, false, receiverList, null);
+
             sendMQ(userId, null, ResultVOUtils.successWithMsg("容器【"+containerName+"】创建成功"));
         } catch (Exception e) {
             log.error("创建容器出现异常，异常位置：{}，错误栈：{}",
@@ -286,6 +293,11 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.CREATE_CONTAINER, e);
             projectLogService.saveErrorLog(projectId,uc.getId(),ProjectLogTypeEnum.CREATE_CONTAINER_ERROR,ResultEnum.DOCKER_EXCEPTION);
+
+            // 发送通知
+            List<String> receiverList = new ArrayList<>();
+            receiverList.add(userId);
+            noticeService.sendUserTask("创建容器","创建容器【"+containerName+"】失败,Docker异常", 2, false, receiverList, null);
 
             sendMQ(userId, null, ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
         }

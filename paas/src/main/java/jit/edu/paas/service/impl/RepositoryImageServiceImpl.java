@@ -1,7 +1,6 @@
 package jit.edu.paas.service.impl;
 
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
-import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.Image;
@@ -20,6 +19,7 @@ import jit.edu.paas.domain.vo.HubImageVO;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.mapper.RepositoryImageMapper;
+import jit.edu.paas.service.NoticeService;
 import jit.edu.paas.service.RepositoryImageService;
 import jit.edu.paas.service.SysImageService;
 import jit.edu.paas.service.SysLogService;
@@ -52,6 +52,8 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
     private SysImageService sysImageService;
     @Autowired
     private SysLogService sysLogService;
+    @Autowired
+	private NoticeService noticeService;
     @Autowired
     private JedisClient jedisClient;
     @Autowired
@@ -260,12 +262,22 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PUSH_IMAGE_TO_HUB);
 
+            // 发送通知
+            List<String> receiverList = new ArrayList<>();
+            receiverList.add(userId);
+            noticeService.sendUserTask("推送Hub镜像","推送镜像【"+sysImage.getName()+"】成功", 4, false, receiverList, null);
+
             sendMQ(userId, image.getId(), ResultVOUtils.successWithMsg("镜像上传成功"));
         } catch (Exception e) {
             log.error("上传镜像失败，错误位置：{}，错误栈：{}",
                     "RepositoryImageServiceImpl.pushTask()", HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PUSH_IMAGE_TO_HUB,e);
+
+            // 发送通知
+            List<String> receiverList = new ArrayList<>();
+            receiverList.add(userId);
+            noticeService.sendUserTask("推送Hub镜像","推送镜像【"+sysImage.getName()+"】失败,Docker推送异常", 4, false, receiverList, null);
 
             sendMQ(userId, null, ResultVOUtils.error(ResultEnum.PUSH_ERROR));
         }
@@ -303,7 +315,7 @@ public class RepositoryImageServiceImpl extends ServiceImpl<RepositoryImageMappe
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PULL_IMAGE_FROM_HUB);
 
-            sendMQ(userId, sysImage.getId(), ResultVOUtils.success());
+            sendMQ(userId, sysImage.getId(), ResultVOUtils.successWithMsg("镜像拉取成功"));
         } catch (Exception e) {
             log.error("拉取镜像失败，错误位置：{}，错误栈：{}",
                     "RepositoryImageServiceImpl.pullTask()", HttpClientUtils.getStackTraceAsString(e));

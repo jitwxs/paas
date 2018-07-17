@@ -19,6 +19,7 @@ import jit.edu.paas.domain.enums.*;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.mapper.SysImageMapper;
+import jit.edu.paas.service.NoticeService;
 import jit.edu.paas.service.SysImageService;
 import jit.edu.paas.service.SysLogService;
 import jit.edu.paas.service.SysLoginService;
@@ -59,6 +60,8 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
     private MQProducer mqProducer;
     @Autowired
     private SysLogService sysLogService;
+    @Autowired
+    private NoticeService noticeService;
 
     @Value("${docker.server.url}")
     private String serverUrl;
@@ -189,6 +192,7 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         // 4、查询信息
         try {
             String fullName = image.getFullName();
+
             return ResultVOUtils.success(dockerClient.inspectImage(fullName));
         } catch (Exception e) {
             log.error("Docker查询详情异常，错误位置：{}，错误栈：{}",
@@ -364,34 +368,62 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
     @Override
     public void pullImageTask(String name, String userId, HttpServletRequest request) {
         try {
+            if(!name.contains(":")) {
+                name = name + ":latest";
+            }
             dockerClient.pull(name);
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PULL_IMAGE_FROM_DOCKER_HUB);
-        } catch (Exception e) {
+        } catch (DockerTimeoutException timoutException){
+            sendMQ(userId, null, ResultVOUtils.error(ResultEnum.DOCKER_TIMEOUT));
+            // 发送通知
+            List<String> receiverList = new ArrayList<>();
+            receiverList.add(userId);
+            noticeService.sendUserTask("拉取Docker Hub镜像","拉取镜像【"+name+"】失败，连接超时", 4, false, receiverList, null);
+            return;
+        }catch (Exception e) {
             log.error("Pull Docker Hub镜像失败，错误位置：{}，镜像名：{}，错误栈：{}"
-                    , "SysImageServiceImpl.pullImageFromHub()", name, HttpClientUtils.getStackTraceAsString(e));
+                    , "SysImageServiceImpl.pullImageTask()", name, HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PULL_IMAGE_FROM_DOCKER_HUB, e);
+            // 发送通知
+            List<String> receiverList = new ArrayList<>();
+            receiverList.add(userId);
+            noticeService.sendUserTask("拉取Docker Hub镜像","拉取镜像【"+name+"】失败，Docker拉取异常", 4, false, receiverList, null);
 
             sendMQ(userId, null, ResultVOUtils.error(ResultEnum.PULL_ERROR));
+            return;
         }
 
         // 保存信息
         try {
             List<Image> images = dockerClient.listImages(DockerClient.ListImagesParam.byName(name));
-            if(images.size() ==0) {
+            if(images.size() <= 0) {
                 sendMQ(userId, null, ResultVOUtils.error(ResultEnum.INSPECT_ERROR));
+                // 发送通知
+                List<String> receiverList = new ArrayList<>();
+                receiverList.add(userId);
+                noticeService.sendUserTask("拉取Docker Hub镜像", "拉取镜像【" + name + "】失败，查看拉取后镜像信息异常", 4, false, receiverList, null);
+                return;
             }
+
             Image image = images.get(0);
 
             SysImage sysImage = imageToSysImage(image, image.repoTags().get(0));
             imageMapper.insert(sysImage);
+            // 发送通知
+            List<String> receiverList = new ArrayList<>();
+            receiverList.add(userId);
+            noticeService.sendUserTask("拉取Docker Hub镜像","拉取镜像【"+name+"】成功", 4, false, receiverList, null);
 
             sendMQ(userId, sysImage.getId(), ResultVOUtils.successWithMsg("镜像拉取成功"));
         } catch (Exception e) {
             log.error("获取镜像详情失败，错误位置：{}，镜像名：{}，错误栈：{}",
                     "SysImageServiceImpl.pullImageFromHub()", name, HttpClientUtils.getStackTraceAsString(e));
-
+            // 发送通知
+            List<String> receiverList = new ArrayList<>();
+            receiverList.add(userId);
+            noticeService.sendUserTask("拉取Docker Hub镜像", "拉取镜像【" + name + "】失败，Docker异常", 4, false, receiverList, null);
             sendMQ(userId, null, ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
         }
     }
@@ -415,6 +447,10 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         } catch (Exception e) {
             log.error("Tag镜像异常，错误位置：{}，错误栈：{}",
                     "SysImageServiceImpl.pushImage", HttpClientUtils.getStackTraceAsString(e));
+            // 发送通知
+            List<String> receiverList = new ArrayList<>();
+            receiverList.add(userId);
+            noticeService.sendUserTask("推送Docker Hub镜像", "推送镜像【" + imageName + "】失败，Docker异常", 4, false, receiverList, null);
             sendMQ(userId, null, ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
         }
 
@@ -425,13 +461,23 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             sysLogService.saveLog(request, SysLogTypeEnum.PUSH_IMAGE_TO_DOCKER_HUB);
         } catch (ImagePushFailedException ipe) {
             sendMQ(userId, null, ResultVOUtils.error(ResultEnum.PUSH_ERROR));
+            // 发送通知
+            List<String> receiverList = new ArrayList<>();
+            receiverList.add(userId);
+            noticeService.sendUserTask("推送Docker Hub镜像", "推送镜像【" + imageName + "】失败，Docker推送异常", 4, false, receiverList, null);
+            return;
         } catch (Exception e) {
             log.error("push镜像异常，错误位置：{}，错误栈：{}",
                     "SysImageServiceImpl.pushImage", HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.PUSH_IMAGE_TO_DOCKER_HUB, e);
+            // 发送通知
+            List<String> receiverList = new ArrayList<>();
+            receiverList.add(userId);
+            noticeService.sendUserTask("推送Docker Hub镜像", "推送镜像【" + imageName + "】失败，其他错误", 4, false, receiverList, null);
 
             sendMQ(userId, null, ResultVOUtils.error(ResultEnum.OTHER_ERROR));
+            return;
         }
 
         try {
@@ -441,7 +487,10 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             log.error("删除镜像异常，错误位置：{}，错误栈：{}",
                     "SysImageServiceImpl.pushImage", HttpClientUtils.getStackTraceAsString(e));
         }
-
+        // 发送通知
+        List<String> receiverList = new ArrayList<>();
+        receiverList.add(userId);
+        noticeService.sendUserTask("推送Docker Hub镜像", "推送镜像【" + imageName + "】成功", 4, false, receiverList, null);
         sendMQ(userId, null, ResultVOUtils.successWithMsg("镜像上传成功，名称为" + imageName));
     }
 
@@ -485,13 +534,21 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             imageMapper.insert(sysImage);
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.IMPORT_IMAGE);
-
+            // 发送通知
+            List<String> receiverList = new ArrayList<>();
+            receiverList.add(uid);
+            noticeService.sendUserTask("导入镜像", "导入镜像【" + fullName + "】成功", 4, false, receiverList, null);
             sendMQ(uid, null, ResultVOUtils.successWithMsg("镜像导入成功"));
         } catch (Exception e) {
             log.error("导入镜像失败，错误位置：{}，镜像名：{}，错误栈：{}",
                     "SysImageServiceImpl.pullImageFromHub()", fullName, HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.IMPORT_IMAGE, e);
+
+            // 发送通知
+            List<String> receiverList = new ArrayList<>();
+            receiverList.add(uid);
+            noticeService.sendUserTask("导入镜像", "导入镜像【" + fullName + "】失败,Docker导入失败", 4, false, receiverList, null);
 
             sendMQ(uid, null, ResultVOUtils.error(ResultEnum.IMPORT_ERROR));
         }

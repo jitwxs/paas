@@ -72,6 +72,8 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
     private MQProducer mqProducer;
     @Autowired
     private PortService portService;
+    @Autowired
+	private NoticeService noticeService;
 
     @Override
     public ResultVO checkPermission(String userId, String serviceId) {
@@ -152,6 +154,12 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
             sysLogService.saveLog(request, SysLogTypeEnum.DELETE_SERVICE);
 
             projectLogService.saveSuccessLog(getProjectId(serviceId), serviceId, ProjectLogTypeEnum.DELETE_SERVICE);
+
+            // 发送通知
+            List<String> receiverList = new ArrayList<>();
+            receiverList.add(userId);
+            noticeService.sendUserTask("删除服务", "删除服务【" + getById(serviceId).getName() + "】成功", 3, false, receiverList, null);
+
             // 发送成功消息
             sendMQ(userId, serviceId, ResultVOUtils.successWithMsg("删除服务成功"));
         } catch (Exception e) {
@@ -160,6 +168,12 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.DELETE_SERVICE, e);
             projectLogService.saveErrorLog(getProjectId(serviceId),serviceId, ProjectLogTypeEnum.DELETE_SERVICE_ERROR,ResultEnum.DOCKER_EXCEPTION);
+
+            // 发送通知
+            List<String> receiverList = new ArrayList<>();
+            receiverList.add(userId);
+            noticeService.sendUserTask("删除服务","删除服务【"+getById(serviceId).getName()+"】失败,Docker异常", 3, false, receiverList, null);
+
             // 发送异常消息
             sendMQ(userId, serviceId, ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
         }
@@ -321,6 +335,11 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
             sysLogService.saveLog(request, SysLogTypeEnum.CREATE_SERVICE);
             projectLogService.saveSuccessLog(projectId,us.getId(),ProjectLogTypeEnum.CREATE_SERVICE);
 
+            // 发送通知
+            List<String> receiverList = new ArrayList<>();
+            receiverList.add(userId);
+            noticeService.sendUserTask("创建服务","创建服务【"+serviceName+"】成功", 3, false, receiverList, null);
+
             sendMQ(userId, creation.id(), ResultVOUtils.successWithMsg("服务创建成功"));
         } catch (Exception e) {
             log.error("创建服务出现异常，异常位置：{}，错误栈：{}",
@@ -329,6 +348,11 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.CREATE_SERVICE, e);
             projectLogService.saveErrorLog(projectId,us.getId(),ProjectLogTypeEnum.CREATE_SERVICE_ERROR,ResultEnum.DOCKER_EXCEPTION);
+
+            // 发送通知
+            List<String> receiverList = new ArrayList<>();
+            receiverList.add(userId);
+            noticeService.sendUserTask("创建服务","创建服务【"+serviceName+"】失败,Docker异常", 3, false, receiverList, null);
 
             sendMQ(userId, null, ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
         }
