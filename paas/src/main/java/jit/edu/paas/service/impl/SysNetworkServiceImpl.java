@@ -93,7 +93,7 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
 
     @Transactional(rollbackFor = CustomException.class)
     @Override
-    public ResultVO createPublicNetwork(String name, String driver, Map<String, String> labels, Boolean hasIpv6, HttpServletRequest request) {
+    public ResultVO createPublicNetwork(String name, String driver, Map<String, String> labels, HttpServletRequest request) {
         // 参数判断
         if(StringUtils.isBlank(name, driver)) {
             return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
@@ -118,9 +118,6 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
             builder.checkDuplicate(true);
             builder.attachable(true);
 
-            if(hasIpv6 != null) {
-                builder.enableIPv6(hasIpv6);
-            }
             if(labels != null) {
                 builder.labels(labels);
             }
@@ -154,7 +151,7 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
     }
 
     @Override
-    public ResultVO createUserNetwork(String name, String driver, Map<String, String> labels, Boolean hasIpv6, String uid) {
+    public ResultVO createUserNetwork(String name, String driver, Map<String, String> labels, String uid) {
         // 参数判断
         if(StringUtils.isBlank(name, driver)) {
             return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
@@ -180,9 +177,6 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
             builder.checkDuplicate(true);
             builder.attachable(true);
 
-            if(hasIpv6 != null) {
-                builder.enableIPv6(hasIpv6);
-            }
             if(labels != null) {
                 builder.labels(labels);
             }

@@ -51,14 +51,14 @@ public interface SysNetworkService extends IService<SysNetwork> {
      * @author jitwxs
      * @since 2018/7/14 16:01
      */
-    ResultVO createPublicNetwork(String name, String driver, Map<String, String> labels, Boolean hasIpv6, HttpServletRequest request);
+    ResultVO createPublicNetwork(String name, String driver, Map<String, String> labels, HttpServletRequest request);
 
     /**
      * 创建用户网络
      * @author jitwxs
      * @since 2018/7/14 19:33
      */
-    ResultVO createUserNetwork(String name, String driver, Map<String,String> labels, Boolean hasIpv6, String uid);
+    ResultVO createUserNetwork(String name, String driver, Map<String,String> labels, String uid);
 
     /**
      * 是否有权限访问

@@ -2,7 +2,6 @@ package jit.edu.paas.controller;
 
 import com.baomidou.mybatisplus.plugins.Page;
 import jit.edu.paas.commons.util.CollectionUtils;
-import jit.edu.paas.commons.util.JsonUtils;
 import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.domain.entity.SysNetwork;
@@ -15,7 +14,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -92,7 +90,7 @@ public class NetworkController {
             return ResultVOUtils.error(ResultEnum.JSON_ERROR);
         }
 
-        return networkService.createPublicNetwork(name, driver, labels, hasIpv6, request);
+        return networkService.createPublicNetwork(name, driver, labels, request);
     }
 
     /**
@@ -102,12 +100,17 @@ public class NetworkController {
      */
     @PostMapping("/self/create")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResultVO createUserNetwork(String name, String driver, String labelsStr, Boolean hasIpv6,
-                                      @RequestAttribute String uid) {
+    public ResultVO createUserNetwork(String name, String driver, String labelsStr, @RequestAttribute String uid) {
         // 前端传递map字符串
-        Map<String, String> labels = CollectionUtils.mapJson2map(labelsStr);
+        Map<String, String> labels;
+        try {
+            labels = CollectionUtils.mapJson2map(labelsStr);
+        } catch (Exception e) {
+            log.error("Json格式解析错误，错误位置：{}，错误信息：{}", "NetworkController.createUserNetwork()", e.getMessage());
+            return ResultVOUtils.error(ResultEnum.JSON_ERROR);
+        }
 
-        return networkService.createUserNetwork(name, driver, labels, hasIpv6, uid);
+        return networkService.createUserNetwork(name, driver, labels, uid);
     }
 
     /**

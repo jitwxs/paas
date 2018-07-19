@@ -480,7 +480,7 @@
 			  "data": null
 			}
 
-## 项目日志  [GET /project/log/{?projectId,type,current,size,}]
+## 项目日志  [GET /project/log/{?projectId,type,current,size}]
 
 + Parameters
 
@@ -576,11 +576,12 @@
 
 # Group 容器管理
 
-## 用户容器列表  [GET /container/list/{?name,current,size,orderByField,asc}]
+## 用户容器列表  [GET /container/list/{?name,status,current,size,orderByField,asc}]
 
 + Parameters
 
 	+ name (string, optional) - 容器名
+	+ status (number, optional) - 状态类型
     + current (number, optional) - 页码，默认为1
     + size (number, optional) - 页面容量，默认为10
     + orderByField (string, optional) - 排序字段
@@ -1267,7 +1268,8 @@
 			        "repo": "library",
 			        "parentId": "",
 			        "createDate": "2018-07-04 11:28:16",
-			        "updateDate": null
+			        "updateDate": null,
+			        "username": null
 			      }
 			    ]
 			  }
@@ -1290,7 +1292,8 @@
 		        "repo": "所属仓储",
 		        "parentId": "父镜像ID",
 		        "createDate": "创建时间",
-		        "updateDate": "更新时间"
+		        "updateDate": "更新时间",
+		        "username": "所属用户名"
 			}
 
 ## DockerHub镜像列表 [GET /image/list/hub{?name,limit}]
@@ -2058,8 +2061,7 @@
 			{
 				"name" : "网络名，字符串，只能由字母+数字组成，必填",
 				"driver" : "网络驱动，字符串，必填",
-				"labels" : "标签，Map<String, String>，选填",
-				"hasIpv6" : "是否为IPV6，boolean，选填"
+				"labelsStr" : "标签，Map<String, String>字符串，选填",
 			}
 
 + Response 200 (application/json)
@@ -2086,8 +2088,7 @@
 			{
 				"name" : "网络名，字符串，只能由字母+数字组成，必填",
 				"driver" : "网络驱动，字符串，必填",
-				"labels" : "标签，Map<String, String>，选填",
-				"hasIpv6" : "是否为IPV6，boolean，选填"
+				"labelsStr" : "标签，Map<String, String>，选填"
 			}
 
 + Response 200 (application/json)
@@ -2100,11 +2101,7 @@
 			  "data": null
 			}
 
-## 删除网络 [DELETE /network/delete/{id}]
-
-+ Parameters
-
-    + id (string, required) - 网络ID
+## 删除网络 [POST /network/delete]
 
 + Request
 
@@ -2113,10 +2110,17 @@
 			Content-Type: application/x-www-form-urlencoded
 			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
 
+    + Body
+
+	        {
+			  "ids": "111,222,333"
+			}
+
 	+ Schema
 
-			普通用户仅能删除自己创建的网络
-			管理员可以删除任意网络
+			{
+				"ids": "网络ID字符串，多个逗号分隔"
+			}
 
 + Response 200 (application/json)
     
@@ -2136,7 +2140,6 @@
 	
 			Content-Type: application/x-www-form-urlencoded
 			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
-
 
 	+ Body
 
@@ -2490,29 +2493,6 @@
 			  }
 			}
 
-## 服务日志 [GET /service/log/{id}]
-
-+ Parameters
-
-    + id (string, required) - 服务ID
-
-+ Request
-
-	+ Headers
-	
-			Content-Type: application/x-www-form-urlencoded
-			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
-
-+ Response 200 (application/json)
-    
-    + Body
-
-			{
-			  "code": 0,
-			  "message": "成功",
-			  "data": ""
-			}
-
 ## 删除服务 - WebSocket [DELETE /service/delete/{id}]
 
 + Parameters
@@ -2581,7 +2561,7 @@
 				"cmdStr": "执行命令，多个分号分隔，选填",
 				"envStr": "环境变量，多个分号分隔，选填",
 				"destinationStr": "内部目录，多个分号分隔，选填",
-				"replicas": "横向扩展个数，数字，选填，默认为1"
+				"replicas": "横向扩展个数，数字，选填，默认为1",
 				"portMapStr": "端口Map<String, String> JSON字符串，暴露端口必填，其余端口选填",
 				"labelsStr": "标签Map<String, String> JSON字符串，选填"
 			}
@@ -2895,22 +2875,44 @@
 			    "current": 1,
 			    "records": [
 			      {
-			        "id": "22710dba2e16487795655e68e56be8e9",
-			        "containerId": "e2ae80b9d4cf4f09433e9957b5f62b40ee562d1b62837165502c4d5f7996d3c5",
-			        "name": "5707b93721f8913e39315d3eec3e77f8096949fe80c1a61a78b5213fae8add42",
-			        "destination": "/usr/local/hello",
-			        "source": "/var/lib/docker/volumes/5707b93721f8913e39315d3eec3e77f8096949fe80c1a61a78b5213fae8add42/_data",
-			        "createDate": "2018-07-05 11:06:55",
-			        "updateDate": null
+			        "id": "486186ce65fe4ad4a80bb65c815f86de",
+			        "objId": "kdy3aygudnqysyrla0w3amgj6",
+			        "name": "7a988ab3fb2087aecf2cc88e58b112a48d035fd8a30d738c19191b5ff47edc99",
+			        "destination": "/qq/bb",
+			        "source": "/var/lib/docker/volumes/7a988ab3fb2087aecf2cc88e58b112a48d035fd8a30d738c19191b5ff47edc99/_data",
+			        "type": 2,
+			        "createDate": "2018-07-16 14:42:17",
+			        "updateDate": "2018-07-16 14:42:17",
+			        "volume": {
+			          "Name": "7a988ab3fb2087aecf2cc88e58b112a48d035fd8a30d738c19191b5ff47edc99",
+			          "Driver": "local",
+			          "DriverOpts": null,
+			          "Options": {},
+			          "Labels": null,
+			          "Mountpoint": "/var/lib/docker/volumes/7a988ab3fb2087aecf2cc88e58b112a48d035fd8a30d738c19191b5ff47edc99/_data",
+			          "Scope": "local",
+			          "Status": null
+			        }
 			      },
 			      {
-			        "id": "f6658faa690441189cdf3f34c5546167",
-			        "containerId": "e2ae80b9d4cf4f09433e9957b5f62b40ee562d1b62837165502c4d5f7996d3c5",
-			        "name": "7cdf905d9f1f90d9a1166b34fdde554c3fc6edaa30b1fe936180478f1ad999f7",
-			        "destination": "/usr/local/world",
-			        "source": "/var/lib/docker/volumes/7cdf905d9f1f90d9a1166b34fdde554c3fc6edaa30b1fe936180478f1ad999f7/_data",
-			        "createDate": "2018-07-05 11:06:55",
-			        "updateDate": null
+			        "id": "63d3ab662c9b4a2dace29a53fd0f93b9",
+			        "objId": "kdy3aygudnqysyrla0w3amgj6",
+			        "name": "4e9a6abb5040f7a7b38a1e9d2081a57fc575ddf7eafb9d52510870d4033fbd90",
+			        "destination": "/tt/xxx",
+			        "source": "/var/lib/docker/volumes/4e9a6abb5040f7a7b38a1e9d2081a57fc575ddf7eafb9d52510870d4033fbd90/_data",
+			        "type": 2,
+			        "createDate": "2018-07-16 14:42:17",
+			        "updateDate": "2018-07-16 14:42:17",
+			        "volume": {
+			          "Name": "4e9a6abb5040f7a7b38a1e9d2081a57fc575ddf7eafb9d52510870d4033fbd90",
+			          "Driver": "local",
+			          "DriverOpts": null,
+			          "Options": {},
+			          "Labels": null,
+			          "Mountpoint": "/var/lib/docker/volumes/4e9a6abb5040f7a7b38a1e9d2081a57fc575ddf7eafb9d52510870d4033fbd90/_data",
+			          "Scope": "local",
+			          "Status": null
+			        }
 			      }
 			    ]
 			  }
@@ -2925,7 +2927,17 @@
 		      "destination": "容器内路径",
 		      "source": "数据卷路径",
 		      "createDate": "创建时间",
-		      "updateDate": "更新实际"
+		      "updateDate": "更新时间",
+		      "volume": {
+			          "Name": "数据卷名",
+			          "Driver": "数据卷驱动",
+			          "DriverOpts": null,
+			          "Options": {},
+			          "Labels": null,
+			          "Mountpoint": "挂载点",
+			          "Scope": "范围",
+			          "Status": "状态"
+			        }
 		    }
 
 ## 数据卷详情 [GET /volumes/inspect/id/{id}]
@@ -3587,19 +3599,19 @@
 			    "current": 1,
 			    "records": [
 			      {
-			        "id": "2af6929e67fb48e289cc4f6dc02dbde8",
-			        "userId": "1231451941131",
-			        "type": 22,
-			        "description": "同步镜像",
-			        "action": "/image/sync",
-			        "method": "GET",
-			        "ip": "0:0:0:0:0:0:0:1",
+			        "id": "9e01d9dad0634e64977cd063e5c97e6d",
+			        "userId": "afaba31231451",
+			        "type": 61,
+			        "description": "创建公共网络失败",
+			        "action": "/network/public/create",
+			        "method": "POST",
+			        "ip": "192.168.100.142",
 			        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:61.0) Gecko/20100101 Firefox/61.0",
 			        "param": null,
-			        "exception": null,
-			        "createDate": "2018-07-07 16:16:40",
-			        "username": "sys",
-			        "hasException": false
+			        "exception": "Request error: POST http://192.168.100.30:2375/networks/create: 500, body: {\"message\":\"This node is not a swarm manager. Use \\\"docker swarm init\\\" or \\\"docker swarm join\\\" to connect this node to swarm and try again.\"}\n",
+			        "createDate": "2018-07-18 17:12:43",
+			        "username": "wxsa",
+			        "hasException": true
 			      }
 			    ]
 			  }
