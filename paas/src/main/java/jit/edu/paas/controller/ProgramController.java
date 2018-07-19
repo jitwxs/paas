@@ -1,6 +1,7 @@
 package jit.edu.paas.controller;
 
 import com.baomidou.mybatisplus.plugins.Page;
+import jit.edu.paas.commons.util.CollectionUtils;
 import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.domain.entity.SysProgram;
 import jit.edu.paas.domain.enums.ResultEnum;
@@ -9,6 +10,8 @@ import jit.edu.paas.service.SysProgramService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import javax.ws.rs.DELETE;
 
 /**
  * 运行程序Controller
@@ -54,10 +57,11 @@ public class ProgramController {
      */
     @PostMapping("/delete")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVO deleteProgram(Integer[] ids) {
-        if(ids == null) {
+    public ResultVO deleteProgram(String ids) {
+        String[] idArray = ids.split(",");
+        if(CollectionUtils.isArrayEmpty(idArray)) {
             return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
-        return programService.deleteByIds(ids);
+        return programService.deleteByIds(idArray);
     }
 }

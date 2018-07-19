@@ -1,6 +1,7 @@
 package jit.edu.paas.commons.util;
 
 import freemarker.template.utility.StringUtil;
+import jit.edu.paas.domain.enums.ResultEnum;
 
 import java.util.*;
 
@@ -131,5 +132,15 @@ public class CollectionUtils {
                 iterator.remove();
             }
         }
+    }
+
+    public static Map<String,String> mapJson2map(String json)  {
+        Map<String, String> labels = null;
+        if(StringUtils.isNotBlank(json)) {
+            labels = JsonUtils.jsonToMap(json);
+            // 解决前台发送空map问题
+            CollectionUtils.removeNullEntry(labels);
+        }
+        return labels;
     }
 }

@@ -55,6 +55,9 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, NoticeDTO> impl
         if(title.length() > 50) {
             return ResultVOUtils.error(ResultEnum.NOTICE_TITLE_LENGTH_THAN_50);
         }
+        if(content.length() > 65535) {
+            return ResultVOUtils.error(ResultEnum.NOTICE_CONTENT_LENGTH_THAN_65535);
+        }
         // 2、类型校验
         if(type == null || !checkType(type)) {
             return ResultVOUtils.error(ResultEnum.NOTICE_TYPE_ERROR);

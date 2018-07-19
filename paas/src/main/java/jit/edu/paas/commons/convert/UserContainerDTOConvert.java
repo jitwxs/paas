@@ -5,6 +5,7 @@ import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.domain.dto.UserContainerDTO;
 import jit.edu.paas.domain.entity.UserContainer;
 import jit.edu.paas.domain.enums.ContainerStatusEnum;
+import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.service.UserProjectService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +23,8 @@ import java.util.stream.Collectors;
 public class UserContainerDTOConvert {
     @Autowired
     private UserProjectService projectService;
+    @Autowired
+    private SysLoginService sysLoginService;
 
     public UserContainerDTO convert(UserContainer container) {
         if(container == null) {
@@ -39,6 +42,17 @@ public class UserContainerDTOConvert {
         Integer status = container.getStatus();
         if(status != null) {
             dto.setStatusName(ContainerStatusEnum.getMessage(status));
+        }
+
+        String userId = projectService.getUserId(container.getProjectId());
+        if(StringUtils.isNotBlank(projectId)) {
+            String username= sysLoginService.getById(userId).getUsername();
+            dto.setUsername(username);
+        }
+
+        if(StringUtils.isNotBlank(projectId)) {
+            String projectName = projectService.getProjectName(projectId);
+            dto.setProjectName(projectName);
         }
 
         return dto;

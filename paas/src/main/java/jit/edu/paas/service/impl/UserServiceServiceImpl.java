@@ -146,6 +146,7 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
     @Transactional(rollbackFor = CustomException.class)
     @Override
     public void deleteServiceTask(String userId, String serviceId,HttpServletRequest request) {
+        String serviceName = getById(serviceId).getName();
         try {
             dockerSwarmClient.removeService(serviceId);
             // 删除数据
@@ -158,7 +159,7 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
             // 发送通知
             List<String> receiverList = new ArrayList<>();
             receiverList.add(userId);
-            noticeService.sendUserTask("删除服务", "删除服务【" + getById(serviceId).getName() + "】成功", 3, false, receiverList, null);
+            noticeService.sendUserTask("删除服务", "删除服务【" +serviceName+ "】成功", 3, false, receiverList, null);
 
             // 发送成功消息
             sendMQ(userId, serviceId, ResultVOUtils.successWithMsg("删除服务成功"));
@@ -172,20 +173,10 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
             // 发送通知
             List<String> receiverList = new ArrayList<>();
             receiverList.add(userId);
-            noticeService.sendUserTask("删除服务","删除服务【"+getById(serviceId).getName()+"】失败,Docker异常", 3, false, receiverList, null);
+            noticeService.sendUserTask("删除服务","删除服务【"+serviceName+"】失败,Docker异常", 3, false, receiverList, null);
 
             // 发送异常消息
             sendMQ(userId, serviceId, ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION));
-        }
-    }
-
-    @Override
-    public LogStream logById(String id) {
-        try {
-            return dockerSwarmClient.serviceLogs(id,DockerClient.LogsParam.stdout());
-        } catch (Exception e) {
-            log.error("获取服务日志出现异常，异常位置：{}，错误信息：{}","UserServiceServiceImpl.logById()", e.getMessage());
-            return null;
         }
     }
 

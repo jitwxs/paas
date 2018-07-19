@@ -57,7 +57,7 @@ public class WebSocketServer {
                 //如果有，则删除原来的sessionId
                 jedisClient.hdel(key, field);
             }
-//            log.info("WebSocket连接建立成功，用户ID：{}", userId);
+            log.info("WebSocket连接建立成功，用户ID：{}", userId);
         } catch (Exception e) {
             log.error("缓存读取异常，错误位置：{}", "WebSocketServer.onOpen()");
         }

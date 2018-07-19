@@ -89,7 +89,8 @@ public enum ResultEnum {
     NOTICE_TITLE_LENGTH_THAN_50("通知标题不能超过50个字符",111),
     NOTICE_TYPE_ERROR("通知类型错误",112),
     NOTICE_RECEIVER_NOT_EMPTY("通知接收用户不能为空",113),
-    NOTICE_READ_ERROR("读取通知错误",114);
+    NOTICE_READ_ERROR("读取通知错误",114),
+    NOTICE_CONTENT_LENGTH_THAN_65535("通知内容不能超过65535个字符", 115);
 
     private String message;
     private int code;

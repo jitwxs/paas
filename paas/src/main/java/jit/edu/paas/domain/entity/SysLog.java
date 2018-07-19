@@ -1,9 +1,11 @@
 package jit.edu.paas.domain.entity;
 
+import com.baomidou.mybatisplus.annotations.TableField;
 import com.baomidou.mybatisplus.annotations.TableId;
 import com.baomidou.mybatisplus.enums.IdType;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import jit.edu.paas.commons.util.HttpClientUtils;
+import jit.edu.paas.domain.enums.SysLogTypeEnum;
 import lombok.Data;
 import org.apache.commons.lang3.StringUtils;
 
@@ -70,6 +72,9 @@ public class SysLog implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date createDate;
 
+    @TableField(exist = false)
+    private String typeName;
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public void setParam(Map paramMap){
         if (paramMap == null){
@@ -83,5 +88,13 @@ public class SysLog implements Serializable {
             params.append(HttpClientUtils.abbr(StringUtils.endsWithIgnoreCase(param.getKey(), "password") ? "" : paramValue, 100));
         }
         this.param = params.toString();
+    }
+
+    public String getTypeName() {
+        if(this.type != null) {
+            return SysLogTypeEnum.getMessage(this.type);
+        } else {
+            return null;
+        }
     }
 }

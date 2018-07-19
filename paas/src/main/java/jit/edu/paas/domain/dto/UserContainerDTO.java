@@ -19,4 +19,9 @@ public class UserContainerDTO extends UserContainer {
      * 状态名
      */
     private String statusName;
+
+    /**
+     * 所属用户名
+     */
+    private String username;
 }

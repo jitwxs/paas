@@ -74,13 +74,6 @@ public interface UserServiceService extends IService<UserService> {
     void deleteServiceTask(String userId, String serviceId, HttpServletRequest request);
 
     /**
-     * 查看服务日志
-     * @author hf
-     * @since 2018/7/13 9:25
-     */
-    LogStream logById(String id);
-
-    /**
      * 服务横向扩展
      * @param num 横向扩展数目
      * @author jitwxs

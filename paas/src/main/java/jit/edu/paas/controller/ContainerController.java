@@ -93,7 +93,7 @@ public class ContainerController {
      */
     @GetMapping("/list")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO listContainer(@RequestAttribute String uid, String name, Page<UserContainer> page) {
+    public ResultVO listContainer(@RequestAttribute String uid, String name, Integer status, Page<UserContainer> page) {
         // 鉴权
         String roleName = loginService.getRoleName(uid);
         // 角色无效
@@ -104,9 +104,9 @@ public class ContainerController {
         Page<UserContainerDTO> selectPage = null;
 
         if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
-            selectPage = containerService.listContainerByUserId(uid, name, page);
+            selectPage = containerService.listContainerByUserId(uid, name, status, page);
         } else if(RoleEnum.ROLE_SYSTEM.getMessage().equals(roleName)) {
-            selectPage = containerService.listContainerByUserId(null, name, page);
+            selectPage = containerService.listContainerByUserId(null, name, status,page);
         }
 
         return ResultVOUtils.success(selectPage);
@@ -165,16 +165,12 @@ public class ContainerController {
         }
 
         // 前端传递map字符串
-        Map<String, String> portMap = new HashMap<>(16);
-        if(StringUtils.isNotBlank(portMapStr)) {
-            try {
-                portMap = JsonUtils.jsonToMap(portMapStr);
-                // 解决前台发送空map问题
-                CollectionUtils.removeNullEntry(portMap);
-            } catch (Exception e) {
-                log.error("Json格式解析错误，错误位置：{}，错误信息：{}", "ContainerController.createContainer()", e.getMessage());
-                return ResultVOUtils.error(ResultEnum.JSON_ERROR);
-            }
+        Map<String, String> portMap;
+        try {
+            portMap = CollectionUtils.mapJson2map(portMapStr);
+        } catch (Exception e) {
+            log.error("Json格式解析错误，错误位置：{}，错误信息：{}", "ContainerController.createContainer()", e.getMessage());
+            return ResultVOUtils.error(ResultEnum.JSON_ERROR);
         }
 
         // 前台字符串转换

@@ -558,8 +558,8 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
     }
 
     @Override
-    public Page<UserContainerDTO> listContainerByUserId(String userId, String name, Page<UserContainer> page) {
-        List<UserContainer> containers = userContainerMapper.listContainerByUserIdAndName(page, userId, name);
+    public Page<UserContainerDTO> listContainerByUserId(String userId, String name, Integer status, Page<UserContainer> page) {
+        List<UserContainer> containers = userContainerMapper.listContainerByUserIdAndNameAndStatus(page, userId, name, status);
 
         Page<UserContainerDTO> page1 = new Page<>();
         BeanUtils.copyProperties(page, page1);

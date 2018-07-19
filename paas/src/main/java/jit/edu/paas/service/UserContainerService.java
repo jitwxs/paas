@@ -132,7 +132,7 @@ public interface UserContainerService extends IService<UserContainer> {
      * @author jitwxs
      * @since 2018/6/28 16:15
      */
-    Page<UserContainerDTO> listContainerByUserId(String userId, String name, Page<UserContainer> page);
+    Page<UserContainerDTO> listContainerByUserId(String userId, String name, Integer status, Page<UserContainer> page);
 
     /**
      * 根据状态获取容器列表

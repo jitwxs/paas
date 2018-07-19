@@ -3,6 +3,7 @@ package jit.edu.paas.controller;
 import com.baomidou.mybatisplus.plugins.Page;
 import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.commons.util.StringUtils;
+import jit.edu.paas.domain.dto.SysImageDTO;
 import jit.edu.paas.domain.entity.SysImage;
 import jit.edu.paas.domain.enums.ImageTypeEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
@@ -17,6 +18,8 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.Iterator;
 
@@ -42,7 +45,7 @@ public class ImageController {
      */
     @GetMapping("/list/local")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO searchLocalImage(@RequestAttribute String uid,  String name, Integer type, Page<SysImage> page) {
+    public ResultVO searchLocalImage(@RequestAttribute String uid,  String name, Integer type, Page<SysImageDTO> page) {
         // 判断参数
         if(type == null) {
             return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
@@ -234,11 +237,11 @@ public class ImageController {
         while (names.hasMoreElements()) {
             String key = names.nextElement();
             String val = req.getParameter(key);
-            if("name".equals(key)) {
+            if("name".equals(key) && StringUtils.isNotBlank(val)) {
                 flag = true;
                 imageName = val;
             }
-            if("tag".equals(key)) {
+            if("tag".equals(key) && StringUtils.isNotBlank(val)) {
                 tag = val;
             }
         }
@@ -255,12 +258,15 @@ public class ImageController {
             return ResultVOUtils.error(ResultEnum.IMPORT_ERROR_BY_NAME);
         }
 
-        // 取出文件，只取一个
-        MultipartFile file = req.getFile(iterator.next());
-
-        imageService.importImageTask(file, fullName, uid, request);
-
-        return ResultVOUtils.success("开始导入镜像");
+        try {
+            // 取出文件，只取一个
+            MultipartFile file = req.getFile(iterator.next());
+            InputStream stream = file.getInputStream();
+            imageService.importImageTask(stream, fullName, uid, request);
+            return ResultVOUtils.success("开始导入镜像");
+        } catch (IOException e) {
+            return ResultVOUtils.error(ResultEnum.IMPORT_ERROR_BY_NAME);
+        }
     }
 
     /**

@@ -5,8 +5,10 @@ import com.baomidou.mybatisplus.service.IService;
 import jit.edu.paas.domain.entity.SysVolume;
 import jit.edu.paas.domain.enums.VolumeTypeEnum;
 import jit.edu.paas.domain.vo.ResultVO;
+import jit.edu.paas.domain.vo.SysVolumeVO;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.InputStream;
 
 public interface SysVolumeService extends IService<SysVolume> {
     /**
@@ -23,7 +25,7 @@ public interface SysVolumeService extends IService<SysVolume> {
      /**
      * 获取挂载列表
      */
-    ResultVO listByObjId(Page<SysVolume> page, String objId, String uid);
+    ResultVO listByObjId(Page<SysVolumeVO> page, String objId, String uid);
 
     /**
      * 查看挂载信息
@@ -62,13 +64,6 @@ public interface SysVolumeService extends IService<SysVolume> {
      * @since 2018/7/5 13:03
      */
     ResultVO cleanVolumes(VolumeTypeEnum enums);
-
-    /**
-     * 上传文件到数据卷
-     * @author jitwxs
-     * @since 2018/7/11 14:27
-     */
-    ResultVO uploadToVolumes(String uid, HttpServletRequest request);
 
     /**
      * 检查权限

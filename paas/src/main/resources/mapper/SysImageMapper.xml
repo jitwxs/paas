@@ -2,24 +2,36 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="jit.edu.paas.mapper.SysImageMapper">
 
-    <select id="listLocalPublicImage" resultType="jit.edu.paas.domain.entity.SysImage">
+    <select id="listLocalPublicImage" resultType="jit.edu.paas.domain.dto.SysImageDTO">
         SELECT * FROM `sys_image`
         WHERE `type` = 1
         <if test="name != null" >
             AND `name` like "%"#{name}"%"
         </if>
     </select>
-    <select id="listLocalOpenUserImage" resultType="jit.edu.paas.domain.entity.SysImage">
-        SELECT * FROM `sys_image`
+    <select id="listLocalOpenUserImage" resultType="jit.edu.paas.domain.dto.SysImageDTO">
+        SELECT
+        `s`.*,
+        `l`.username
+        FROM
+        `sys_image` AS `s`,
+        `sys_login` AS `l`
         WHERE `type` = 2
         AND `has_open` = 1
+        AND `s`.user_id = `l`.id
         <if test="name != null" >
             AND `name` like "%"#{name}"%"
         </if>
     </select>
-    <select id="listLocalUserImage" resultType="jit.edu.paas.domain.entity.SysImage">
-        SELECT * FROM `sys_image`
+    <select id="listLocalUserImage" resultType="jit.edu.paas.domain.dto.SysImageDTO">
+        SELECT
+        `s`.*,
+        `l`.username
+        FROM
+        `sys_image` AS `s`,
+        `sys_login` AS `l`
         WHERE `type` = 2
+        AND `s`.user_id = `l`.id
         <if test="name != null" >
             AND `name` like "%"#{name}"%"
         </if>

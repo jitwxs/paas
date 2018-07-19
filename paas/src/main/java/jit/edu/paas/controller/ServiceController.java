@@ -135,23 +135,6 @@ public class ServiceController {
     }
 
     /**
-     * 查询服务日志信息
-     * @author hf
-     * @since 2018/7/13 15:39
-     */
-    @GetMapping("/log/{id}")
-    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO logById(@RequestAttribute String uid, @PathVariable String id) {
-        ResultVO resultVO = userServiceService.checkPermission(uid,id);
-        if(ResultEnum.OK.getCode() != resultVO.getCode()) {
-            return resultVO;
-        }
-        LogStream serviceLog = userServiceService.logById(id);
-
-        return serviceLog != null ? ResultVOUtils.success(serviceLog.readFully()) : ResultVOUtils.error(ResultEnum.SERVICE_INSPECT_ERROR) ;
-    }
-
-    /**
      * 服务横向扩展
      * @author jitwxs
      * @since 2018/7/16 10:11
@@ -222,20 +205,15 @@ public class ServiceController {
         }
 
         // 前端传递map字符串
-        Map<String, String> portMap = new HashMap<>(16);
-        Map<String, String> labels = new HashMap<>(16);
-        if(StringUtils.isNotBlank(portMapStr)) {
-            try {
-                portMap = JsonUtils.jsonToMap(portMapStr);
-                labels = JsonUtils.jsonToMap(labelsStr);
-                // 解决前台发送空map问题
-                CollectionUtils.removeNullEntry(portMap);
-                CollectionUtils.removeNullEntry(labels);
-            } catch (Exception e) {
-                log.error("Json格式解析错误，错误位置：{}，错误信息：{}", "ServiceController.createService()", e.getMessage());
-                return ResultVOUtils.error(ResultEnum.JSON_ERROR);
-            }
+        Map<String, String> portMap, labels;
+        try {
+            portMap = CollectionUtils.mapJson2map(portMapStr);
+            labels = CollectionUtils.mapJson2map(labelsStr);
+        } catch (Exception e) {
+            log.error("Json格式解析错误，错误位置：{}，错误信息：{}", "ServiceController.createService()", e.getMessage());
+            return ResultVOUtils.error(ResultEnum.JSON_ERROR);
         }
+
         // 字符串数字转换
         String[] cmd = CollectionUtils.str2Array(cmdStr, ";"),
                 env = CollectionUtils.str2Array(envStr, ";"),

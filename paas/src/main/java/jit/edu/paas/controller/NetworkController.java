@@ -1,17 +1,21 @@
 package jit.edu.paas.controller;
 
 import com.baomidou.mybatisplus.plugins.Page;
+import jit.edu.paas.commons.util.CollectionUtils;
+import jit.edu.paas.commons.util.JsonUtils;
 import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.domain.entity.SysNetwork;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.service.SysNetworkService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -19,6 +23,7 @@ import java.util.Map;
  * @author jitwxs
  * @since 2018/7/14 15:16
  */
+@Slf4j
 @RestController
 @RequestMapping("/network")
 public class NetworkController {
@@ -74,7 +79,19 @@ public class NetworkController {
      */
     @PostMapping("/public/create")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVO createPublicNetwork(String name, String driver, Map<String, String> labels, Boolean hasIpv6, HttpServletRequest request) {
+    public ResultVO createPublicNetwork(String name, String driver, String labelsStr, HttpServletRequest request) {
+
+        Boolean hasIpv6 = false;
+
+        // 前端传递map字符串
+        Map<String, String> labels;
+        try {
+            labels = CollectionUtils.mapJson2map(labelsStr);
+        } catch (Exception e) {
+            log.error("Json格式解析错误，错误位置：{}，错误信息：{}", "NetworkController.createPublicNetwork()", e.getMessage());
+            return ResultVOUtils.error(ResultEnum.JSON_ERROR);
+        }
+
         return networkService.createPublicNetwork(name, driver, labels, hasIpv6, request);
     }
 
@@ -85,8 +102,11 @@ public class NetworkController {
      */
     @PostMapping("/self/create")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResultVO createUserNetwork(String name, String driver, Map<String, String> labels, Boolean hasIpv6,
+    public ResultVO createUserNetwork(String name, String driver, String labelsStr, Boolean hasIpv6,
                                       @RequestAttribute String uid) {
+        // 前端传递map字符串
+        Map<String, String> labels = CollectionUtils.mapJson2map(labelsStr);
+
         return networkService.createUserNetwork(name, driver, labels, hasIpv6, uid);
     }
 

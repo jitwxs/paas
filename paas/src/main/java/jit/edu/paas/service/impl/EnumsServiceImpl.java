@@ -85,6 +85,7 @@ public class EnumsServiceImpl implements EnumsService {
         for (VolumeTypeEnum s : VolumeTypeEnum.values()) {
             map.put(s.getCode(), s.getMessage());
         }
+
         return map;
     }
 

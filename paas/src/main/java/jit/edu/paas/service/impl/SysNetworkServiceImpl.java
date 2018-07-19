@@ -141,6 +141,7 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
 
             return ResultVOUtils.success();
         } catch (NotFoundException fe){
+            fe.printStackTrace();
             return ResultVOUtils.error(ResultEnum.CREATE_NETWORK_ERROR_BY_DRIVER);
         } catch (Exception e) {
             log.error("创建公共网络出现错误，错误位置：{}，错误栈：{}",
@@ -271,7 +272,7 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
 
         try {
             dockerClient.disconnectFromNetwork(containerId, networkId);
-            containerNetworkMapper.delete(new EntityWrapper<ContainerNetwork>().eq("containerId",containerId).and().eq("networkId",networkId));
+            containerNetworkMapper.delete(new EntityWrapper<ContainerNetwork>().eq("container_id",containerId).and().eq("networkId",networkId));
 
             return ResultVOUtils.success();
         } catch (Exception e) {
@@ -293,7 +294,7 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
             return ResultVOUtils.error(ResultEnum.DELETE_NETWORK_ERROR_BY_BRIDGE);
         }
 
-        if (containerNetworkMapper.selectList(new EntityWrapper<ContainerNetwork>().eq("networkId", id)) != null) {
+        if (containerNetworkMapper.selectList(new EntityWrapper<ContainerNetwork>().eq("network_id", id)) != null) {
             return ResultVOUtils.error(ResultEnum.DELETE_NETWORK_ERROR_BY_USED);
         }
 

@@ -14,6 +14,7 @@ import jit.edu.paas.commons.activemq.MQProducer;
 import jit.edu.paas.commons.activemq.Task;
 import jit.edu.paas.commons.util.*;
 import jit.edu.paas.commons.util.jedis.JedisClient;
+import jit.edu.paas.domain.dto.SysImageDTO;
 import jit.edu.paas.domain.entity.SysImage;
 import jit.edu.paas.domain.enums.*;
 import jit.edu.paas.domain.vo.ResultVO;
@@ -30,10 +31,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.jms.Destination;
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
@@ -72,13 +73,13 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
     private final String FULL_NAME_PREFIX = "FULL_NAME:";
 
     @Override
-    public Page<SysImage> listLocalPublicImage(String name, Page<SysImage> page) {
+    public Page<SysImageDTO> listLocalPublicImage(String name, Page<SysImageDTO> page) {
         return page.setRecords(imageMapper.listLocalPublicImage(page, name));
     }
 
     @Override
-    public Page<SysImage> listLocalUserImage(String name, boolean filterOpen, Page<SysImage> page) {
-        List<SysImage> images = filterOpen ? imageMapper.listLocalOpenUserImage(page, name) : imageMapper.listLocalUserImage(page, name);
+    public Page<SysImageDTO> listLocalUserImage(String name, boolean filterOpen, Page<SysImageDTO> page) {
+        List<SysImageDTO> images = filterOpen ? imageMapper.listLocalOpenUserImage(page, name) : imageMapper.listLocalUserImage(page, name);
 
         return page.setRecords(images);
     }
@@ -521,10 +522,10 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
     @Async("taskExecutor")
     @Transactional(rollbackFor = CustomException.class)
     @Override
-    public void importImageTask(MultipartFile file, String fullName, String uid, HttpServletRequest request) {
+    public void importImageTask(InputStream stream, String fullName, String uid, HttpServletRequest request) {
         // 导入镜像
-        try(InputStream inputStream = file.getInputStream()) {
-            dockerClient.create(fullName,inputStream);
+        try {
+            dockerClient.create(fullName,stream);
             // 获取镜像的信息
             List<Image> list = dockerClient.listImages(DockerClient.ListImagesParam.byName(fullName));
             Image image = CollectionUtils.getListFirst(list);
@@ -551,6 +552,14 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             noticeService.sendUserTask("导入镜像", "导入镜像【" + fullName + "】失败,Docker导入失败", 4, false, receiverList, null);
 
             sendMQ(uid, null, ResultVOUtils.error(ResultEnum.IMPORT_ERROR));
+        } finally {
+            if(stream != null) {
+                try {
+                    stream.close();
+                } catch (IOException e) {
+
+                }
+            }
         }
     }
 

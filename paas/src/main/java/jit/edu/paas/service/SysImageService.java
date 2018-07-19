@@ -2,11 +2,13 @@ package jit.edu.paas.service;
 
 import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.IService;
+import jit.edu.paas.domain.dto.SysImageDTO;
 import jit.edu.paas.domain.entity.SysImage;
 import jit.edu.paas.domain.vo.ResultVO;
 import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
+import java.io.InputStream;
 
 /**
  * <p>
@@ -24,7 +26,7 @@ public interface SysImageService extends IService<SysImage> {
      * @author jitwxs
      * @since 2018/6/28 16:15
      */
-    Page<SysImage> listLocalPublicImage(String name, Page<SysImage> page);
+    Page<SysImageDTO> listLocalPublicImage(String name, Page<SysImageDTO> page);
 
     /**
      * 获取本地用户镜像
@@ -32,7 +34,7 @@ public interface SysImageService extends IService<SysImage> {
      * @author jitwxs
      * @since 2018/6/28 16:15
      */
-    Page<SysImage> listLocalUserImage(String name, boolean filterOpen, Page<SysImage> page);
+    Page<SysImageDTO> listLocalUserImage(String name, boolean filterOpen, Page<SysImageDTO> page);
 
     /**
      * 获取Docker Hub镜像列表
@@ -116,12 +118,12 @@ public interface SysImageService extends IService<SysImage> {
 
     /**
      * 导入镜像
-     * @param file 文件对象
+     * @param stream 文件流对象
      * @param fullName 镜像完整名
      * @author jitwxs
      * @since 2018/7/13 17:22
      */
-    void importImageTask(MultipartFile file, String fullName, String uid, HttpServletRequest request);
+    void importImageTask(InputStream stream, String fullName, String uid, HttpServletRequest request);
 
     /**
      * 清理缓存

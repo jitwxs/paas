@@ -139,7 +139,7 @@ public class MonitorController {
     @GetMapping("/portainer")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
     public ResultVO portainer() {
-        String url = serverAddress + ":9000";
+        String url = "http://" + serverAddress + ":9000";
         return ResultVOUtils.success(url);
     }
 
@@ -151,7 +151,7 @@ public class MonitorController {
     @GetMapping("/visualizer")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
     public ResultVO visualizer() {
-        String url = swarmManagerAddress + ":8080";
+        String url = "http://" + swarmManagerAddress + ":8080";
         return ResultVOUtils.success(url);
     }
 }

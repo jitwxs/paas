@@ -38,7 +38,7 @@
             AND c.status = #{status}
         </if>
     </select>
-    <select id="listContainerByUserIdAndName" resultType="jit.edu.paas.domain.entity.UserContainer">
+    <select id="listContainerByUserIdAndNameAndStatus" resultType="jit.edu.paas.domain.entity.UserContainer">
         SELECT user_container.* FROM `user_container`, `user_project`
         WHERE `user_container`.project_id = `user_project`.id
         <if test="userId != null" >
@@ -46,6 +46,9 @@
         </if>
         <if test="name != null" >
             AND `user_container`.name like "%"#{name}"%"
+        </if>
+        <if test="status != null" >
+            AND `user_container`.status = #{status}
         </if>
     </select>
 </mapper>

@@ -22,7 +22,7 @@ public interface UserContainerMapper extends BaseMapper<UserContainer> {
      * @author jitwxs
      * @since 2018/7/9 11:24
      */
-    List<UserContainer> listContainerByUserIdAndName(Pagination page, @Param("userId") String userId, @Param("name") String name);
+    List<UserContainer> listContainerByUserIdAndNameAndStatus(Pagination page, @Param("userId") String userId, @Param("name") String name, @Param("status") Integer status);
 
     /**
      * 获取某一用户所有容器

@@ -26,10 +26,10 @@ public class SysProgramServiceImpl extends ServiceImpl<SysProgramMapper, SysProg
     private SysProgramMapper programMapper;
 
     @Override
-    public ResultVO deleteByIds(Integer[] ids) {
+    public ResultVO deleteByIds(String[] ids) {
         int successCount = 0, errorCount = 0;
-        for(Integer id : ids) {
-            Integer i = programMapper.deleteById(id);
+        for(String id : ids) {
+            Integer i = programMapper.deleteById(Integer.parseInt(id));
 
             if(i == 1) {
                 successCount++;
