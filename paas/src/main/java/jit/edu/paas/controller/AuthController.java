@@ -74,10 +74,10 @@ public class AuthController {
         }
 
         // 1、校验用户名、密码
-        ResultVO resultVO = loginService.registerCheck(username, email);
-        if(resultVO.getCode() != ResultEnum.OK.getCode()) {
-            return resultVO;
-        }
+//        ResultVO resultVO = loginService.registerCheck(username, email);
+//        if(resultVO.getCode() != ResultEnum.OK.getCode()) {
+//            return resultVO;
+//        }
 
         // 2、生成用户
         SysLogin sysLogin = new SysLogin(username,password,email);

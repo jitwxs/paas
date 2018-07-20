@@ -230,4 +230,19 @@ public class ServiceController {
                 env, destination, labels, request);
         return ResultVOUtils.success("开始创建服务");
     }
+
+    /**
+     * 修改服务所属项目
+     * @param projectId 新项目ID
+     * @author jitwxs
+     * @since 2018/7/14 8:35
+     */
+    @PostMapping("/changeProject")
+    @PreAuthorize("hasRole('ROLE_USER')")
+    public ResultVO changeBelongProject(String serviceId, String projectId, @RequestAttribute String uid) {
+        if(StringUtils.isBlank(serviceId, projectId)) {
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
+        }
+        return userServiceService.changeBelongProject(serviceId, projectId, uid);
+    }
 }

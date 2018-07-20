@@ -5,7 +5,7 @@
         SELECT * FROM `user_service`, `user_project`
         WHERE `user_service`.project_id = `user_project`.id
         <if test="userId != null" >
-            AND `user_project`.user_id = #{userId}
+            AND `user_service`.user_id = #{userId}
         </if>
     </select>
     <select id="hasBelong" resultType="java.lang.Boolean">
@@ -17,4 +17,9 @@
             id = #{serviceId}
             AND user_id = #{userId}
     </select>
+    <update id="changeBelongProject">
+        UPDATE `user_service`
+        SET `project_id` = #{projectId}
+        WHERE `id` = #{serviceId}
+    </update>
 </mapper>

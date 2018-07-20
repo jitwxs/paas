@@ -80,4 +80,13 @@ public interface UserServiceService extends IService<UserService> {
      * @since 2018/7/16 10:12
      */
     ResultVO scale(String serviceId, Integer num);
+
+    /**
+     * 修改所属项目
+     * @param serviceId 服务ID
+     * @param projectId 新项目ID
+     */
+    ResultVO changeBelongProject(String serviceId, String projectId, String uid);
+
+    void cleanCache(String id);
 }

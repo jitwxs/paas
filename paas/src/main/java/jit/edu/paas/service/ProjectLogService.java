@@ -19,12 +19,12 @@ public interface ProjectLogService extends IService<ProjectLog> {
      * @author jitwxs
      * @since 2018/7/7 9:09
      */
-    void saveSuccessLog(String projectId, String containerId, ProjectLogTypeEnum projectLogTypeEnum);
+    void saveSuccessLog(String projectId, String objId, ProjectLogTypeEnum projectLogTypeEnum);
 
     /**
      * 保存操作失败日志
      * @author jitwxs
      * @since 2018/7/7 9:09
      */
-    void saveErrorLog(String projectId, String containerId, ProjectLogTypeEnum projectLogTypeEnum, ResultEnum resultEnum);
+    void saveErrorLog(String projectId, String objId, ProjectLogTypeEnum projectLogTypeEnum, ResultEnum resultEnum);
 }

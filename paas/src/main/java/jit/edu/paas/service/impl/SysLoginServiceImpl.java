@@ -75,6 +75,9 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
     @Value("${spring.mail.username}")
     private String senderAddress;
 
+    @Value("${server.addr}")
+    private String serverIp;
+
     @Override
     public SysLogin getById(String id) {
         String field = ID_PREFIX + id;
@@ -248,7 +251,11 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
 
             Context context = new Context();
             // 去除token前缀
-            context.setVariable("registerUrl", token.substring(7));
+            Map<String,Object> vars = new HashMap<>();
+            vars.put("registerUrl",token.substring(7));
+            vars.put("serverIp",serverIp);
+            //context.setVariable("registerUrl", token.substring(7));
+            context.setVariables(vars);
             String emailContent = templateEngine.process("mail", context);
             helper.setText(emailContent, true);
 
@@ -409,6 +416,11 @@ public class SysLoginServiceImpl extends ServiceImpl<SysLoginMapper, SysLogin> i
         }
         if(getByUsername(username) != null) {
             return ResultVOUtils.error(ResultEnum.REGISTER_USERNAME_ERROR);
+        }
+
+        // 校验邮箱
+        if(!StringUtils.isEmail(email)) {
+            return ResultVOUtils.error(ResultEnum.EMAIL_DIS_LEGAL);
         }
         if(getByEmail(email) != null) {
             return ResultVOUtils.error(ResultEnum.REGISTER_EMAIL_ERROR);

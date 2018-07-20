@@ -44,4 +44,6 @@ public interface NoticeMapper extends BaseMapper<NoticeDTO> {
     List<UserNotice> listSelfSendNotice(@Param("userId") String userId, Page<UserNotice> page);
 
     NoticeDTO getSelfSendNoticeDTO(@Param("noticeId") String noticeId);
+
+    int countUnread(@Param("uid") String uid);
 }

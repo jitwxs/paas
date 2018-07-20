@@ -9,8 +9,10 @@ import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.commons.util.JsonUtils;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.dto.UserProjectDTO;
+import jit.edu.paas.domain.entity.ProjectLog;
 import jit.edu.paas.domain.entity.UserContainer;
 import jit.edu.paas.domain.entity.UserProject;
+import jit.edu.paas.domain.entity.UserService;
 import jit.edu.paas.domain.enums.ProjectLogTypeEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.RoleEnum;
@@ -22,15 +24,19 @@ import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.mapper.ProjectLogMapper;
 import jit.edu.paas.mapper.UserContainerMapper;
 import jit.edu.paas.mapper.UserProjectMapper;
+import jit.edu.paas.mapper.UserServiceMapper;
 import jit.edu.paas.service.*;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -49,13 +55,17 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
     private SysLogService sysLogService;
     @Autowired
     private ProjectLogService projectLogService;
+    @Autowired
+    private UserServiceService userServiceService;
+    @Autowired
+    private UserContainerService containerService;
 
+    @Autowired
+    private UserContainerMapper containerMapper;
     @Autowired
     private UserProjectMapper projectMapper;
     @Autowired
     private ProjectLogMapper projectLogMapper;
-    @Autowired
-    private UserContainerMapper containerMapper;
 
     @Autowired
     private JedisClient jedisClient;
@@ -146,12 +156,18 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
             jedisClient.hdel(key, id);
 
             // 更新所属容器
-            List<UserContainer> containers = containerMapper.selectList(new EntityWrapper<UserContainer>().eq("project_id",id));
+            List<UserContainer> containers = containerService.selectList(new EntityWrapper<UserContainer>().eq("project_id",id));
             for(UserContainer container : containers) {
                 container.setProjectId(null);
-                containerMapper.updateById(container);
+                containerService.updateById(container);
             }
-
+            // 更新所属服务
+            List<UserService> services = userServiceService.selectList(new EntityWrapper<UserService>().eq("project_id",id));
+            for(UserService service : services) {
+                service.setProjectId(null);
+                userServiceService.updateById(service);
+                userServiceService.cleanCache(service.getId());
+            }
         } catch (Exception e) {
             log.error("缓存删除异常，错误位置：UserProjectServiceImpl.cleanCache()");
         }
@@ -271,9 +287,38 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
 
     @Override
     public ResultVO listProjectLog(String projectId, Integer type, Page<ProjectLogVO> page) {
-        List<ProjectLogVO> list = projectLogMapper.listProjectLog(projectId, type, page);
+        List<ProjectLog> list = projectLogMapper.listProjectLog(projectId, page);
+        List<ProjectLogVO> voList = projectLog2VO(list);
 
-        return ResultVOUtils.success(page.setRecords(list));
+        return ResultVOUtils.success(page.setRecords(voList));
+    }
+
+    private ProjectLogVO projectLog2VO(ProjectLog log) {
+        ProjectLogVO vo = new ProjectLogVO();
+        BeanUtils.copyProperties(log, vo);
+
+        String objId = log.getObjId();
+
+        if(StringUtils.isNotBlank(objId)) {
+            UserContainer container = containerService.getById(objId);
+            if(container != null) {
+                vo.setObjName(container.getName());
+                return vo;
+            }
+
+            UserService userService = userServiceService.getById(objId);
+            if(userService != null) {
+                vo.setObjName(userService.getName());
+                return vo;
+            }
+        }
+
+
+        return vo;
+    }
+
+    private List<ProjectLogVO> projectLog2VO(List<ProjectLog> list) {
+        return list.stream().map(this::projectLog2VO).collect(Collectors.toList());
     }
 
 }

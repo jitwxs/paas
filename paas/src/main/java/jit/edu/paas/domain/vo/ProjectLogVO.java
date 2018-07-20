@@ -28,9 +28,9 @@ public class ProjectLogVO {
     private String description;
 
     /**
-     * 目标容器名
+     * 目标容器或服务名
      */
-    private String containerName;
+    private String objName;
 
     /**
      * 创建时间

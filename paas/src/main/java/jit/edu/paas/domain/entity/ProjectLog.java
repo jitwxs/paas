@@ -28,7 +28,7 @@ public class ProjectLog implements Serializable {
     /**
      * 容器ID
      */
-    private String containerId;
+    private String objId;
     /**
      * 事件类型
      */
@@ -43,9 +43,9 @@ public class ProjectLog implements Serializable {
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date createDate;
 
-    public ProjectLog(String projectId, String containerId, Integer type, String description) {
+    public ProjectLog(String projectId, String objId, Integer type, String description) {
         this.projectId = projectId;
-        this.containerId = containerId;
+        this.objId = objId;
         this.type = type;
         this.description = description;
     }

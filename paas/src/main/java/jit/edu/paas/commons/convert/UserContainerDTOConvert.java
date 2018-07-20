@@ -9,6 +9,7 @@ import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.service.UserProjectService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -25,6 +26,8 @@ public class UserContainerDTOConvert {
     private UserProjectService projectService;
     @Autowired
     private SysLoginService sysLoginService;
+    @Value("${docker.server.address}")
+    private String serverIp;
 
     public UserContainerDTO convert(UserContainer container) {
         if(container == null) {
@@ -54,6 +57,8 @@ public class UserContainerDTOConvert {
             String projectName = projectService.getProjectName(projectId);
             dto.setProjectName(projectName);
         }
+
+        dto.setIp(serverIp);
 
         return dto;
     }

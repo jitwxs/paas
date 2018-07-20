@@ -93,6 +93,15 @@ public class NoticeController {
     }
 
     /**
+     * 统计当前未读消息个数
+     */
+    @GetMapping("/countUnRead")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVO countUnread(@RequestAttribute String uid) {
+        return ResultVOUtils.success(noticeService.countUnread(uid));
+    }
+
+    /**
      * 将选中通知已读
      * @author jitwxs
      * @since 2018/7/16 21:05

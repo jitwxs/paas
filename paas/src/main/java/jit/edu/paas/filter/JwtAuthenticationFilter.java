@@ -1,5 +1,7 @@
 package jit.edu.paas.filter;
 
+import jit.edu.paas.commons.util.HttpClientUtils;
+import jit.edu.paas.commons.util.JsonUtils;
 import jit.edu.paas.commons.util.SpringBeanFactoryUtils;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.enums.ResultEnum;
@@ -25,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -90,9 +93,14 @@ public class JwtAuthenticationFilter extends BasicAuthenticationFilter {
             // 将用户id放入request中
             request.setAttribute("uid", uid);
 
-            // 保存最后登录时间
+            // 保存最后登录时间和IP
             try {
-                jedisClient.hset("last_login", uid, System.currentTimeMillis() + "");
+                String ip = HttpClientUtils.getRemoteAddr(request);
+                String timestamp = System.currentTimeMillis() + "";
+                Map<String, String> data = new HashMap<>(16);
+                data.put("ip", ip);
+                data.put("timestamp", timestamp);
+                jedisClient.hset("last_login", uid, JsonUtils.mapToJson(data));
             } catch (Exception e) {
                 log.error("缓存存储异常，错误位置：{}", "JwtAuthenticationFilter.UsernamePasswordAuthenticationToken()");
                 e.printStackTrace();

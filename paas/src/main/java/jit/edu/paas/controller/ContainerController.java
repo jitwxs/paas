@@ -340,7 +340,6 @@ public class ContainerController {
         return containerService.changeBelongProject(containerId, projectId, uid);
     }
 
-
     /**
      * 调用终端
      * @param containerId 容器ID

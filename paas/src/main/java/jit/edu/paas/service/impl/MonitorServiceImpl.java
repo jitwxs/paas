@@ -9,10 +9,7 @@ import com.spotify.docker.client.messages.Info;
 import com.spotify.docker.client.messages.NetworkStats;
 import jit.edu.paas.commons.util.*;
 import jit.edu.paas.commons.util.jedis.JedisClient;
-import jit.edu.paas.domain.entity.RepositoryImage;
-import jit.edu.paas.domain.entity.SysImage;
-import jit.edu.paas.domain.entity.UserContainer;
-import jit.edu.paas.domain.entity.UserProject;
+import jit.edu.paas.domain.entity.*;
 import jit.edu.paas.domain.enums.ContainerStatusEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.vo.ContainerMonitorVO;
@@ -22,6 +19,7 @@ import jit.edu.paas.domain.vo.UserDockerInfoVO;
 import jit.edu.paas.mapper.RepositoryImageMapper;
 import jit.edu.paas.mapper.UserContainerMapper;
 import jit.edu.paas.mapper.UserProjectMapper;
+import jit.edu.paas.mapper.UserServiceMapper;
 import jit.edu.paas.service.MonitorService;
 import jit.edu.paas.service.SysImageService;
 import jit.edu.paas.service.UserContainerService;
@@ -52,6 +50,8 @@ public class MonitorServiceImpl implements MonitorService {
     private SysImageService sysImageService;
     @Autowired
     private RepositoryImageMapper repositoryImageMapper;
+    @Autowired
+    private UserServiceMapper userServiceMapper;
 
     @Autowired
     private DockerClient dockerClient;
@@ -335,12 +335,16 @@ public class MonitorServiceImpl implements MonitorService {
         infoVO.setHubImageNum(repositoryImageMapper.selectCount(new EntityWrapper<RepositoryImage>().eq("user_id", uid)));
         infoVO.setProjectNum(userProjectMapper.selectCount(new EntityWrapper<UserProject>().eq("user_id", uid)));
         infoVO.setUploadImageNum(sysImageService.selectCount(new EntityWrapper<SysImage>().eq("user_id", uid)));
+        infoVO.setServiceNum(userServiceMapper.selectCount(new EntityWrapper<UserService>().eq("user_id", uid)));
 
         try {
             String hget = jedisClient.hget("last_login", uid);
             if(StringUtils.isNotBlank(hget)) {
-                Long timestamp = Long.parseLong(hget);
+                Map<String,String> map = JsonUtils.jsonToMap(hget);
+                Long timestamp = Long.parseLong(map.get("timestamp"));
+                String ip = map.get("ip");
                 infoVO.setLastLogin(new Date(timestamp));
+                infoVO.setIp(ip);
             }
         } catch (Exception e) {
             log.error("缓存读取异常，错误位置：{}", "MonitorServiceImpl.getUserDockerInfo()");

@@ -76,4 +76,9 @@ public interface NoticeService extends IService<NoticeDTO> {
     Page<UserNotice> listSelfSendNotice(String uid, Page<UserNotice> page);
 
     NoticeDTO getNoticeDTO(String id);
+
+    /**
+     * 统计未读消息个数
+     */
+    int countUnread(String uid);
 }

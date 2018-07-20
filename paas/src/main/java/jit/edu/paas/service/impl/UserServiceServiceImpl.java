@@ -15,6 +15,7 @@ import jit.edu.paas.commons.activemq.MQProducer;
 import jit.edu.paas.commons.activemq.Task;
 import jit.edu.paas.commons.convert.UserServiceDTOConvert;
 import jit.edu.paas.commons.util.*;
+import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.dto.UserServiceDTO;
 import jit.edu.paas.domain.entity.SysImage;
 import jit.edu.paas.domain.entity.SysVolume;
@@ -30,6 +31,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.command.ActiveMQQueue;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -74,6 +76,11 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
     private PortService portService;
     @Autowired
 	private NoticeService noticeService;
+    @Autowired
+    private JedisClient jedisClient;
+
+    @Value("${redis.user-service.ley}")
+    private String key;
 
     @Override
     public ResultVO checkPermission(String userId, String serviceId) {
@@ -99,9 +106,27 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
 
     @Override
     public UserServiceDTO getById(String id) {
-        UserService userService = userServiceMapper.selectById(id);
+        try {
+            String json = jedisClient.hget(key, id);
+            if(StringUtils.isNotBlank(json)) {
+                return JsonUtils.jsonToObject(json, UserServiceDTO.class);
+            }
+        } catch (Exception e) {
+            log.error("缓存读取异常，异常位置：{}","UserServiceServiceImpl.getById()");
+        }
 
-        return userService == null ? null : dtoConvert.convert(userService);
+        UserServiceDTO serviceDTO = dtoConvert.convert(userServiceMapper.selectById(id));
+        if(serviceDTO == null) {
+            return null;
+        }
+
+        try {
+            jedisClient.hset(key, id, JsonUtils.objectToJson(serviceDTO));
+        } catch (Exception e) {
+            log.error("缓存存储异常，异常位置：{}", "UserServiceServiceImpl.getById()");
+        }
+
+        return serviceDTO;
     }
 
     @Override
@@ -151,6 +176,7 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
             dockerSwarmClient.removeService(serviceId);
             // 删除数据
             userServiceMapper.deleteById(serviceId);
+            cleanCache(serviceId);
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.DELETE_SERVICE);
 
@@ -207,6 +233,31 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
         } catch (Exception e) {
             e.printStackTrace();
             return ResultVOUtils.error(ResultEnum.SERVICE_SCALE_ERROR);
+        }
+    }
+
+    @Override
+    public ResultVO changeBelongProject(String serviceId, String projectId, String uid) {
+        if(!userServiceMapper.hasBelong(serviceId, uid)) {
+            return ResultVOUtils.error(ResultEnum.PERMISSION_ERROR);
+        }
+
+        if(!projectMapper.hasBelong(projectId, uid)) {
+            return ResultVOUtils.error(ResultEnum.PERMISSION_ERROR);
+        }
+
+        userServiceMapper.changeBelongProject(serviceId, projectId);
+        cleanCache(serviceId);
+
+        return ResultVOUtils.success();
+    }
+
+    @Override
+    public void cleanCache(String id) {
+        try {
+            jedisClient.hdel(key, id);
+        } catch (Exception e) {
+            log.error("缓存清理异常，异常位置：{}", "UserServiceServiceImpl.cleanCache()");
         }
     }
 

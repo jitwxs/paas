@@ -10,6 +10,7 @@ import lombok.Getter;
 @Getter
 public enum ResultEnum {
     OK("成功",0),
+    EMAIL_DIS_LEGAL("邮箱不合法", 8),
     JSON_ERROR("JSON解析错误", 9),
     AUTHORITY_ERROR("鉴权错误", 10),
     PERMISSION_ERROR("权限错误", 11),

@@ -34,6 +34,13 @@ public class FileTransferClient extends Socket {
         System.out.println("Client["+client.getLocalPort()+"] 成功连接服务端");
     }
 
+    public FileTransferClient(String serverIp, Integer port) throws IOException {
+        super(serverIp, port);
+        this.client = this;
+
+        System.out.println("Client["+client.getLocalPort()+"] 成功连接服务端");
+    }
+
     private void sendFile(String sourcePath, String srcPath) throws IOException {
         File file = new File(sourcePath);
         if (file.exists()) {

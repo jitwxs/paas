@@ -48,7 +48,7 @@
             WHERE
                 `d`.receive = #{userId}
                 <if test="type != null" >
-                    AND `n.type` = #{type}
+                    AND `n`.type = #{type}
                 </if>
     </select>
     <select id="listSelfSendHistory" resultType="jit.edu.paas.domain.dto.NoticeDTO">
@@ -87,5 +87,8 @@
             LEFT JOIN `sys_login` AS `l` ON `d`.receive = `l`.id
         WHERE
             `d`.notice_id = #{noticeId}
+    </select>
+    <select id="countUnread" parameterType="java.lang.String" resultType="java.lang.Integer">
+        SELECT COUNT(*) from `user_notice_desc` where receive = #{uid} and has_read = false
     </select>
 </mapper>

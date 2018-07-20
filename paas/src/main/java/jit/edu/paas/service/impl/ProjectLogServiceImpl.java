@@ -25,15 +25,15 @@ public class ProjectLogServiceImpl extends ServiceImpl<ProjectLogMapper, Project
     private ProjectLogMapper logMapper;
 
     @Override
-    public void saveSuccessLog(String projectId, String containerId, ProjectLogTypeEnum projectLogTypeEnum) {
-        ProjectLog log = new ProjectLog(projectId, containerId, projectLogTypeEnum.getCode(), projectLogTypeEnum.getMessage());
+    public void saveSuccessLog(String projectId, String objId, ProjectLogTypeEnum projectLogTypeEnum) {
+        ProjectLog log = new ProjectLog(projectId, objId, projectLogTypeEnum.getCode(), projectLogTypeEnum.getMessage());
         logMapper.insert(log);
     }
 
     @Override
-    public void saveErrorLog(String projectId, String containerId, ProjectLogTypeEnum projectLogTypeEnum, ResultEnum resultEnum) {
+    public void saveErrorLog(String projectId, String objId, ProjectLogTypeEnum projectLogTypeEnum, ResultEnum resultEnum) {
         String description = projectLogTypeEnum.getMessage() + "，原因：" + resultEnum.getMessage();
-        ProjectLog log = new ProjectLog(projectId, containerId, projectLogTypeEnum.getCode(), description);
+        ProjectLog log = new ProjectLog(projectId, objId, projectLogTypeEnum.getCode(), description);
         logMapper.insert(log);
     }
 }

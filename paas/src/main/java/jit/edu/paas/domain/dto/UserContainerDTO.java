@@ -24,4 +24,9 @@ public class UserContainerDTO extends UserContainer {
      * 所属用户名
      */
     private String username;
+    /**
+     * docker主机ip地址
+     */
+    private String ip;
+
 }

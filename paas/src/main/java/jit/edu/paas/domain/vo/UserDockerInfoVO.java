@@ -18,6 +18,11 @@ public class UserDockerInfoVO {
     private Date lastLogin;
 
     /**
+     * 最后登录IP
+     */
+    private String ip;
+
+    /**
      * 项目数
      */
     private Integer projectNum;
@@ -45,4 +50,8 @@ public class UserDockerInfoVO {
      * Hub镜像数目
      */
     private Integer hubImageNum;
+    /**
+     * 服务数目
+     */
+    private Integer serviceNum;
 }

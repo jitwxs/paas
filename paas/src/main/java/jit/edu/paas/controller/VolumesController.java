@@ -10,9 +10,11 @@ import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.VolumeTypeEnum;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.domain.vo.SysVolumeVO;
+import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.service.SysVolumeService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -37,6 +39,14 @@ import java.util.Map;
 public class VolumesController {
     @Autowired
     private SysVolumeService sysVolumeService;
+
+    @Value("${file.socket.port}")
+    private Integer socketPort;
+    @Value("${docker.server.address}")
+    private String dockerServerAddress;
+    @Value("${docker.swarm.manager.address}")
+    private String dockerSwarmAddress;
+
 
     /**
      * 列出某一容器/服务所有数据卷
@@ -152,7 +162,15 @@ public class VolumesController {
         // 3、上传
         int successCount = 0, errorCount = 0,times = 0;
         try {
-            FileTransferClient transferClient = new FileTransferClient();
+            FileTransferClient transferClient;
+            if(volume.getType() == VolumeTypeEnum.CONTAINER.getCode()) {
+                transferClient = new FileTransferClient(dockerServerAddress, socketPort);
+            } else if (volume.getType() == VolumeTypeEnum.SERVICE.getCode()) {
+                transferClient = new FileTransferClient(dockerSwarmAddress, socketPort);
+            } else {
+                return ResultVOUtils.error(ResultEnum.OTHER_ERROR.getCode(), "数据卷类型错误");
+            }
+
             while (iterator.hasNext()) {
                 MultipartFile file = req.getFile(iterator.next());
                 int i = transferClient.sendFile(volume.getSource(), file);
@@ -160,9 +178,10 @@ public class VolumesController {
                     successCount++;
                     times += i;
                 } else {
-                    errorCount++;
+                     errorCount++;
                 }
             }
+            transferClient.closeClient();
         } catch (IOException e) {
             log.error("上传数据卷出现错误，错误位置：{}，错误栈：{}",
                     "SysVolumeServiceImpl.uploadToVolumes()", HttpClientUtils.getStackTraceAsString(e));

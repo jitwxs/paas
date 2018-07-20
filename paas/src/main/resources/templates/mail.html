@@ -7,7 +7,7 @@
 </head>
 <body>
 <h3>你好，欢迎注册无道PAAS平台</h3>
-<a href="#" th:href="@{http://192.168.100.142:9999/auth/email?token={registerUrl}(registerUrl=${registerUrl})}">请点击此处激活账号</a>
+<a href="#" th:href="@{${serverIp}+'/auth/email?token='+${registerUrl}}">请点击</a>
 <h5>请确保为本人操作，如果不是本人操作，请忽略该邮件</h5>
 <label>
 如果您无法点击此链接，请将其复制到浏览器地址栏后访问，为了保障您帐号的安全性，请在24小时内完成账号注册，此链接将在您注册后失效！

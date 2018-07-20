@@ -1,5 +1,6 @@
 package jit.edu.paas.service.impl;
 
+import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import jit.edu.paas.commons.activemq.MQProducer;
@@ -158,6 +159,11 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, NoticeDTO> impl
     @Override
     public NoticeDTO getNoticeDTO(String id) {
         return noticeMapper.getSelfSendNoticeDTO(id);
+    }
+
+    @Override
+    public int countUnread(String uid) {
+        return noticeMapper.countUnread(uid);
     }
 
     /**

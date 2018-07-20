@@ -29,4 +29,6 @@ public interface UserServiceMapper extends BaseMapper<UserService> {
      * @since 2018/7/15 14:48
      */
     boolean hasBelong(@Param("serviceId") String serviceId, @Param("userId") String userId);
+
+    void changeBelongProject(@Param("serviceId") String serviceId, @Param("projectId") String projectId);
 }

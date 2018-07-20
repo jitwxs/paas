@@ -1,6 +1,7 @@
 package jit.edu.paas.domain.select;
 
 import lombok.Data;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.util.Date;
 
@@ -26,9 +27,11 @@ public class UserProjectSelect {
     /**
      * 起始时间【创建时间】
      */
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date startDate;
     /**
      * 截至时间【创建时间】
      */
+    @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date endDate;
 }
