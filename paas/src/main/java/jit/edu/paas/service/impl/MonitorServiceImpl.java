@@ -7,15 +7,14 @@ import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.ContainerStats;
 import com.spotify.docker.client.messages.Info;
 import com.spotify.docker.client.messages.NetworkStats;
+import com.spotify.docker.client.messages.swarm.Node;
+
 import jit.edu.paas.commons.util.*;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.entity.*;
 import jit.edu.paas.domain.enums.ContainerStatusEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
-import jit.edu.paas.domain.vo.ContainerMonitorVO;
-import jit.edu.paas.domain.vo.DockerInfoVO;
-import jit.edu.paas.domain.vo.ResultVO;
-import jit.edu.paas.domain.vo.UserDockerInfoVO;
+import jit.edu.paas.domain.vo.*;
 import jit.edu.paas.mapper.RepositoryImageMapper;
 import jit.edu.paas.mapper.UserContainerMapper;
 import jit.edu.paas.mapper.UserProjectMapper;
@@ -28,9 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.util.Date;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -55,6 +52,8 @@ public class MonitorServiceImpl implements MonitorService {
 
     @Autowired
     private DockerClient dockerClient;
+    @Autowired
+    private DockerClient dockerSwarmClient;
     @Autowired
     private JedisClient jedisClient;
 
@@ -298,23 +297,13 @@ public class MonitorServiceImpl implements MonitorService {
     public ResultVO getDockerInfo() {
         try {
             Info info = dockerClient.info();
+            List<Node> nodes = dockerSwarmClient.listNodes();
+            List<com.spotify.docker.client.messages.swarm.Service> services = dockerSwarmClient.listServices();
 
-            DockerInfoVO infoVO = new DockerInfoVO();
+            DockerInfoVO infoVO = genDockerInfoVO(info);
+            infoVO.setNodes(genDockerNodeInfoVO(nodes));
+            infoVO.setServiceNum(services.size());
 
-            infoVO.setHostName(info.name());
-            infoVO.setArchitecture(info.architecture());
-            infoVO.setOsName(info.operatingSystem());
-            infoVO.setCupNum(info.cpus());
-            infoVO.setMemorySize(NumberUtils.decimal2Bit((double)(info.memTotal()) / 1024 /1024 / 1024));
-
-            infoVO.setDockerVersion(info.serverVersion());
-            infoVO.setImageNum(info.images());
-            infoVO.setContainerNum(info.containers());
-            infoVO.setContainerRunningNum(info.containersRunning());
-            infoVO.setContainerPauseNum(info.containersPaused());
-            infoVO.setContainerStopNum(info.containersStopped());
-
-            infoVO.setTime(new Date());
             return ResultVOUtils.success(infoVO);
         } catch (Exception e) {
             log.error("读取Docker宿主机信息错误，错误位置：{}，错误栈：{}",
@@ -351,5 +340,56 @@ public class MonitorServiceImpl implements MonitorService {
         }
 
         return ResultVOUtils.success(infoVO);
+    }
+
+    /**
+     * Info --> DockerInfoVO
+     * @author jitwxs
+     */
+    private DockerInfoVO genDockerInfoVO(Info info) {
+        DockerInfoVO infoVO = new DockerInfoVO();
+
+        infoVO.setHostName(info.name());
+        infoVO.setArchitecture(info.architecture());
+        infoVO.setOsName(info.operatingSystem());
+        infoVO.setCupNum(info.cpus());
+        infoVO.setMemorySize(NumberUtils.decimal2Bit((double)(info.memTotal()) / 1024 /1024 / 1024));
+
+        infoVO.setDockerVersion(info.serverVersion());
+        infoVO.setImageNum(info.images());
+        infoVO.setContainerNum(info.containers());
+        infoVO.setContainerRunningNum(info.containersRunning());
+        infoVO.setContainerPauseNum(info.containersPaused());
+        infoVO.setContainerStopNum(info.containersStopped());
+
+        infoVO.setTime(new Date());
+
+        return infoVO;
+    }
+
+    /**
+     * Node --> DockerNodeInfoVO
+     * @author jitwxs
+     */
+    private List<DockerNodeInfoVO> genDockerNodeInfoVO(List<Node> nodes) {
+        if(nodes == null || nodes.size() == 0) {
+            return null;
+        }
+
+        List<DockerNodeInfoVO> list = new ArrayList<>();
+        for(Node node : nodes) {
+            DockerNodeInfoVO nodeInfoVO = new DockerNodeInfoVO();
+
+            nodeInfoVO.setHostName(node.description().hostname());
+            nodeInfoVO.setArchitecture(node.description().platform().architecture());
+            nodeInfoVO.setDockerVersion(node.description().engine().engineVersion());
+            nodeInfoVO.setState(node.status().state());
+            nodeInfoVO.setIp(node.status().addr());
+            nodeInfoVO.setHasLeader(node.managerStatus() != null);
+
+            list.add(nodeInfoVO);
+        }
+
+        return list;
     }
 }

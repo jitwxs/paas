@@ -7,7 +7,6 @@ import com.google.common.collect.ImmutableList;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.Volume;
 import com.spotify.docker.client.messages.VolumeList;
-import jit.edu.paas.commons.socket.FileTransferClient;
 import jit.edu.paas.commons.util.*;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.entity.SysVolume;
@@ -23,9 +22,7 @@ import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.mapper.SysVolumesMapper;
 import jit.edu.paas.mapper.UserContainerMapper;
 import jit.edu.paas.mapper.UserServiceMapper;
-import jit.edu.paas.service.SysLogService;
-import jit.edu.paas.service.SysLoginService;
-import jit.edu.paas.service.SysVolumeService;
+import jit.edu.paas.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,13 +30,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -142,24 +138,12 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
             }
         }
 
-        List<SysVolume> list = volumesMapper.selectByObjId(objId, page);
-        List<SysVolumeVO> voList = sysVolume2Vo(list, uid);
-
-        return ResultVOUtils.success(page.setRecords(voList));
-    }
-
-    private List<SysVolumeVO> sysVolume2Vo(List<SysVolume> list, String userId) {
-        List<SysVolumeVO> resList = new ArrayList<>();
-        for(SysVolume sysVolume : list) {
-            SysVolumeVO volumeVO = new SysVolumeVO();
-            BeanUtils.copyProperties(sysVolume,volumeVO);
-            ResultVO resultVO = inspectVolumes(sysVolume.getId(), userId);
-            if(ResultEnum.OK.getCode() == resultVO.getCode()) {
-                volumeVO.setVolume((Volume)resultVO.getData());
-            }
-            resList.add(volumeVO);
+        try {
+            List<SysVolumeVO> voList = sysVolume2VO(volumesMapper.selectByObjId(objId, page));
+            return ResultVOUtils.success(page.setRecords(voList));
+        } catch (Exception e) {
+            return ResultVOUtils.error(ResultEnum.VOLUME_INFO_ERROR.getCode(), e.getMessage());
         }
-        return resList;
     }
 
     @Override
@@ -171,19 +155,7 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
             return resultVO;
         }
         try {
-            Volume volume;
-            int type = sysVolume.getType();
-
-            // 根据数据卷类型查询
-            if(type == VolumeTypeEnum.CONTAINER.getCode()) {
-                volume = dockerClient.inspectVolume(sysVolume.getName());
-            } else if(type == VolumeTypeEnum.SERVICE.getCode()) {
-                volume = dockerSwarmClient.inspectVolume(sysVolume.getName());
-            } else {
-                throw new CustomException(ResultEnum.OTHER_ERROR.getCode(), "数据卷类型不被接收");
-            }
-
-            return ResultVOUtils.success(volume);
+            return ResultVOUtils.success(sysVolume2VO(sysVolume));
         } catch (Exception e) {
             log.error("获取数据卷详情异常，错误位置：{}", "SysVolumeServiceImpl.inspectVolumes()");
             return ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION);
@@ -362,5 +334,45 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
         sysVolume.setSource(volume.mountpoint());
 
         return sysVolume;
+    }
+
+    private SysVolumeVO sysVolume2VO(SysVolume sysVolume) throws Exception {
+        Volume volume;
+        SysVolumeVO volumeVO = new SysVolumeVO();
+        int type = sysVolume.getType();
+
+        if(type == VolumeTypeEnum.CONTAINER.getCode()) {
+            volume = dockerClient.inspectVolume(sysVolume.getName());
+
+            UserContainer container = containerMapper.selectById(sysVolume.getObjId());
+            if(container != null) {
+                volumeVO.setObjName(container.getName());
+            }
+        } else if(type == VolumeTypeEnum.SERVICE.getCode()) {
+            volume = dockerSwarmClient.inspectVolume(sysVolume.getName());
+
+            UserService service = serviceMapper.selectById(sysVolume.getObjId());
+            if(service != null) {
+                volumeVO.setObjName(service.getName());
+            }
+        } else {
+            throw new CustomException(ResultEnum.OTHER_ERROR.getCode(), "数据卷类型不被接受");
+        }
+
+        BeanUtils.copyProperties(sysVolume, volumeVO);
+
+        volumeVO.setVolume(volume);
+        volumeVO.setTypeName(VolumeTypeEnum.getMessage(type));
+
+        return volumeVO;
+    }
+
+    private List<SysVolumeVO> sysVolume2VO(List<SysVolume> sysVolumes) throws Exception{
+        List<SysVolumeVO> list = new ArrayList<>();
+
+        for(SysVolume sysVolume : sysVolumes) {
+            list.add(sysVolume2VO(sysVolume));
+        }
+        return list;
     }
 }

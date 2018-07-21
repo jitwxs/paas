@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * Docker信息VO
@@ -63,4 +64,14 @@ public class DockerInfoVO {
 
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss", timezone = "GMT+8")
     private Date time;
+
+    /**
+     * Swarm节点信息
+     */
+    private List<DockerNodeInfoVO> nodes;
+
+    /**
+     * 运行服务数
+     */
+    private Integer serviceNum;
 }

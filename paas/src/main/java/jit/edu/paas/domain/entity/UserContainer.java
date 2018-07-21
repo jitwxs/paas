@@ -32,6 +32,10 @@ public class UserContainer implements Serializable {
      */
     private String projectId;
     /**
+     * 用户ID
+     */
+    private String userId;
+    /**
      * 容器名
      */
     private String name;

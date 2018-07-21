@@ -7,42 +7,31 @@
         WHERE
             project_id = #{projectId}
     </update>
-    <select id="listContainerByUserId" resultType="jit.edu.paas.domain.entity.UserContainer">
-        SELECT user_container.* FROM `user_container`, `user_project`
-        WHERE `user_container`.project_id = `user_project`.id
-        <if test="userId != null" >
-		  AND `user_project`.user_id = #{userId}
-        </if>
-    </select>
     <select id="hasBelongSb" resultType="java.lang.Boolean">
         SELECT
             count( * )
         FROM
-            `user_container` AS `c`,
-            `user_project` AS `p`
+            `user_container` AS `c`
         WHERE
-            c.project_id = p.id
-            AND c.id = #{containerId}
-            AND p.user_id = #{userId}
+            c.id = #{containerId}
+            AND c.user_id = #{userId}
     </select>
     <select id="countByUserId" resultType="java.lang.Integer">
         SELECT
             count( * )
         FROM
-            `user_container` AS `c`,
-            `user_project` AS `p`
+            `user_container` AS `c`
         WHERE
-            c.project_id = p.id
-            AND p.user_id = #{userId}
+            c.user_id = #{userId}
         <if test="status != null" >
             AND c.status = #{status}
         </if>
     </select>
     <select id="listContainerByUserIdAndNameAndStatus" resultType="jit.edu.paas.domain.entity.UserContainer">
-        SELECT user_container.* FROM `user_container`, `user_project`
-        WHERE `user_container`.project_id = `user_project`.id
+        SELECT * FROM `user_container`
+        WHERE 1 = 1
         <if test="userId != null" >
-            AND `user_project`.user_id = #{userId}
+            AND `user_container`.user_id = #{userId}
         </if>
         <if test="name != null" >
             AND `user_container`.name like "%"#{name}"%"

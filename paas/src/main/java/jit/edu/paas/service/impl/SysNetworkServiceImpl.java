@@ -3,8 +3,12 @@ package jit.edu.paas.service.impl;
 import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
+import com.google.common.collect.ImmutableMap;
 import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.docker.client.exceptions.NotFoundException;
+import com.spotify.docker.client.messages.AttachedNetwork;
+import com.spotify.docker.client.messages.ContainerInfo;
 import com.spotify.docker.client.messages.Network;
 import com.spotify.docker.client.messages.NetworkConfig;
 import jit.edu.paas.commons.util.*;
@@ -13,6 +17,7 @@ import jit.edu.paas.domain.entity.SysNetwork;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.RoleEnum;
 import jit.edu.paas.domain.enums.SysLogTypeEnum;
+import jit.edu.paas.domain.vo.ContainerNetworkVO;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.mapper.ContainerNetworkMapper;
@@ -22,15 +27,13 @@ import jit.edu.paas.service.SysLogService;
 import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.service.SysNetworkService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * <p>
@@ -215,7 +218,7 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
         String roleName = loginService.getRoleName(userId);
 
         if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
-            // 普通用户无法访问他人网络j
+            // 普通用户无法访问他人网络
             if(!userId.equals(network.getUserId())) {
                 return ResultVOUtils.error(ResultEnum.PERMISSION_ERROR);
             }
@@ -401,6 +404,79 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
         }
     }
 
+    @Override
+    public ResultVO listByContainerId(String containerId) {
+        List<ContainerNetwork> list = containerNetworkMapper.selectList(
+                new EntityWrapper<ContainerNetwork>().eq("container_id", containerId));
+        List<ContainerNetworkVO> res = new ArrayList<>();
+
+        for(ContainerNetwork containerNetwork : list) {
+            ContainerNetworkVO vo = new ContainerNetworkVO();
+            BeanUtils.copyProperties(containerNetwork, vo);
+            // 设置网络
+            vo.setNetwork(networkMapper.selectById(containerNetwork.getNetworkId()));
+            res.add(vo);
+        }
+
+        return ResultVOUtils.success(res);
+    }
+
+    @Transactional(rollbackFor = CustomException.class)
+    @Override
+    public ResultVO syncByContainerId(String containerId) {
+        try {
+            List<ContainerNetwork> dbList = containerNetworkMapper.selectList(new EntityWrapper<ContainerNetwork>().eq("container_id", containerId));
+            boolean[] dbFlag = new boolean[dbList.size()];
+            Arrays.fill(dbFlag, false);
+
+            ContainerInfo containerInfo =  dockerClient.inspectContainer(containerId);
+            ImmutableMap<String, AttachedNetwork> networkImmutableMap =  containerInfo.networkSettings().networks();
+
+            int addCount = 0, deleteCount = 0;
+            if(networkImmutableMap != null && networkImmutableMap.size() > 0) {
+                boolean flag = false;
+                for(AttachedNetwork attachedNetwork : networkImmutableMap.values()) {
+                    String networkId = attachedNetwork.networkId();
+                    if(StringUtils.isNotBlank(networkId)) {
+                        // 判断数据库中是否有该条记录
+                        for(int i=0; i<dbList.size(); i++) {
+                            if(dbFlag[i]) {
+                                continue;
+                            }
+                            if(hasExist(containerId, networkId)) {
+                                dbFlag[i] = true;
+                                flag = true;
+                                break;
+                            }
+                        }
+
+                        // 保存新纪录
+                        if(!flag) {
+                            ContainerNetwork containerNetwork = new ContainerNetwork(containerId, networkId);
+                            containerNetworkMapper.insert(containerNetwork);
+                            addCount++;
+                        }
+                    }
+                }
+
+                // 删除失效记录
+                for(int i=0; i< dbList.size(); i++) {
+                    if(!dbFlag[i]) {
+                        containerNetworkMapper.deleteById(dbList.get(i).getId());
+                        deleteCount++;
+                    }
+                }
+            }
+
+            Map<String, Integer> map = new HashMap<>(16);
+            map.put("add", addCount);
+            map.put("delete", deleteCount);
+            return ResultVOUtils.success(map);
+        } catch (Exception e) {
+            return ResultVOUtils.error(ResultEnum.CONTAINER_NETWORK_SYNC_ERROR);
+        }
+    }
+
     /**
      * 判断是否存在driver为host的网络
      * host网络只允许存在一个
@@ -444,5 +520,13 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
         }
 
         return sysNetwork;
+    }
+
+    private boolean hasExist(String containerId, String networkId) {
+        List<ContainerNetwork> list = containerNetworkMapper.selectList(new EntityWrapper<ContainerNetwork>()
+            .eq("container_id", containerId)
+            .eq("network_id", networkId));
+
+        return CollectionUtils.isListNotEmpty(list);
     }
 }

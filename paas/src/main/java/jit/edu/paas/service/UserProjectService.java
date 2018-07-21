@@ -41,7 +41,7 @@ public interface UserProjectService extends IService<UserProject> {
 
     /**
      * 获取项目列表
-     * @author jitwxs
+     * @author getProjectById
      * @since 2018/7/11 18:40
      */
     Page<UserProjectDTO> list(UserProjectSelect projectSelect, Page<UserProjectDTO> page);

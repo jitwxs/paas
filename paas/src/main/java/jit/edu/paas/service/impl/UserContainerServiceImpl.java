@@ -57,6 +57,8 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
     @Autowired
     private SysImageService imageService;
     @Autowired
+    private SysNetworkService networkService;
+    @Autowired
     private SysLogService sysLogService;
     @Autowired
     private ProjectLogService projectLogService;
@@ -249,6 +251,7 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             // 仅存在于数据库，不代表实际容器名
             uc.setName(containerName);
             uc.setProjectId(projectId);
+            uc.setUserId(userId);
             uc.setImage(image.getFullName());
 
             if(CollectionUtils.isNotArrayEmpty(destination)) {
@@ -276,7 +279,10 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
 
             userContainerMapper.insert(uc);
 
-            // 4、写入日志
+            // 4、保存网络信息
+            networkService.syncByContainerId(uc.getId());
+
+            // 5、写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.CREATE_CONTAINER);
             projectLogService.saveSuccessLog(projectId,uc.getId(),ProjectLogTypeEnum.CREATE_CONTAINER);
 
@@ -504,7 +510,8 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             if(containerDTO == null) {
                 return ResultVOUtils.error(ResultEnum.CONTAINER_NOT_FOUND);
             }
-            if(!projectMapper.hasBelong(containerDTO.getProjectId(), userId)) {
+
+            if(!containerDTO.getUserId().equals(userId)) {
                 return ResultVOUtils.error(ResultEnum.PERMISSION_ERROR);
             }
         }
@@ -637,7 +644,7 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
         if(StringUtils.isBlank(userId)) {
             containers = userContainerMapper.selectList(new EntityWrapper<>());
         } else{
-            containers = userContainerMapper.listContainerByUserId(userId);
+            containers = userContainerMapper.selectList(new EntityWrapper<UserContainer>().eq("user_id",userId));
         }
 
         int successCount = 0, errorCount = 0;

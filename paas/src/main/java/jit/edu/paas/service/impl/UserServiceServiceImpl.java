@@ -130,6 +130,17 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
     }
 
     @Override
+    public String getName(String id) {
+        UserService service = getById(id);
+
+        if(service != null) {
+            return service.getName();
+        } else {
+            return null;
+        }
+    }
+
+    @Override
     public Page<UserServiceDTO> listUserServiceByUserId(String userId, Page<UserService> page) {
         List<UserService> services = userServiceMapper.listServiceByUserId(page, userId);
 

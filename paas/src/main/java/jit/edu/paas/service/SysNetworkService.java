@@ -103,6 +103,17 @@ public interface SysNetworkService extends IService<SysNetwork> {
     ResultVO sync();
 
     /**
+     * 获取容器所有网络
+     * @author jitwxs
+     */
+    ResultVO listByContainerId(String containerId);
+    /**
+     * 同步容器网络
+     * @author jitwxs
+     */
+    ResultVO syncByContainerId(String containerId);
+
+    /**
      * 判断是否存在driver为host的网络
      * host网络只允许存在一个
      * @author jitwxs

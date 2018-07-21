@@ -184,7 +184,7 @@ public class VolumesController {
             transferClient.closeClient();
         } catch (IOException e) {
             log.error("上传数据卷出现错误，错误位置：{}，错误栈：{}",
-                    "SysVolumeServiceImpl.uploadToVolumes()", HttpClientUtils.getStackTraceAsString(e));
+                    "VolumesController.uploadToVolumes()", HttpClientUtils.getStackTraceAsString(e));
             return ResultVOUtils.error(ResultEnum.VOLUME_UPLOAD_ERROR);
         }
 

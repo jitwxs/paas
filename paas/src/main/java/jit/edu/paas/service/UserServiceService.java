@@ -27,6 +27,8 @@ public interface UserServiceService extends IService<UserService> {
      */
     UserServiceDTO getById(String id);
 
+    String getName(String id);
+
     /**
      * 检查权限
      * @author hf

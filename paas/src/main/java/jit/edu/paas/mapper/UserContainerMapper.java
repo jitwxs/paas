@@ -25,13 +25,6 @@ public interface UserContainerMapper extends BaseMapper<UserContainer> {
     List<UserContainer> listContainerByUserIdAndNameAndStatus(Pagination page, @Param("userId") String userId, @Param("name") String name, @Param("status") Integer status);
 
     /**
-     * 获取某一用户所有容器
-     * @author jitwxs
-     * @since 2018/7/9 11:24
-     */
-    List<UserContainer> listContainerByUserId(@Param("userId") String userId);
-
-    /**
      * 判断容器是否属于指定用户
      * @author jitwxs
      * @since 2018/7/5 11:44

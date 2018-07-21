@@ -8,6 +8,7 @@ import jit.edu.paas.domain.entity.SysNetwork;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.service.SysNetworkService;
+import jit.edu.paas.service.UserContainerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -27,6 +28,8 @@ import java.util.Map;
 public class NetworkController {
     @Autowired
     private SysNetworkService networkService;
+    @Autowired
+    private UserContainerService containerService;
 
     /**
      * 获取网络列表 - 用户接口
@@ -49,7 +52,7 @@ public class NetworkController {
 
     /**
      * 获取网络接口 - 管理员接口
-     * @param hasPublic 是否公共镜像
+     * @param hasPublic 是否公共网络
      * @author jitwxs
      * @since 2018/7/14 16:47
      */
@@ -57,6 +60,38 @@ public class NetworkController {
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
     public ResultVO listAllNetwork(Boolean hasPublic, Page<SysNetwork> page) {
         return ResultVOUtils.success(networkService.listAllNetwork(page, hasPublic));
+    }
+
+    /**
+     * 获取某一容器所有网络
+     * @author jitwxs
+     */
+    @GetMapping("/container/{id}")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVO listByContainerId(@PathVariable String id, @RequestAttribute String uid) {
+        // 鉴权
+        ResultVO resultVO = containerService.checkPermission(uid, id);
+        if(ResultEnum.OK.getCode() != resultVO.getCode()) {
+            return resultVO;
+        }
+
+        return networkService.listByContainerId(id);
+    }
+
+    /**
+     * 同步容器网络
+     * @author jitwxs
+     */
+    @GetMapping("/sync/container/{id}")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVO syncByContainerId(@PathVariable String id, @RequestAttribute String uid) {
+        // 鉴权
+        ResultVO resultVO = containerService.checkPermission(uid, id);
+        if(ResultEnum.OK.getCode() != resultVO.getCode()) {
+            return resultVO;
+        }
+
+        return networkService.syncByContainerId(id);
     }
 
     /**
@@ -78,9 +113,6 @@ public class NetworkController {
     @PostMapping("/public/create")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
     public ResultVO createPublicNetwork(String name, String driver, String labelsStr, HttpServletRequest request) {
-
-        Boolean hasIpv6 = false;
-
         // 前端传递map字符串
         Map<String, String> labels;
         try {

@@ -7,9 +7,6 @@ import jit.edu.paas.domain.enums.VolumeTypeEnum;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.domain.vo.SysVolumeVO;
 
-import javax.servlet.http.HttpServletRequest;
-import java.io.InputStream;
-
 public interface SysVolumeService extends IService<SysVolume> {
     /**
      *
