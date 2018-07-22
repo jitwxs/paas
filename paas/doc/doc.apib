@@ -484,7 +484,7 @@
 
 + Parameters
 
-    + projectId (string, optional) - 项目ID
+    + projectId (string, required) - 项目ID
     + type (string, optional) - 日志类型
     + current (number, optional) - 页码，默认为1
     + size (number, optional) - 页面容量，默认为10
@@ -506,72 +506,47 @@
     + Body
 
     		{
-			  "code": 0,
+ 			  "code": 0,
 			  "message": "成功",
 			  "data": {
-			    "total": 8,
-			    "size": 10,
-			    "pages": 1,
+			    "total": 177,
+			    "size": 3,
+			    "pages": 59,
 			    "current": 1,
 			    "records": [
 			      {
-			        "id": "1c2b4481b8064e2091d7427ee5725820",
-			        "type": 20,
-			        "description": "创建容器",
-			        "containerName": "babababba",
-			        "createDate": "2018-07-07 15:46:16"
-			      },
-			      {
-			        "id": "1e30ef54a11e44a7b96fbb46e3450f0b",
-			        "type": 23,
-			        "description": "开启容器失败，原因：Docker异常",
-			        "containerName": null,
-			        "createDate": "2018-07-07 11:11:33"
-			      },
-			      {
-			        "id": "59e295eb5f8149aaad8506367e6caa2b",
+			        "id": "10dfc77a9a894aab871d11a7428c8d05",
 			        "type": 22,
 			        "description": "开启容器",
-			        "containerName": "babababba",
-			        "createDate": "2018-07-07 15:46:38"
+			        "objName": "qunidayede",
+			        "createDate": "2018-07-20 18:09:37"
 			      },
 			      {
-			        "id": "7c2c0f04b9844b15bc2c7a5b0445ae20",
-			        "type": 23,
-			        "description": "开启容器失败，原因：Docker异常",
-			        "containerName": "babababba",
-			        "createDate": "2018-07-07 15:50:26"
-			      },
-			      {
-			        "id": "7ec5a521de134cb491db138752c0a732",
-			        "type": 20,
-			        "description": "创建容器",
-			        "containerName": "aaa",
-			        "createDate": "2018-07-07 15:48:32"
-			      },
-			      {
-			        "id": "9a3d201132d54334b326829a3044e4b3",
-			        "type": 20,
-			        "description": "创建容器",
-			        "containerName": "biubiubiu",
-			        "createDate": "2018-07-07 15:40:58"
-			      },
-			      {
-			        "id": "b3865ce97f394f94b9ec88519d51f11a",
-			        "type": 20,
-			        "description": "创建容器",
-			        "containerName": "bbb",
-			        "createDate": "2018-07-07 16:10:44"
-			      },
-			      {
-			        "id": "c4e566f69fd04e23a316325de0d05a53",
+			        "id": "db5e048aa8434067becf0f969a19fa07",
 			        "type": 22,
 			        "description": "开启容器",
-			        "containerName": "biubiubiu",
-			        "createDate": "2018-07-07 15:43:32"
+			        "objName": "power",
+			        "createDate": "2018-07-20 18:09:27"
+			      },
+			      {
+			        "id": "fea48026de154fd08c03cabc2320ce44",
+			        "type": 22,
+			        "description": "开启容器",
+			        "objName": "pup",
+			        "createDate": "2018-07-20 15:36:47"
 			      }
 			    ]
 			  }
+			}
+
+	+ Schema
+
+			{
+				"id": "id",
+				"type": "类别",
+				"description": "描述",
+				"objName": "容器或服务名",
+				"createDate": "发生时间"
 			}
 
 # Group 容器管理
@@ -606,27 +581,50 @@
 			  "code": 0,
 			  "message": "成功",
 			  "data": {
-			    "total": 1,
-			    "size": 10,
-			    "pages": 1,
+			    "total": 13,
+			    "size": 1,
+			    "pages": 13,
 			    "current": 1,
 			    "records": [
 			      {
-			        "id": "f868226b2584c93b4ce1b34aef310b5a2125d7564a977b2c8835362ed28e0d9a",
-			        "projectId": "6860df07dd1445228ff21d53eb18be65",
-			        "name": "xxxx",
+			        "id": "11673d9d97d4b3f3901331e47c09dda6b59faaa63e69d8be9e9e5cb9bc345d41",
+			        "projectId": "58d227494a6c4625aa5d15495ae17156",
+			        "userId": "34567189513412",
+			        "name": "nginxs",
 			        "command": null,
-			        "port": "{\"654\":[{\"HostIp\":\"0.0.0.0\",\"HostPort\":\"41565\"}],\"80\":[{\"HostIp\":\"0.0.0.0\",\"HostPort\":\"61120\"}]}",
+			        "port": "{\"80\":[{\"HostIp\":\"0.0.0.0\",\"HostPort\":\"18118\"}]}",
 			        "image": "nginx:latest",
 			        "status": 0,
 			        "env": null,
-			        "createDate": "2018-07-07 17:40:14",
-			        "updateDate": "2018-07-09 22:23:05",
-			        "projectName": "哇咔咔",
-			        "statusName": "容器关闭"
+			        "createDate": "2018-07-21 17:22:07",
+			        "updateDate": "2018-07-22 08:33:49",
+			        "projectName": "GR",
+			        "statusName": "容器关闭",
+			        "username": "zy",
+			        "ip": "192.168.100.30"
 			      }
 			    ]
 			  }
+			}
+
+	+ Schema
+
+			{
+				"id": "容器ID",
+				"projectId": "项目ID",
+				"userId": "用户ID",
+				"name": "容器名",
+				"command": "启动命令",
+				"port": "端口映射",
+				"image": "使用镜像名",
+				"status": "容器状态",
+				"env": "环境变量",
+				"createDate": "创建时间",
+				"updateDate": "最后操作时间",
+				"projectName": "项目名",
+				"statusName": "容器状态名",
+				"username": "用户名",
+				"ip": "容器IP"
 			}
 
 ## 项目容器列表  [GET /container/project/{projectId}/list{?current,size,orderByField,asc}]
@@ -658,27 +656,50 @@
 			  "code": 0,
 			  "message": "成功",
 			  "data": {
-			    "total": 1,
-			    "size": 10,
-			    "pages": 1,
+			    "total": 6,
+			    "size": 1,
+			    "pages": 6,
 			    "current": 1,
 			    "records": [
 			      {
-			        "id": "f868226b2584c93b4ce1b34aef310b5a2125d7564a977b2c8835362ed28e0d9a",
-			        "projectId": "6860df07dd1445228ff21d53eb18be65",
-			        "name": "xxxx",
+			        "id": "11673d9d97d4b3f3901331e47c09dda6b59faaa63e69d8be9e9e5cb9bc345d41",
+			        "projectId": "58d227494a6c4625aa5d15495ae17156",
+			        "userId": "34567189513412",
+			        "name": "nginxs",
 			        "command": null,
-			        "port": "{\"654\":[{\"HostIp\":\"0.0.0.0\",\"HostPort\":\"41565\"}],\"80\":[{\"HostIp\":\"0.0.0.0\",\"HostPort\":\"61120\"}]}",
+			        "port": "{\"80\":[{\"HostIp\":\"0.0.0.0\",\"HostPort\":\"18118\"}]}",
 			        "image": "nginx:latest",
 			        "status": 0,
 			        "env": null,
-			        "createDate": "2018-07-07 17:40:14",
-			        "updateDate": "2018-07-09 22:23:05",
-			        "projectName": "哇咔咔",
-			        "statusName": "容器关闭"
+			        "createDate": "2018-07-21 17:22:07",
+			        "updateDate": "2018-07-22 08:33:49",
+			        "projectName": "GR",
+			        "statusName": "容器关闭",
+			        "username": "zy",
+			        "ip": "192.168.100.30"
 			      }
 			    ]
 			  }
+			}
+
+	+ Schema
+
+			{
+				"id": "容器ID",
+				"projectId": "项目ID",
+				"userId": "用户ID",
+				"name": "容器名",
+				"command": "启动命令",
+				"port": "端口映射",
+				"image": "使用镜像名",
+				"status": "容器状态",
+				"env": "环境变量",
+				"createDate": "创建时间",
+				"updateDate": "最后操作时间",
+				"projectName": "项目名",
+				"statusName": "容器状态名",
+				"username": "用户名",
+				"ip": "容器IP"
 			}
 
 ## 获取容器  [GET /container/{id}]
@@ -702,19 +723,42 @@
 			  "code": 0,
 			  "message": "成功",
 			  "data": {
-			    "id": "f868226b2584c93b4ce1b34aef310b5a2125d7564a977b2c8835362ed28e0d9a",
-			    "projectId": "6860df07dd1445228ff21d53eb18be65",
-			    "name": "xxxx",
+			    "id": "11673d9d97d4b3f3901331e47c09dda6b59faaa63e69d8be9e9e5cb9bc345d41",
+			    "projectId": "58d227494a6c4625aa5d15495ae17156",
+			    "userId": "34567189513412",
+			    "name": "nginxs",
 			    "command": null,
-			    "port": "{\"654\":[{\"HostIp\":\"0.0.0.0\",\"HostPort\":\"41565\"}],\"80\":[{\"HostIp\":\"0.0.0.0\",\"HostPort\":\"61120\"}]}",
+			    "port": "{\"80\":[{\"HostIp\":\"0.0.0.0\",\"HostPort\":\"18118\"}]}",
 			    "image": "nginx:latest",
 			    "status": 0,
 			    "env": null,
-			    "createDate": "2018-07-07 17:40:14",
-			    "updateDate": "2018-07-09 23:00:00",
-			    "projectName": "哇咔咔",
-			    "statusName": "容器关闭"
+			    "createDate": "2018-07-21 17:22:07",
+			    "updateDate": "2018-07-22 08:33:49",
+			    "projectName": "GR",
+			    "statusName": "容器关闭",
+			    "username": "zy",
+			    "ip": "192.168.100.30"
 			  }
+			}
+
+	+ Schema
+
+			{
+				"id": "容器ID",
+				"projectId": "项目ID",
+				"userId": "用户ID",
+				"name": "容器名",
+				"command": "启动命令",
+				"port": "端口映射",
+				"image": "使用镜像名",
+				"status": "容器状态",
+				"env": "环境变量",
+				"createDate": "创建时间",
+				"updateDate": "最后操作时间",
+				"projectName": "项目名",
+				"statusName": "容器状态名",
+				"username": "用户名",
+				"ip": "容器IP"
 			}
 
 ## 获取状态 [GET /container/status/{id}]
@@ -2047,6 +2091,104 @@
 		        "updateDate": "更新时间"
 			}
 
+## 获取容器网络 [GET /network/container/{id}]
+
++ Parameters
+
+	+ id (string, required) - 容器ID，必填
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": [
+			    {
+			      "id": "41a16e7347b8470aae5466b4d5b84c2f",
+			      "containerId": "11673d9d97d4b3f3901331e47c09dda6b59faaa63e69d8be9e9e5cb9bc345d41",
+			      "networkId": "a1502826e75b8c0e8f6d27c2a9737c2f4d7f4f36b8398f1ee9bc08e6a7d43dc1",
+			      "createDate": "2018-07-21 19:18:14",
+			      "network": {
+			        "id": "a1502826e75b8c0e8f6d27c2a9737c2f4d7f4f36b8398f1ee9bc08e6a7d43dc1",
+			        "name": "bridge",
+			        "scope": "local",
+			        "driver": "bridge",
+			        "hasInternal": false,
+			        "hasIpv6": false,
+			        "labels": "{}",
+			        "hasPublic": true,
+			        "userId": null,
+			        "createDate": "2018-07-21 19:17:01",
+			        "updateDate": null
+			      }
+			    }
+			  ]
+			}
+
+	+ Schema
+
+			{
+			      "id": "记录ID",
+			      "containerId": "容器ID",
+			      "networkId": "网络ID",
+			      "createDate": "连接网络时间",
+			      "network": {
+			        "id": "网络ID",
+			        "name": "网络名",
+			        "scope": "网络范围",
+			        "driver": "网络驱动",
+			        "hasInternal": "是否内部",
+			        "hasIpv6": "是否开启IPV6",
+			        "labels": "标签",
+			        "hasPublic": "是否公共",
+			        "userId": "如果非公共，所属用户",
+			        "createDate": "创建时间",
+			        "updateDate": "更新时间"
+			      }
+			    }
+
+## 同步容器网络 [GET /network/sync/container/{id}]
+
++ Parameters
+
+	+ id (string, required) - 容器ID，必填
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": {
+			    "add": 1,
+			    "delete": 0
+			  }
+			}
+
+	+ Schema
+
+			{
+				"add": "新增网络数",
+				"delete": "移除网络数"
+			}
+
 ## 创建公共网络（管理员） [POST /network/public/create]
 
 + Request
@@ -2584,6 +2726,40 @@
 			    }
 			}
 
+## 修改所属项目（用户） [POST /service/changeProject]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Body
+
+	        {
+			  "serviceId": "aaaa",
+			  "projectId": "xxxx"
+			}
+
+	+ Schema
+
+			{
+				"serviceId": 服务ID，字符串，必填,
+				"projectId": 新项目ID，字符串，必填
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
+
+
 ## 横向扩展 [POST /service/scale]
 
 + Request
@@ -2865,80 +3041,64 @@
     
     + Body
 
-	        {
-			  "code": 0,
-			  "message": "成功",
-			  "data": {
-			    "total": 2,
-			    "size": 10,
-			    "pages": 1,
-			    "current": 1,
-			    "records": [
-			      {
-			        "id": "486186ce65fe4ad4a80bb65c815f86de",
-			        "objId": "kdy3aygudnqysyrla0w3amgj6",
-			        "name": "7a988ab3fb2087aecf2cc88e58b112a48d035fd8a30d738c19191b5ff47edc99",
-			        "destination": "/qq/bb",
-			        "source": "/var/lib/docker/volumes/7a988ab3fb2087aecf2cc88e58b112a48d035fd8a30d738c19191b5ff47edc99/_data",
-			        "type": 2,
-			        "createDate": "2018-07-16 14:42:17",
-			        "updateDate": "2018-07-16 14:42:17",
-			        "volume": {
-			          "Name": "7a988ab3fb2087aecf2cc88e58b112a48d035fd8a30d738c19191b5ff47edc99",
-			          "Driver": "local",
-			          "DriverOpts": null,
-			          "Options": {},
-			          "Labels": null,
-			          "Mountpoint": "/var/lib/docker/volumes/7a988ab3fb2087aecf2cc88e58b112a48d035fd8a30d738c19191b5ff47edc99/_data",
-			          "Scope": "local",
-			          "Status": null
-			        }
-			      },
-			      {
-			        "id": "63d3ab662c9b4a2dace29a53fd0f93b9",
-			        "objId": "kdy3aygudnqysyrla0w3amgj6",
-			        "name": "4e9a6abb5040f7a7b38a1e9d2081a57fc575ddf7eafb9d52510870d4033fbd90",
-			        "destination": "/tt/xxx",
-			        "source": "/var/lib/docker/volumes/4e9a6abb5040f7a7b38a1e9d2081a57fc575ddf7eafb9d52510870d4033fbd90/_data",
-			        "type": 2,
-			        "createDate": "2018-07-16 14:42:17",
-			        "updateDate": "2018-07-16 14:42:17",
-			        "volume": {
-			          "Name": "4e9a6abb5040f7a7b38a1e9d2081a57fc575ddf7eafb9d52510870d4033fbd90",
-			          "Driver": "local",
-			          "DriverOpts": null,
-			          "Options": {},
-			          "Labels": null,
-			          "Mountpoint": "/var/lib/docker/volumes/4e9a6abb5040f7a7b38a1e9d2081a57fc575ddf7eafb9d52510870d4033fbd90/_data",
-			          "Scope": "local",
-			          "Status": null
-			        }
-			      }
-			    ]
-			  }
+			{
+				"code": 0,
+				"message": "成功",
+				"data": {
+				"total": 1,
+				"size": 10,
+				"pages": 1,
+				"current": 1,
+				"records": [
+					{
+						"id": "1fe1579799064fb08e50f689826d50ff",
+						"objId": "63ec66f93e85246a1e7aa5e18c01ed9de19db9ad453d83836be60de315a3c82e",
+						"name": "7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19",
+						"destination": "/var",
+						"source": "/var/lib/docker/volumes/7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19/_data",
+						"type": 1,
+						"createDate": "2018-07-21 16:36:21",
+						"updateDate": null,
+						"typeName": "容器数据卷",
+						"objName": "demo-java",
+						"volume": {
+							"Name": "7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19",
+							"Driver": "local",
+							"DriverOpts": null,
+							"Options": {},
+							"Labels": null,
+							"Mountpoint": "/var/lib/docker/volumes/7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19/_data",
+							"Scope": "local",
+							"Status": null
+						}
+					}
+				]
 			}
 
 	+ Schema
 
 			{
-		      "id": "数据卷ID",
-		      "containerId": "容器ID",
-		      "name": "数据卷名",
-		      "destination": "容器内路径",
-		      "source": "数据卷路径",
-		      "createDate": "创建时间",
-		      "updateDate": "更新时间",
-		      "volume": {
-			          "Name": "数据卷名",
-			          "Driver": "数据卷驱动",
-			          "DriverOpts": null,
-			          "Options": {},
-			          "Labels": null,
-			          "Mountpoint": "挂载点",
-			          "Scope": "范围",
-			          "Status": "状态"
-			        }
-		    }
+				"id": "数据卷ID",
+				"objId": "容器/服务ID",
+				"name": "数据卷名",
+				"destination": "容器内路径"
+				"source": "数据卷路径",
+				"type": "数据卷类型",
+				"createDate": "创建时间",
+				"updateDate": "更新时间",
+				"typeName": "数据卷类型名",
+				"objName": "容器/服务名",
+				"volume": {
+					"Name": "数据卷名",
+					"Driver": "数据卷驱动",
+					"DriverOpts": null,
+					"Options": {},
+					"Labels": null,
+					"Mountpoint": "挂载点",
+					"Scope": "范围",
+					"Status": "状态"
+				}
+			}
 
 ## 数据卷详情 [GET /volumes/inspect/id/{id}]
 
@@ -2953,10 +3113,6 @@
 			Content-Type: application/x-www-form-urlencoded
 			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
 
-	+ Schema
-
-			/volumes/inspect/id/22710dba2e16487795655e68e56be8e9
-
 + Response 200 (application/json)
     
     + Body
@@ -2965,15 +3121,52 @@
 			  "code": 0,
 			  "message": "成功",
 			  "data": {
-			    "Name": "5707b93721f8913e39315d3eec3e77f8096949fe80c1a61a78b5213fae8add42",
-			    "Driver": "local",
-			    "DriverOpts": null,
-			    "Options": {},
-			    "Labels": null,
-			    "Mountpoint": "/var/lib/docker/volumes/5707b93721f8913e39315d3eec3e77f8096949fe80c1a61a78b5213fae8add42/_data",
-			    "Scope": "local",
-			    "Status": null
+			    "id": "1fe1579799064fb08e50f689826d50ff",
+			    "objId": "63ec66f93e85246a1e7aa5e18c01ed9de19db9ad453d83836be60de315a3c82e",
+			    "name": "7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19",
+			    "destination": "/var",
+			    "source": "/var/lib/docker/volumes/7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19/_data",
+			    "type": 1,
+			    "createDate": "2018-07-21 16:36:21",
+			    "updateDate": null,
+			    "typeName": "容器数据卷",
+			    "objName": "demo-java",
+			    "volume": {
+			      "Name": "7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19",
+			      "Driver": "local",
+			      "DriverOpts": null,
+			      "Options": {},
+			      "Labels": null,
+			      "Mountpoint": "/var/lib/docker/volumes/7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19/_data",
+			      "Scope": "local",
+			      "Status": null
+			    }
 			  }
+			}
+
+	+ Schema
+
+			{
+				"id": "数据卷ID",
+				"objId": "容器/服务ID",
+				"name": "数据卷名",
+				"destination": "容器内路径"
+				"source": "数据卷路径",
+				"type": "数据卷类型",
+				"createDate": "创建时间",
+				"updateDate": "更新时间",
+				"typeName": "数据卷类型名",
+				"objName": "容器/服务名",
+				"volume": {
+					"Name": "数据卷名",
+					"Driver": "数据卷驱动",
+					"DriverOpts": null,
+					"Options": {},
+					"Labels": null,
+					"Mountpoint": "挂载点",
+					"Scope": "范围",
+					"Status": "状态"
+				}
 			}
 
 ## 数据卷详情 [GET /volumes/inspect/name/{name}]
@@ -3001,15 +3194,52 @@
 			  "code": 0,
 			  "message": "成功",
 			  "data": {
-			    "Name": "5707b93721f8913e39315d3eec3e77f8096949fe80c1a61a78b5213fae8add42",
-			    "Driver": "local",
-			    "DriverOpts": null,
-			    "Options": {},
-			    "Labels": null,
-			    "Mountpoint": "/var/lib/docker/volumes/5707b93721f8913e39315d3eec3e77f8096949fe80c1a61a78b5213fae8add42/_data",
-			    "Scope": "local",
-			    "Status": null
+			    "id": "1fe1579799064fb08e50f689826d50ff",
+			    "objId": "63ec66f93e85246a1e7aa5e18c01ed9de19db9ad453d83836be60de315a3c82e",
+			    "name": "7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19",
+			    "destination": "/var",
+			    "source": "/var/lib/docker/volumes/7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19/_data",
+			    "type": 1,
+			    "createDate": "2018-07-21 16:36:21",
+			    "updateDate": null,
+			    "typeName": "容器数据卷",
+			    "objName": "demo-java",
+			    "volume": {
+			      "Name": "7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19",
+			      "Driver": "local",
+			      "DriverOpts": null,
+			      "Options": {},
+			      "Labels": null,
+			      "Mountpoint": "/var/lib/docker/volumes/7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19/_data",
+			      "Scope": "local",
+			      "Status": null
+			    }
 			  }
+			}
+
+	+ Schema
+
+			{
+				"id": "数据卷ID",
+				"objId": "容器/服务ID",
+				"name": "数据卷名",
+				"destination": "容器内路径"
+				"source": "数据卷路径",
+				"type": "数据卷类型",
+				"createDate": "创建时间",
+				"updateDate": "更新时间",
+				"typeName": "数据卷类型名",
+				"objName": "容器/服务名",
+				"volume": {
+					"Name": "数据卷名",
+					"Driver": "数据卷驱动",
+					"DriverOpts": null,
+					"Options": {},
+					"Labels": null,
+					"Mountpoint": "挂载点",
+					"Scope": "范围",
+					"Status": "状态"
+				}
 			}
 
 ## 上传文件 [POST /volumes/upload]
@@ -3514,6 +3744,26 @@
 			  }
 			}
 
+## 未读消息数 [GET /notice/countUnRead]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": 2
+			}
+
+
 ## 已读消息 [POST /notice/read]
 
 + Request
@@ -3657,12 +3907,39 @@
 			    "cupNum": 1,
 			    "memorySize": 0.95,
 			    "dockerVersion": "17.09.0-ce",
-			    "imageNum": 8,
-			    "containerNum": 3,
+			    "imageNum": 37,
+			    "containerNum": 20,
 			    "containerRunningNum": 3,
 			    "containerPauseNum": 0,
-			    "containerStopNum": 0,
-			    "time": "2018-07-09 14:39:43"
+			    "containerStopNum": 17,
+			    "time": "2018-07-22 08:52:25",
+			    "nodes": [
+			      {
+			        "hostName": "bogon",
+			        "architecture": "x86_64",
+			        "dockerVersion": "17.09.0-ce",
+			        "ip": "192.168.100.104",
+			        "state": "ready",
+			        "hasLeader": false
+			      },
+			      {
+			        "hostName": "bogon",
+			        "architecture": "x86_64",
+			        "dockerVersion": "17.09.0-ce",
+			        "ip": "192.168.100.238",
+			        "state": "ready",
+			        "hasLeader": false
+			      },
+			      {
+			        "hostName": "bogon",
+			        "architecture": "x86_64",
+			        "dockerVersion": "17.09.0-ce",
+			        "ip": "192.168.100.42",
+			        "state": "ready",
+			        "hasLeader": true
+			      }
+			    ],
+			    "serviceNum": 16
 			  }
 			}
 
@@ -3680,7 +3957,17 @@
 			    "containerRunningNum": "容器运行数目",
 			    "containerPauseNum": "容器暂停数目",
 			    "containerStopNum": "容器停止数目",
-			    "time": "数据获取时间"
+			    "time": "数据获取时间",
+			    "serviceNum": "服务数"
+			}
+
+			{
+				"hostName": "节点主机名",
+				"architecture": "节点架构",
+				"dockerVersion": "Docker版本",
+				"ip": "IP地址",
+				"state": "状态",
+				"hasLeader": "是否是Leader节点"
 			}
 
 ## 自身信息 [GET /monitor/self/info]
@@ -3704,14 +3991,16 @@
 			  "code": 0,
 			  "message": "成功",
 			  "data": {
-			    "lastLogin": "2018-07-10 00:34:25",
-			    "projectNum": 7,
-			    "containerNum": 1,
+			    "lastLogin": "2018-07-20 20:03:52",
+			    "ip": "192.168.100.142",
+			    "projectNum": 0,
+			    "containerNum": 0,
 			    "containerRunningNum": 0,
 			    "containerPauseNum": 0,
-			    "containerStopNum": 1,
-			    "uploadImageNum": 3,
-			    "hubImageNum": 1
+			    "containerStopNum": 0,
+			    "uploadImageNum": 0,
+			    "hubImageNum": 0,
+			    "serviceNum": 0
 			  }
 			}
 
@@ -3719,6 +4008,7 @@
 
             {
 				"lastLogin": "最后登录时间",
+				"ip": "登录IP",
 			    "projectNum": "项目数目",
 			    "containerNum": "容器数目",
 			    "containerRunningNum": "容器运行数目",

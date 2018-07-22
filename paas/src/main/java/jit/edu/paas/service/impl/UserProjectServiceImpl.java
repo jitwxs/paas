@@ -4,9 +4,9 @@ import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import jit.edu.paas.commons.util.HttpClientUtils;
+import jit.edu.paas.commons.util.JsonUtils;
 import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.commons.util.StringUtils;
-import jit.edu.paas.commons.util.JsonUtils;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.dto.UserProjectDTO;
 import jit.edu.paas.domain.entity.ProjectLog;
@@ -24,7 +24,6 @@ import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.mapper.ProjectLogMapper;
 import jit.edu.paas.mapper.UserContainerMapper;
 import jit.edu.paas.mapper.UserProjectMapper;
-import jit.edu.paas.mapper.UserServiceMapper;
 import jit.edu.paas.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -34,7 +33,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -293,21 +291,26 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
         return ResultVOUtils.success(page.setRecords(voList));
     }
 
+    /**
+     * ProjectLog --> ProjectLogVO
+     * @author jitwxs
+     * @since 2018/7/22 8:39
+     */
     private ProjectLogVO projectLog2VO(ProjectLog log) {
         ProjectLogVO vo = new ProjectLogVO();
         BeanUtils.copyProperties(log, vo);
 
         String objId = log.getObjId();
 
-        if(StringUtils.isNotBlank(objId)) {
+        if (StringUtils.isNotBlank(objId)) {
             UserContainer container = containerService.getById(objId);
-            if(container != null) {
+            if (container != null) {
                 vo.setObjName(container.getName());
                 return vo;
             }
 
             UserService userService = userServiceService.getById(objId);
-            if(userService != null) {
+            if (userService != null) {
                 vo.setObjName(userService.getName());
                 return vo;
             }
@@ -316,9 +319,12 @@ public class UserProjectServiceImpl extends ServiceImpl<UserProjectMapper, UserP
 
         return vo;
     }
-
+    /**
+     * ProjectLog --> ProjectLogVO
+     * @author jitwxs
+     * @since 2018/7/22 8:39
+     */
     private List<ProjectLogVO> projectLog2VO(List<ProjectLog> list) {
         return list.stream().map(this::projectLog2VO).collect(Collectors.toList());
     }
-
 }

@@ -2,6 +2,7 @@ package jit.edu.paas.controller;
 
 import com.baomidou.mybatisplus.plugins.Page;
 import jit.edu.paas.commons.util.ResultVOUtils;
+import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.domain.dto.UserProjectDTO;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.RoleEnum;
@@ -115,6 +116,9 @@ public class ProjectController {
     public ResultVO getProjectLog(@RequestAttribute String uid, String projectId, Integer type,
                                   @RequestParam(defaultValue = "1") Integer current,
                                   @RequestParam(defaultValue = "10") Integer size) {
+        if(StringUtils.isBlank(projectId)) {
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
+        }
         // 鉴权
         String roleName = loginService.getRoleName(uid);
         if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
