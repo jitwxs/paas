@@ -15,6 +15,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.Path;
 import java.util.Map;
 
 /**
@@ -31,22 +32,35 @@ public class NetworkController {
     @Autowired
     private UserContainerService containerService;
 
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVO getById(@PathVariable String id, @RequestAttribute String uid) {
+        ResultVO resultVO = networkService.hasPermission(id, uid);
+        if(ResultEnum.OK.getCode() != resultVO.getCode()) {
+            return resultVO;
+        }
+        return ResultVOUtils.success(networkService.getById(id));
+    }
+
     /**
      * 获取网络列表 - 用户接口
-     * @param type 1：公共网络；2：个人网络
+     * @param type 1：公共网络；2：个人网络；其他：个人网络 + 公共网络
      * @author jitwxs
      * @since 2018/7/14 16:43
      */
     @GetMapping("/list")
     @PreAuthorize("hasRole('ROLE_USER')")
-    public ResultVO listNetwork(@RequestParam(defaultValue = "-1") int type, Page<SysNetwork> page, @RequestAttribute String uid) {
+    public ResultVO listNetwork(@RequestParam(defaultValue = "-1") int type, @RequestAttribute String uid,
+                                @RequestParam(defaultValue = "1") Integer current,
+                                @RequestParam(defaultValue = "10") Integer size) {
+        Page<SysNetwork> page = new Page<>(current,size,"create_date",false);
         switch (type) {
             case 1:
                 return ResultVOUtils.success(networkService.listAllNetwork(page, true));
             case 2:
                 return ResultVOUtils.success(networkService.listSelfNetwork(page, uid));
             default:
-                return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
+                return ResultVOUtils.success(networkService.listSelfAndPublicNetwork(page, uid));
         }
     }
 
@@ -58,7 +72,10 @@ public class NetworkController {
      */
     @GetMapping("/listAll")
     @PreAuthorize("hasRole('ROLE_SYSTEM')")
-    public ResultVO listAllNetwork(Boolean hasPublic, Page<SysNetwork> page) {
+    public ResultVO listAllNetwork(Boolean hasPublic,
+                                   @RequestParam(defaultValue = "1") Integer current,
+                                   @RequestParam(defaultValue = "10") Integer size) {
+        Page<SysNetwork> page = new Page<>(current,size,"create_date",false);
         return ResultVOUtils.success(networkService.listAllNetwork(page, hasPublic));
     }
 

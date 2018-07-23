@@ -47,6 +47,11 @@ public interface SysNetworkService extends IService<SysNetwork> {
     Page<SysNetwork> listSelfNetwork(Page<SysNetwork> page, String userId);
 
     /**
+     * 获取个人网络 + 公共网络
+     */
+    Page<SysNetwork> listSelfAndPublicNetwork(Page<SysNetwork> page, String uid);
+
+    /**
      * 创建公共网络
      * @author jitwxs
      * @since 2018/7/14 16:01

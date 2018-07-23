@@ -22,15 +22,15 @@
             </foreach>
         </where>
     </update>
-    <update id="readAllNotice">
-        UPDATE `user_notice_desc`
-        SET `has_read` = true
-        WHERE
-            `receive` = #{userId}
-            <if test="type != null" >
-                AND `n.type` = #{type}
-            </if>
-    </update>
+    <select id="listUnReadIds" resultType="java.lang.String">
+        SELECT d.id from user_notice AS n , user_notice_desc AS d
+        WHERE n.id = d.notice_id
+        AND d.has_read = false
+        AND d.receive = #{userId}
+        <if test="type != null" >
+            AND n.type =1
+        </if>
+    </select>
     <select id="listUserNotice" resultType="jit.edu.paas.domain.dto.NoticeDTO">
         SELECT
         n.title,
@@ -91,4 +91,13 @@
     <select id="countUnread" parameterType="java.lang.String" resultType="java.lang.Integer">
         SELECT COUNT(*) from `user_notice_desc` where receive = #{uid} and has_read = false
     </select>
+    <delete id="deleteNotice">
+        DELETE from `user_notice_desc`
+       <where>
+            `receive` = #{userId}
+            <foreach collection="ids" item="id" open="and id in (" close=") " separator=",">
+                #{id}
+            </foreach>
+        </where>
+    </delete>
 </mapper>

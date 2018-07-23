@@ -506,4 +506,17 @@ public class HttpClientUtils {
         e.printStackTrace(new PrintWriter(stringWriter));
         return stringWriter.toString();
     }
+
+    public static String getErrorMessage(String message) {
+        try {
+            // 形如：Request error: POST http://192.168.100.42:2375/services/create: 400, body: {"message":"rpc error: code = InvalidArgument desc = ContainerSpec: duplicate mount point: /a"}
+            int start = message.lastIndexOf("{"), end = message.lastIndexOf("}");
+            String msgMapStr = message.substring(start, end + 1);
+            Map<String, String> msgMap = JsonUtils.jsonToMap(msgMapStr);
+            return msgMap.get("message");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
+    }
 }

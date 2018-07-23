@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.ConflictException;
+import com.spotify.docker.client.exceptions.DockerRequestException;
 import com.spotify.docker.client.exceptions.DockerTimeoutException;
 import com.spotify.docker.client.exceptions.ImagePushFailedException;
 import com.spotify.docker.client.messages.*;
@@ -325,8 +326,13 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             sysLogService.saveLog(request, SysLogTypeEnum.DELETE_IMAGE);
 
             return ResultVOUtils.success();
-        } catch (ConflictException e){
-            return ResultVOUtils.error(ResultEnum.IMAGE_ERROR_BY_USED);
+        } catch (DockerRequestException requestException){
+            String message = HttpClientUtils.getErrorMessage(requestException.getMessage());
+            log.error("删除镜像异常，错误位置：{}，错误信息：{}",
+                    "SysImageServiceImpl.removeImage", message);
+            return ResultVOUtils.error(ResultEnum.DELETE_IMAGE_ERROR.getCode(), message);
+        }catch (ConflictException e){
+            return ResultVOUtils.error(ResultEnum.DELETE_IMAGE_BY_CONTAINER_ERROR);
         }catch (Exception e) {
             log.error("Docker删除镜像异常，错误位置：{},错误栈：{}"
                     ,"SysImageServiceImpl.removeImage",HttpClientUtils.getStackTraceAsString(e));

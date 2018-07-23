@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import com.google.common.collect.ImmutableList;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.LogStream;
+import com.spotify.docker.client.exceptions.DockerRequestException;
 import com.spotify.docker.client.messages.ContainerMount;
 import com.spotify.docker.client.messages.ServiceCreateResponse;
 import com.spotify.docker.client.messages.mount.Mount;
@@ -394,6 +395,11 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
             noticeService.sendUserTask("创建服务","创建服务【"+serviceName+"】成功", 3, false, receiverList, null);
 
             sendMQ(userId, creation.id(), ResultVOUtils.successWithMsg("服务创建成功"));
+        } catch (DockerRequestException requestException){
+            log.error("服务创建失败，错误位置：{}，错误原因：{}",
+                    "UserServiceServiceImpl.createServiceTask()", requestException.getMessage());
+            sendMQ(userId, null, ResultVOUtils.error(
+                    ResultEnum.SERVICE_CREATE_ERROR.getCode(),HttpClientUtils.getErrorMessage(requestException.getMessage())));
         } catch (Exception e) {
             log.error("创建服务出现异常，异常位置：{}，错误栈：{}",
                     "UserServiceServiceImpl.createServiceTask()", HttpClientUtils.getStackTraceAsString(e));

@@ -18,4 +18,6 @@ public interface SysVolumesMapper extends BaseMapper<SysVolume> {
      * @since 2018/7/16 10:54
      */
     boolean hasUser(String id);
+
+    void deleteByObjId(@Param("objId") String objId);
 }

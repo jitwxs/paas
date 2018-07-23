@@ -45,11 +45,15 @@ public class ImageController {
      */
     @GetMapping("/list/local")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO searchLocalImage(@RequestAttribute String uid,  String name, Integer type, Page<SysImageDTO> page) {
+    public ResultVO searchLocalImage(@RequestAttribute String uid,  String name, Integer type,
+                                     @RequestParam(defaultValue = "1") Integer current,
+                                     @RequestParam(defaultValue = "10") Integer size) {
         // 判断参数
         if(type == null) {
             return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
+
+        Page<SysImageDTO> page = new Page<>(current, size, "create_date", false);
 
         String roleName = loginService.getRoleName(uid);
 

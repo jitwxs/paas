@@ -94,6 +94,13 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
         return page.setRecords(list);
     }
 
+    @Override
+    public Page<SysNetwork> listSelfAndPublicNetwork(Page<SysNetwork> page, String uid) {
+        List<SysNetwork> list = networkMapper.listSelfAndPublicNetwork(page, uid);
+
+        return page.setRecords(list);
+    }
+
     @Transactional(rollbackFor = CustomException.class)
     @Override
     public ResultVO createPublicNetwork(String name, String driver, Map<String, String> labels, HttpServletRequest request) {
@@ -287,7 +294,7 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
         }
 
         // Bridge网络无法删除
-        if("bridge".equals(network.getDriver().toLowerCase())) {
+        if("bridge".equals(network.getName().toLowerCase())) {
             return ResultVOUtils.error(ResultEnum.DELETE_NETWORK_ERROR_BY_BRIDGE);
         }
 

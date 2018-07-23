@@ -15,4 +15,7 @@
             AND ISNULL( destination )
             AND id = #{id}
     </select>
+    <delete id="deleteByObjId" parameterType="java.lang.String">
+        DELETE FROM `sys_volume` WHERE obj_id = #{objId}
+    </delete>
 </mapper>

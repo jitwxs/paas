@@ -16,4 +16,9 @@
         FROM sys_network
         WHERE `user_id` = #{userId}
     </select>
+    <select id="listSelfAndPublicNetwork" resultType="jit.edu.paas.domain.entity.SysNetwork">
+        SELECT * FROM sys_network
+        WHERE (has_public = true)
+        OR (has_public = false and user_id = #{userId})
+    </select>
 </mapper>

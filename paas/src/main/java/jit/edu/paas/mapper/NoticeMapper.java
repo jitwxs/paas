@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.plugins.pagination.Pagination;
 import jit.edu.paas.domain.dto.NoticeDTO;
 import jit.edu.paas.domain.entity.UserNotice;
 import jit.edu.paas.domain.entity.UserNoticeDesc;
+import jit.edu.paas.domain.vo.ResultVO;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;
@@ -37,7 +38,10 @@ public interface NoticeMapper extends BaseMapper<NoticeDTO> {
 
     void readNotice(@Param("ids") String[] ids, @Param("userId") String userId);
 
-    void readAllNotice(@Param("userId") String userId, @Param("type") Integer type);
+    /**
+     * 获取指定用户未读消息的ID集合
+     */
+    List<String> listUnReadIds(@Param("userId") String userId, @Param("type") Integer type);
 
     List<NoticeDTO> listSelfSendHistory(@Param("userId") String userId, Page<NoticeDTO> page);
 
@@ -46,4 +50,6 @@ public interface NoticeMapper extends BaseMapper<NoticeDTO> {
     NoticeDTO getSelfSendNoticeDTO(@Param("noticeId") String noticeId);
 
     int countUnread(@Param("uid") String uid);
+
+    void deleteNotice(@Param("ids") String[] idArray, @Param("userId") String userId);
 }

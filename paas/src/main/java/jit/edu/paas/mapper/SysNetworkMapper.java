@@ -20,4 +20,6 @@ public interface SysNetworkMapper extends BaseMapper<SysNetwork> {
     List<SysNetwork> listAllNetwork(Page<SysNetwork> page, @Param("hasPublic") Boolean hasPublic);
 
     List<SysNetwork> listSelfNetwork(Page<SysNetwork> page, @Param("userId") String userId);
+
+    List<SysNetwork> listSelfAndPublicNetwork(Page<SysNetwork> page, @Param("userId") String userId);
 }

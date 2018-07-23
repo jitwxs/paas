@@ -25,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.jms.Destination;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -128,9 +129,11 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, NoticeDTO> impl
     @Override
     public ResultVO readAllNotice(String userId, Integer type) {
         try {
-            noticeMapper.readAllNotice(userId, type);
+            List<String> ids = noticeMapper.listUnReadIds(userId, type);
+            noticeMapper.readNotice(ids.toArray(new String[ids.size()]), userId);
             return ResultVOUtils.success();
         } catch (Exception e) {
+            e.printStackTrace();
             return ResultVOUtils.error(ResultEnum.NOTICE_READ_ERROR);
         }
     }
@@ -164,6 +167,13 @@ public class NoticeServiceImpl extends ServiceImpl<NoticeMapper, NoticeDTO> impl
     @Override
     public int countUnread(String uid) {
         return noticeMapper.countUnread(uid);
+    }
+
+    @Override
+    public ResultVO deleteNotice(String[] idArray, String userId) {
+        noticeMapper.deleteNotice(idArray, userId);
+
+        return ResultVOUtils.success();
     }
 
     /**

@@ -81,4 +81,6 @@ public interface NoticeService extends IService<NoticeDTO> {
      * 统计未读消息个数
      */
     int countUnread(String uid);
+
+    ResultVO deleteNotice(String[] idArray, String userId);
 }

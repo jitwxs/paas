@@ -1,6 +1,7 @@
 package jit.edu.paas.controller;
 
 import com.baomidou.mybatisplus.plugins.Page;
+import jit.edu.paas.commons.util.CollectionUtils;
 import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.domain.dto.NoticeDTO;
 import jit.edu.paas.domain.entity.UserNotice;
@@ -117,4 +118,15 @@ public class NoticeController {
     public ResultVO readAll(@RequestAttribute String uid, Integer type) {
         return noticeService.readAllNotice(uid, type);
     }
+
+    @PostMapping("/delete")
+    @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
+    public ResultVO deleteNotices(String ids, @RequestAttribute String uid) {
+        String[] idArray = ids.split(",");
+        if(CollectionUtils.isArrayEmpty(idArray)) {
+            return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
+        }
+        return noticeService.deleteNotice(idArray, uid);
+    }
+
 }

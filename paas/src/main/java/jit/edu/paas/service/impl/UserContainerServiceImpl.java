@@ -257,15 +257,16 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             if(CollectionUtils.isNotArrayEmpty(destination)) {
                 // 为数据库中的sysvolumes插入
                 ImmutableList<ContainerMount> info = dockerClient.inspectContainer(creation.id()).mounts();
-                for(int i = 0;i<destination.length;i++){
-                    SysVolume sysVolume = new SysVolume();
-                    sysVolume.setObjId(creation.id());
-                    sysVolume.setDestination(destination[i]);
-                    sysVolume.setName(info.get(i).name());
-                    sysVolume.setSource(info.get(i).source());
-                    sysVolume.setType(VolumeTypeEnum.CONTAINER.getCode());
-
-                    sysVolumesMapper.insert(sysVolume);
+                if(CollectionUtils.isListNotEmpty(info)) {
+                    for(ContainerMount mount : info) {
+                        SysVolume sysVolume = new SysVolume();
+                        sysVolume.setObjId(creation.id());
+                        sysVolume.setDestination(mount.destination());
+                        sysVolume.setName(mount.name());
+                        sysVolume.setSource(mount.source());
+                        sysVolume.setType(VolumeTypeEnum.CONTAINER.getCode());
+                        sysVolumesMapper.insert(sysVolume);
+                    }
                 }
             }
 
@@ -388,6 +389,8 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             // 删除数据
             String name = getName(containerId);
             userContainerMapper.deleteById(containerId);
+            // 删除数据卷
+            sysVolumesMapper.deleteByObjId(containerId);
             // 清理缓存
             cleanCache(containerId);
             // 写入日志
