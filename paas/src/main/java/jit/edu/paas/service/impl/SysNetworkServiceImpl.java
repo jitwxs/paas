@@ -5,7 +5,7 @@ import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import com.google.common.collect.ImmutableMap;
 import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.exceptions.DockerException;
+import com.spotify.docker.client.exceptions.DockerRequestException;
 import com.spotify.docker.client.exceptions.NotFoundException;
 import com.spotify.docker.client.messages.AttachedNetwork;
 import com.spotify.docker.client.messages.ContainerInfo;
@@ -254,7 +254,10 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
             dockerClient.connectToNetwork(containerId, networkId);
 
             return ResultVOUtils.success();
-        } catch (Exception e) {
+        } catch (DockerRequestException requestException){
+            return ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION.getCode(),
+                    HttpClientUtils.getErrorMessage(requestException.getMessage()));
+        }catch (Exception e) {
             log.error("连接网络出错错误，错误位置：{}，错误栈：{}",
                     "SysNetworkServiceImpl.connectNetwork()", HttpClientUtils.getStackTraceAsString(e));
             return ResultVOUtils.error(ResultEnum.CONNECT_NETWORK_ERROR);
@@ -276,9 +279,13 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
 
         try {
             dockerClient.disconnectFromNetwork(containerId, networkId);
-            containerNetworkMapper.delete(new EntityWrapper<ContainerNetwork>().eq("container_id",containerId).and().eq("networkId",networkId));
+            containerNetworkMapper.delete(new EntityWrapper<ContainerNetwork>().eq("container_id",containerId).and().eq("network_id",networkId));
 
             return ResultVOUtils.success();
+        } catch (DockerRequestException requestException){
+            return ResultVOUtils.error(
+                    ResultEnum.SERVICE_CREATE_ERROR.getCode(),
+                    HttpClientUtils.getErrorMessage(requestException.getMessage()));
         } catch (Exception e) {
             log.error("取消连接网络出错错误，错误位置：{}，错误栈：{}",
                     "SysNetworkServiceImpl.disConnectNetwork()", HttpClientUtils.getStackTraceAsString(e));
@@ -331,6 +338,10 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
             networkMapper.deleteById(networkId);
 
             return ResultVOUtils.success();
+        } catch (DockerRequestException requestException){
+            return ResultVOUtils.error(
+                    ResultEnum.SERVICE_CREATE_ERROR.getCode(),
+                    HttpClientUtils.getErrorMessage(requestException.getMessage()));
         } catch (Exception e) {
             log.error("删除网络错误，错误位置：{}，错误栈：{}",
                     "SysNetworkServiceImpl.deleteNetwork()", HttpClientUtils.getStackTraceAsString(e));
@@ -404,6 +415,10 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
             map.put("delete", deleteCount);
             map.put("error", errorCount);
             return ResultVOUtils.success(map);
+        } catch (DockerRequestException requestException){
+            return ResultVOUtils.error(
+                    ResultEnum.SERVICE_CREATE_ERROR.getCode(),
+                    HttpClientUtils.getErrorMessage(requestException.getMessage()));
         } catch (Exception e) {
             log.error("读取网络信息失败，错误位置：{}，错误栈：{}",
                     "SysNetworkServiceImpl.sync()", HttpClientUtils.getStackTraceAsString(e));
@@ -531,8 +546,8 @@ public class SysNetworkServiceImpl extends ServiceImpl<SysNetworkMapper, SysNetw
 
     private boolean hasExist(String containerId, String networkId) {
         List<ContainerNetwork> list = containerNetworkMapper.selectList(new EntityWrapper<ContainerNetwork>()
-            .eq("container_id", containerId)
-            .eq("network_id", networkId));
+                .eq("container_id", containerId)
+                .eq("network_id", networkId));
 
         return CollectionUtils.isListNotEmpty(list);
     }

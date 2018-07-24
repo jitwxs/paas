@@ -2,7 +2,6 @@ package jit.edu.paas.service;
 
 import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.IService;
-import com.spotify.docker.client.LogStream;
 import com.spotify.docker.client.messages.swarm.Service;
 import jit.edu.paas.domain.dto.UserServiceDTO;
 import jit.edu.paas.domain.entity.UserService;

@@ -19,4 +19,9 @@ public class UserServiceDTO extends UserService {
      * 状态名
      */
     private String statusName;
+
+    /**
+     * IP
+     */
+    private String ip;
 }

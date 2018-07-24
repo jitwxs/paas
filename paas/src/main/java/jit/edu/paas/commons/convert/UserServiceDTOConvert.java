@@ -7,6 +7,7 @@ import jit.edu.paas.domain.entity.UserService;
 import jit.edu.paas.service.UserProjectService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -22,6 +23,9 @@ public class UserServiceDTOConvert {
     @Autowired
     private UserProjectService projectService;
 
+    @Value("${docker.swarm.manager.address}")
+    private String serverIp;
+
     public UserServiceDTO convert(UserService userService) {
         if(userService == null) {
             return null;
@@ -35,6 +39,8 @@ public class UserServiceDTOConvert {
             String projectName = projectService.getProjectName(projectId);
             dto.setProjectName(projectName);
         }
+
+        dto.setIp(serverIp);
 
         return dto;
     }

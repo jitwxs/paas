@@ -254,6 +254,12 @@ public class ImageController {
         if(!flag || !iterator.hasNext()) {
             return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
+        // 判断镜像名是否有大写字符
+        for(int i=0; i<imageName.length(); i++) {
+            if(Character.isUpperCase(imageName.charAt(i))){
+                return ResultVOUtils.error(ResultEnum.IMAGE_NAME_CONTAIN_UPPER);
+            }
+        }
 
         // 拼接完整名：repo/userId/imageName:tag
         String fullName = "local/" + uid + "/" + imageName + ":" + tag;
@@ -283,4 +289,11 @@ public class ImageController {
     public ResultVO listExportPort(@RequestAttribute String uid, @PathVariable String id) {
         return imageService.listExportPorts(id, uid);
     }
+
+    @GetMapping("/clean")
+    @PreAuthorize("hasRole('ROLE_SYSTEM')")
+    public ResultVO cleanImage() {
+        return imageService.cleanImage();
+    }
+
 }

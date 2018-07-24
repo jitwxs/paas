@@ -53,6 +53,7 @@ public enum ResultEnum {
     DELETE_IMAGE_BY_CONTAINER_ERROR("删除镜像错误，有容器正在使用该镜像",51),
     DELETE_IMAGE_ERROR("删除镜像错误",52),
     IMAGE_EXCEPTION("镜像异常",53),
+    IMAGE_NAME_CONTAIN_UPPER("镜像名包含大写字符",54),
     INPUT_PORT_ERROR("输入端口错误，请检查端口是否合法、是否可用，暴露端口是否均设置",60),
     CONTAINER_NOT_FOUND("容器不存在",61),
     CONTAINER_STATUS_REFUSE("容器状态拒绝操作",62),

@@ -1,8 +1,5 @@
 package jit.edu.paas.commons.util;
 
-import freemarker.template.utility.StringUtil;
-import jit.edu.paas.domain.enums.ResultEnum;
-
 import java.util.*;
 
 /**

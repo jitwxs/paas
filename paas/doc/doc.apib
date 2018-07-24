@@ -551,7 +551,7 @@
 
 # Group 容器管理
 
-## 用户容器列表  [GET /container/list/{?name,status,current,size,orderByField,asc}]
+## 用户容器列表  [GET /container/list/{?name,status,current,size}]
 
 + Parameters
 
@@ -559,8 +559,6 @@
 	+ status (number, optional) - 状态类型
     + current (number, optional) - 页码，默认为1
     + size (number, optional) - 页面容量，默认为10
-    + orderByField (string, optional) - 排序字段
-    + asc (boolean, optional) - 升序：true；降序：false
 
 + Request
 
@@ -1260,7 +1258,7 @@
 
 # Group 镜像管理
 
-## 本地镜像列表 [GET /image/list/local{?type,name,current,size,orderByField,asc}]
+## 本地镜像列表 [GET /image/list/local{?type,name,current,size}]
 
 + Parameters
 
@@ -1268,8 +1266,6 @@
     + name (string, optional) - 镜像名
     + current (number, optional) - 页码，默认为1
     + size (number, optional) - 页面容量，默认为10
-    + orderByField (string, optional) - 排序字段
-    + asc (boolean, optional) - 升序：true；降序：false
 
 + Request
 
@@ -1959,6 +1955,35 @@
 			  "data": null
 			}
 
+## 清理镜像（管理员） [GET /image/clean]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
++ Response 200 (application/json)
+    
+    + Body
+
+			{
+				"code": 0,
+				"message": "成功",
+				"data": {
+					"success": 0,
+					"error": 0
+				}
+			}
+
+	+ Schema
+
+			{
+				"success": "成功记录数",
+				"error": "失败记录数"
+			}
+
 # Group 网络管理
 
 ## 网络列表（管理员） [GET /network/listAll{?hasPublic,current,size,orderByField,asc}]
@@ -1968,8 +1993,6 @@
 	+ hasPublic (boolean, optional) - 是否公共网络
     + current (number, optional) - 页码，默认为1
     + size (number, optional) - 页面容量，默认为10
-    + orderByField (string, optional) - 排序字段
-    + asc (boolean, optional) - 升序：true；降序：false
 
 + Request
 
@@ -2024,15 +2047,13 @@
 		        "updateDate": "更新时间"
 			}
 
-## 网络列表（用户） [GET /network/list{?type,current,size,orderByField,asc}]
+## 网络列表（用户） [GET /network/list{?type,current,size}]
 
 + Parameters
 
-	+ type (int, required) - 类型，必填，1：公共网络；2：自己的网络
+	+ type (int, required) - 类型，必填；1：公共网络；2：个人网络；其他：个人网络 + 公共网络
     + current (number, optional) - 页码，默认为1
     + size (number, optional) - 页面容量，默认为10
-    + orderByField (string, optional) - 排序字段
-    + asc (boolean, optional) - 升序：true；降序：false
 
 + Request
 
@@ -2392,24 +2413,27 @@
 			  "code": 0,
 			  "message": "成功",
 			  "data": {
-			    "total": 1,
-			    "size": 10,
-			    "pages": 1,
+			    "total": 2,
+			    "size": 1,
+			    "pages": 2,
 			    "current": 1,
 			    "records": [
 			      {
-			        "id": "qjm4luj57mnto57rmm9hkpu2e",
-			        "projectId": "aabakfsvakiuw1213",
-			        "name": "my-nginx",
-			        "replicas": 3,
+			        "id": "w0getgx6ecbjtqct30eeqg5wl",
+			        "projectId": "9946b01701a54ceeb1811360763a02c3",
+			        "name": "swarm",
+			        "fullName": "1021207315149336577-swarm",
+			        "userId": "1021207315149336577",
+			        "replicas": 2,
 			        "command": null,
-			        "port": "8080",
-			        "image": "nginx",
+			        "port": "{\"8080\":11115}",
+			        "image": "tomcat:7",
 			        "env": null,
-			        "createDate": "2018-07-07 15:06:01",
-			        "updateDate": "2018-07-07 15:06:01",
-			        "projectName": "项目1",
-			        "statusName": "服务运行"
+			        "createDate": "2018-07-23 15:00:29",
+			        "updateDate": "2018-07-23 15:00:43",
+			        "projectName": "test",
+			        "statusName": null,
+			        "ip": "192.168.100.42"
 			      }
 			    ]
 			  }
@@ -2461,7 +2485,8 @@
 			        "createDate": "2018-07-07 15:06:01",
 			        "updateDate": "2018-07-07 15:06:01",
 			        "projectName": "项目1",
-			        "statusName": "服务运行"
+			        "statusName": "服务运行",
+			        "ip": "192.168.100.42"
 			      }
 			    ]
 			  }
@@ -2504,7 +2529,8 @@
 			    "createDate": "2018-07-07 15:06:01",
 			    "updateDate": "2018-07-07 15:06:01",
 			    "projectName": "项目1",
-			    "statusName": "服务运行"
+			    "statusName": "服务运行",
+			    "ip": "192.168.100.42"
 			  }
 			}
 
@@ -3045,34 +3071,35 @@
 				"code": 0,
 				"message": "成功",
 				"data": {
-				"total": 1,
-				"size": 10,
-				"pages": 1,
-				"current": 1,
-				"records": [
-					{
-						"id": "1fe1579799064fb08e50f689826d50ff",
-						"objId": "63ec66f93e85246a1e7aa5e18c01ed9de19db9ad453d83836be60de315a3c82e",
-						"name": "7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19",
-						"destination": "/var",
-						"source": "/var/lib/docker/volumes/7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19/_data",
-						"type": 1,
-						"createDate": "2018-07-21 16:36:21",
-						"updateDate": null,
-						"typeName": "容器数据卷",
-						"objName": "demo-java",
-						"volume": {
-							"Name": "7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19",
-							"Driver": "local",
-							"DriverOpts": null,
-							"Options": {},
-							"Labels": null,
-							"Mountpoint": "/var/lib/docker/volumes/7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19/_data",
-							"Scope": "local",
-							"Status": null
+					"total": 1,
+					"size": 10,
+					"pages": 1,
+					"current": 1,
+					"records": [
+						{
+							"id": "1fe1579799064fb08e50f689826d50ff",
+							"objId": "63ec66f93e85246a1e7aa5e18c01ed9de19db9ad453d83836be60de315a3c82e",
+							"name": "7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19",
+							"destination": "/var",
+							"source": "/var/lib/docker/volumes/7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19/_data",
+							"type": 1,
+							"createDate": "2018-07-21 16:36:21",
+							"updateDate": null,
+							"typeName": "容器数据卷",
+							"objName": "demo-java",
+							"volume": {
+								"Name": "7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19",
+								"Driver": "local",
+								"DriverOpts": null,
+								"Options": {doc.api},
+								"Labels": null,
+								"Mountpoint": "/var/lib/docker/volumes/7b857db47618bc0135e658fa2fbe396854ce0f6dca1a482090af9f048b96cd19/_data",
+								"Scope": "local",
+								"Status": null
+							}
 						}
-					}
-				]
+					]
+				}
 			}
 
 	+ Schema
@@ -3254,7 +3281,7 @@
 	+ Body
 
 	        {
-				"id": 22710dba2e16487795655e68e56be8e9,
+				"id": "22710dba2e16487795655e68e56be8e9",
 				"file": 文件
 			}
 
@@ -3744,7 +3771,7 @@
 			  }
 			}
 
-## 未读消息数 [GET /notice/countUnRead]
+## 未读通知数 [GET /notice/countUnRead]
 
 + Request
 
@@ -3764,7 +3791,7 @@
 			}
 
 
-## 已读消息 [POST /notice/read]
+## 已读通知 [POST /notice/read]
 
 + Request
 
@@ -3795,7 +3822,7 @@
 			  "data": null
 			}
 
-## 已读所有消息 [POST /notice/readAll]
+## 已读所有通知 [POST /notice/readAll]
 
 + Request
 
@@ -3813,6 +3840,38 @@
 			  "message": "成功",
 			  "data": null
 			}
+
+## 删除通知 [POST /notice/delete]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Body
+
+	        {
+			  "ids": "11,22,33"
+			}
+	
+	+ Schema
+
+			{
+				ids: "通知ID，多个使用逗号拼接"
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+	        {
+			  "code": 0,
+			  "message": "成功",
+			  "data": null
+			}
+
 
 # Group 监控管理
 
@@ -4502,6 +4561,7 @@
 			  "message": "成功",
 			  "data": {
 			    "0": "成功",
+			    "8": "邮箱不合法",
 			    "9": "JSON解析错误",
 			    "10": "鉴权错误",
 			    "11": "权限错误",
@@ -4542,7 +4602,7 @@
 			    "49": "删除Hub上镜像失败",
 			    "50": "删除镜像错误，没有权限",
 			    "51": "删除镜像错误，有容器正在使用该镜像",
-			    "52": "删除镜像错误，有容器正在使用",
+			    "52": "删除镜像错误",
 			    "53": "镜像异常",
 			    "60": "输入端口错误，请检查端口是否合法、是否可用，暴露端口是否均设置",
 			    "61": "容器不存在",
@@ -4558,6 +4618,7 @@
 			    "71": "数据卷不存在",
 			    "72": "数据卷上传失败",
 			    "73": "该数据卷不支持查看",
+			    "74": "数据卷信息错误",
 			    "80": "网络名已存在",
 			    "81": "网络名不合法，只能为字母或数字",
 			    "82": "Host网络已存在，只允许存在一个",
@@ -4571,17 +4632,19 @@
 			    "90": "网络连接拒绝，没有权限",
 			    "91": "网络取消连接拒绝，没有权限",
 			    "92": "公共网络创建失败，Driver无效",
-			    "93": "删除网络错误,请先清空网络内容器",
+			    "93": "删除网络错误,请先清空网络内容器或服务",
+			    "94": "容器网络同步失败",
 			    "100": "服务不存在",
 			    "101": "服务查询失败",
 			    "102": "服务名不合法，只能为字母或数字",
 			    "103": "服务名不合法，已经存在",
-			    "104": "服务横向扩展失败",
+			    "104": "服务创建失败",
 			    "110": "通知标题或内容不能为空",
 			    "111": "通知标题不能超过50个字符",
 			    "112": "通知类型错误",
 			    "113": "通知接收用户不能为空",
-			    "114": "读取通知错误"
+			    "114": "读取通知错误",
+			    "115": "通知内容不能超过65535个字符"
 			  }
 			}
 

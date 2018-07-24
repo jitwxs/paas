@@ -6,7 +6,6 @@ import com.baomidou.mybatisplus.plugins.pagination.Pagination;
 import jit.edu.paas.domain.dto.NoticeDTO;
 import jit.edu.paas.domain.entity.UserNotice;
 import jit.edu.paas.domain.entity.UserNoticeDesc;
-import jit.edu.paas.domain.vo.ResultVO;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;

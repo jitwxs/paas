@@ -97,15 +97,12 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         }
 
         try {
-            /*
-            star_count	star数
-            is_official	是否官方
-            name 镜像名
-            is_automated
-            description	描述
-            */
-            List<ImageSearchResult> results = DockerApiUtils.searchImages(serverUrl, name, limit);
+            List<ImageSearchResult> results = dockerClient.searchImages(name);
             return ResultVOUtils.success(results);
+        } catch (DockerRequestException requestException){
+            return ResultVOUtils.error(
+                    ResultEnum.SERVICE_CREATE_ERROR.getCode(),
+                    HttpClientUtils.getErrorMessage(requestException.getMessage()));
         } catch (Exception e) {
             log.error("Docker搜索异常，错误位置：SysImageServiceImpl.listHubImage,出错信息：" + HttpClientUtils.getStackTraceAsString(e));
             return ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION);
@@ -196,7 +193,10 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             String fullName = image.getFullName();
 
             return ResultVOUtils.success(dockerClient.inspectImage(fullName));
-        } catch (Exception e) {
+        } catch (DockerRequestException requestException){
+            return ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION.getCode(),
+                    HttpClientUtils.getErrorMessage(requestException.getMessage()));
+        }catch (Exception e) {
             log.error("Docker查询详情异常，错误位置：{}，错误栈：{}",
                     "SysImageServiceImpl.inspectImage", HttpClientUtils.getStackTraceAsString(e));
             return ResultVOUtils.error(ResultEnum.INSPECT_ERROR);
@@ -546,9 +546,14 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             receiverList.add(uid);
             noticeService.sendUserTask("导入镜像", "导入镜像【" + fullName + "】成功", 4, false, receiverList, null);
             sendMQ(uid, null, ResultVOUtils.successWithMsg("镜像导入成功"));
-        } catch (Exception e) {
+        } catch (DockerRequestException requestException){
+            log.error("导入镜像失败，错误位置：{}，错误原因：{}",
+                    "SysImageServiceImpl.importImageTask()", requestException.getMessage());
+            sendMQ(uid, null, ResultVOUtils.error(
+                    ResultEnum.SERVICE_CREATE_ERROR.getCode(),HttpClientUtils.getErrorMessage(requestException.getMessage())));
+        }catch (Exception e) {
             log.error("导入镜像失败，错误位置：{}，镜像名：{}，错误栈：{}",
-                    "SysImageServiceImpl.pullImageFromHub()", fullName, HttpClientUtils.getStackTraceAsString(e));
+                    "SysImageServiceImpl.importImageTask()", fullName, HttpClientUtils.getStackTraceAsString(e));
             // 写入日志
             sysLogService.saveLog(request, SysLogTypeEnum.IMPORT_IMAGE, e);
 
@@ -670,7 +675,9 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             }
 
             return ResultVOUtils.success(res);
-        } catch (Exception e) {
+        } catch (DockerRequestException requestException){
+            return ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION.getCode(), HttpClientUtils.getErrorMessage(requestException.getMessage()));
+        }catch (Exception e) {
             log.error("获取镜像暴露端口错误，出错位置：{}，出错镜像ID：{}，错误栈：{}",
                     "SysImageServiceImpl.listExportPorts()", imageId, HttpClientUtils.getStackTraceAsString(e));
             return null;
@@ -710,6 +717,27 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         List<SysImage> records = imageMapper.listSelfImage(userId, page);
 
         return page.setRecords(records);
+    }
+
+    @Override
+    public ResultVO cleanImage() {
+        List<SysImage> images =  imageMapper.selectList(new EntityWrapper<SysImage>().eq("name", "<none>"));
+        int success = 0, error = 0;
+        try {
+            for(SysImage image : images) {
+                dockerClient.removeImage(image.getImageId());
+                success++;
+            }
+        } catch (Exception e) {
+            log.error("清理镜像出现异常，异常位置：{}，异常栈：{}",
+                    "SysImageServiceImpl.cleanImage()", e.getMessage());
+            error++;
+        }
+
+        Map<String, Integer> map = new HashMap<>();
+        map.put("success", success);
+        map.put("error", error);
+        return ResultVOUtils.success(map);
     }
 
     /**

@@ -113,12 +113,23 @@ public class NoticeController {
         return noticeService.readNotice(ids, uid);
     }
 
+    /**
+     * 已读所有通知
+     * @param type 通知类别，为null时已读所有
+     * @author jitwxs
+     * @since 2018/7/23 9:18
+     */
     @PostMapping("/readAll")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVO readAll(@RequestAttribute String uid, Integer type) {
         return noticeService.readAllNotice(uid, type);
     }
 
+    /**
+     * 批量删除通知
+     * @author jitwxs
+     * @since 2018/7/23 9:19
+     */
     @PostMapping("/delete")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
     public ResultVO deleteNotices(String ids, @RequestAttribute String uid) {

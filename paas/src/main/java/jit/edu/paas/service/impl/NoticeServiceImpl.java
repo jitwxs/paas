@@ -1,6 +1,5 @@
 package jit.edu.paas.service.impl;
 
-import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.plugins.Page;
 import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import jit.edu.paas.commons.activemq.MQProducer;
@@ -13,7 +12,6 @@ import jit.edu.paas.domain.enums.NoticeTypeEnum;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.WebSocketTypeEnum;
 import jit.edu.paas.domain.vo.ResultVO;
-import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.mapper.NoticeMapper;
 import jit.edu.paas.mapper.SysLoginMapper;
 import jit.edu.paas.service.NoticeService;
@@ -22,10 +20,8 @@ import org.apache.activemq.command.ActiveMQQueue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.jms.Destination;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

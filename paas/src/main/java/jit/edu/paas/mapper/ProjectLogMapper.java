@@ -3,7 +3,6 @@ package jit.edu.paas.mapper;
 import com.baomidou.mybatisplus.mapper.BaseMapper;
 import com.baomidou.mybatisplus.plugins.pagination.Pagination;
 import jit.edu.paas.domain.entity.ProjectLog;
-import jit.edu.paas.domain.vo.ProjectLogVO;
 import org.apache.ibatis.annotations.Param;
 
 import java.util.List;

@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.mapper.EntityWrapper;
 import com.baomidou.mybatisplus.plugins.Page;
 import jit.edu.paas.commons.convert.UserContainerDTOConvert;
 import jit.edu.paas.commons.util.CollectionUtils;
-import jit.edu.paas.commons.util.JsonUtils;
 import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.domain.dto.UserContainerDTO;
@@ -93,7 +92,9 @@ public class ContainerController {
      */
     @GetMapping("/list")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO listContainer(@RequestAttribute String uid, String name, Integer status, Page<UserContainer> page) {
+    public ResultVO listContainer(@RequestAttribute String uid, String name, Integer status,
+                                  @RequestParam(defaultValue = "1") Integer current,
+                                  @RequestParam(defaultValue = "10") Integer size) {
         // 鉴权
         String roleName = loginService.getRoleName(uid);
         // 角色无效
@@ -101,6 +102,7 @@ public class ContainerController {
             return ResultVOUtils.error(ResultEnum.AUTHORITY_ERROR);
         }
 
+        Page<UserContainer> page = new Page<>(current, size, "update_date", false);
         Page<UserContainerDTO> selectPage = null;
 
         if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {

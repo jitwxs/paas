@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.service.IService;
 import jit.edu.paas.domain.dto.SysImageDTO;
 import jit.edu.paas.domain.entity.SysImage;
 import jit.edu.paas.domain.vo.ResultVO;
-import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.InputStream;
@@ -146,4 +145,9 @@ public interface SysImageService extends IService<SysImage> {
      * @since 2018/7/12 14:34
      */
     Page<SysImage> selfImage(String userId, Page<SysImage> page);
+
+    /**
+     * 清理无效镜像
+     */
+    ResultVO cleanImage();
 }

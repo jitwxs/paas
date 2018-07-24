@@ -59,7 +59,7 @@ public class MQConsumer {
      */
     @JmsListener(destination = "MQ_QUEUE_CONTAINER")
     public void receiveContainer(String text) {
-        log.info("接收到消息：{}", text);
+//        log.info("接收到消息：{}", text);
 
         if (StringUtils.isNotBlank(text)) {
             Task task = JsonUtils.jsonToObject(text, Task.class);
@@ -88,7 +88,7 @@ public class MQConsumer {
      */
     @JmsListener(destination = "MQ_QUEUE_SYS_IMAGE")
     public void receiveSysImage(String text) {
-        log.info("接收到消息：{}", text);
+//        log.info("接收到消息：{}", text);
 
         if (StringUtils.isNotBlank(text)) {
             Task task = JsonUtils.jsonToObject(text, Task.class);
@@ -117,7 +117,7 @@ public class MQConsumer {
      */
     @JmsListener(destination = "MQ_QUEUE_HUB_IMAGE")
     public void receiveHubImage(String text) {
-        log.info("接收到消息：{}", text);
+//        log.info("接收到消息：{}", text);
 
         if (StringUtils.isNotBlank(text)) {
             Task task = JsonUtils.jsonToObject(text, Task.class);
@@ -146,7 +146,7 @@ public class MQConsumer {
      */
     @JmsListener(destination = "MQ_QUEUE_SERVICE")
     public void receiveService(String text) {
-        log.info("接收到消息：{}", text);
+//        log.info("接收到消息：{}", text);
 
         if (StringUtils.isNotBlank(text)) {
             Task task = JsonUtils.jsonToObject(text, Task.class);
@@ -176,7 +176,7 @@ public class MQConsumer {
      */
     @JmsListener(destination = "MQ_QUEUE_NOTICE")
     public void receiveNotice(String text) {
-        log.info("接收到消息：{}", text);
+//        log.info("接收到消息：{}", text);
 
         if (StringUtils.isNotBlank(text)) {
             Task task = JsonUtils.jsonToObject(text, Task.class);

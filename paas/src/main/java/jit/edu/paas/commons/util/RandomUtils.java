@@ -1,6 +1,7 @@
 package jit.edu.paas.commons.util;
 
-import java.util.*;
+import java.util.Random;
+import java.util.UUID;
 
 /**
  * 随机工具类
