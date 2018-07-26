@@ -15,13 +15,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Enumeration;
-import java.util.Iterator;
 
 /**
  * 镜像Controller
@@ -220,38 +217,18 @@ public class ImageController {
 
     /**
      * 导入镜像【WebSocket】
-     * @param request 包含name、tag和单个文件
-     * @author hf
-     * @since 2018/7/1 20:48
+     * @param file 镜像文件，只能为tar.gz文件
+     * @param imageName 镜像名，不能包含大写字符
+     * @param tag 镜像标签，默认为latest
+     * @author jitwxs
+     * @since 2018/7/25 13:41
      */
     @PostMapping("/import")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO importImage(@RequestAttribute String uid, HttpServletRequest request) {
-        StandardMultipartHttpServletRequest req;
-        try {
-            req = (StandardMultipartHttpServletRequest) request;
-        } catch (Exception e) {
-            return ResultVOUtils.error(ResultEnum.UPLOAD_TYPE_ERROR);
-        }
-
-        // 遍历普通参数，取出镜像名和tag（默认latest）
-        String imageName = "", tag = "latest";
-        boolean flag = false;
-        Enumeration<String> names = req.getParameterNames();
-        while (names.hasMoreElements()) {
-            String key = names.nextElement();
-            String val = req.getParameter(key);
-            if("name".equals(key) && StringUtils.isNotBlank(val)) {
-                flag = true;
-                imageName = val;
-            }
-            if("tag".equals(key) && StringUtils.isNotBlank(val)) {
-                tag = val;
-            }
-        }
-        // 遍历文件参数
-        Iterator<String> iterator = req.getFileNames();
-        if(!flag || !iterator.hasNext()) {
+    public ResultVO importImage(String imageName, @RequestParam(defaultValue = "latest") String tag, MultipartFile file,
+                                @RequestAttribute String uid, HttpServletRequest request) {
+        // 校验参数
+        if(StringUtils.isBlank(imageName) || file == null) {
             return ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
         // 判断镜像名是否有大写字符
@@ -259,6 +236,10 @@ public class ImageController {
             if(Character.isUpperCase(imageName.charAt(i))){
                 return ResultVOUtils.error(ResultEnum.IMAGE_NAME_CONTAIN_UPPER);
             }
+        }
+        // 判断文件后缀
+        if(!file.getOriginalFilename().endsWith(".tar.gz")) {
+            return ResultVOUtils.error(ResultEnum.IMAGE_UPLOAD_ERROR_BY_SUFFIX);
         }
 
         // 拼接完整名：repo/userId/imageName:tag
@@ -269,8 +250,6 @@ public class ImageController {
         }
 
         try {
-            // 取出文件，只取一个
-            MultipartFile file = req.getFile(iterator.next());
             InputStream stream = file.getInputStream();
             imageService.importImageTask(stream, fullName, uid, request);
             return ResultVOUtils.success("开始导入镜像");

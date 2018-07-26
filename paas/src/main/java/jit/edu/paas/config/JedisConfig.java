@@ -1,11 +1,15 @@
 package jit.edu.paas.config;
 
 import jit.edu.paas.commons.util.jedis.JedisClientCluster;
+import jit.edu.paas.commons.util.jedis.JedisClientPool;
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisCluster;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.Protocol;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -16,7 +20,7 @@ import java.util.Set;
  */
 @Configuration
 public class JedisConfig {
-    /* 以下为单机版配置 **/
+//    /* 以下为单机版配置 **/
 //    @Value("${redis.standalone.host}")
 //    private String STANDALONE_HOST;
 //

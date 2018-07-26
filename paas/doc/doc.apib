@@ -1,6 +1,6 @@
 ﻿FORMAT: 1A
 
-# 无道云平台 —— 基于Docker容器的PaaS系统
+# 无道容器云 —— 基于Docker容器的PaaS系统
 
 # Group 鉴权管理
 
@@ -3269,7 +3269,7 @@
 				}
 			}
 
-## 上传文件 [POST /volumes/upload]
+## 上传文件 - WebSocket [POST /volumes/upload]
 
 + Request
 
@@ -3299,19 +3299,15 @@
 	        {
 			    "code": 0,
 			    "message": "成功",
-			    "data": {
-			        "times": 0,
-			        "success": 1,
-			        "error": 0
-			    }
+			    "data": "开始上传文件"
 			}
 
-	+ Schema
-
             {
-				"times": "耗时（秒）",
-				"success": "成功文件数",
-				"error": "失败文件数"
+				"info": null,
+				"data": {
+					"uid": "afaba31231451",
+					"data": "{\"code\":0,\"message\":\"文件上传成功\",\"data\":{\"volumeId\":\"00c3120a2e7345cc8e37e53bee385355\",\"type\":5}}"
+				}
 			}
 
 ## 获取本地数据卷（管理员） [GET /volumes/list/{type}]

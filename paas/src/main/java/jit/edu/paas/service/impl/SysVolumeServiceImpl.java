@@ -6,15 +6,15 @@ import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.Volume;
 import com.spotify.docker.client.messages.VolumeList;
+import jit.edu.paas.commons.activemq.MQProducer;
+import jit.edu.paas.commons.activemq.Task;
+import jit.edu.paas.commons.socket.FileTransferClient;
 import jit.edu.paas.commons.util.*;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.entity.SysVolume;
 import jit.edu.paas.domain.entity.UserContainer;
 import jit.edu.paas.domain.entity.UserService;
-import jit.edu.paas.domain.enums.ResultEnum;
-import jit.edu.paas.domain.enums.RoleEnum;
-import jit.edu.paas.domain.enums.SysLogTypeEnum;
-import jit.edu.paas.domain.enums.VolumeTypeEnum;
+import jit.edu.paas.domain.enums.*;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.domain.vo.SysVolumeVO;
 import jit.edu.paas.exception.CustomException;
@@ -25,13 +25,18 @@ import jit.edu.paas.service.SysLogService;
 import jit.edu.paas.service.SysLoginService;
 import jit.edu.paas.service.SysVolumeService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.activemq.command.ActiveMQQueue;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.jms.Destination;
 import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -127,17 +132,31 @@ public class SysVolumeServiceImpl extends ServiceImpl<SysVolumesMapper,SysVolume
 
     @Override
     public ResultVO listByObjId(Page<SysVolumeVO> page, String objId, String uid) {
-        // 1、鉴权
+        // 鉴权
         String roleName = loginService.getRoleName(uid);
         if(StringUtils.isBlank(roleName)) {
             return ResultVOUtils.error(ResultEnum.AUTHORITY_ERROR);
         }
         if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
-            if(!containerMapper.hasBelongSb(objId, uid)) {
+            // 判断Obj类型
+            UserContainer container = containerMapper.selectById(objId);
+            UserService service = null;
+            if(container == null) {
+                service = serviceMapper.selectById(objId);
+            }
+
+            if(container == null && service == null) {
+                return ResultVOUtils.success(ResultEnum.VOLUME_OBJ_NOT_EXIST);
+            }
+
+            if(container != null && !containerMapper.hasBelongSb(objId, uid)) {
+                return ResultVOUtils.error(ResultEnum.PERMISSION_ERROR);
+            } else if(service != null && !serviceMapper.hasBelong(objId, uid)) {
                 return ResultVOUtils.error(ResultEnum.PERMISSION_ERROR);
             }
         }
 
+        // 查询
         try {
             List<SysVolumeVO> voList = sysVolume2VO(volumesMapper.selectByObjId(objId, page));
             return ResultVOUtils.success(page.setRecords(voList));

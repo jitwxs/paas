@@ -299,10 +299,10 @@ public class UserServiceServiceImpl extends ServiceImpl<UserServiceMapper, UserS
                 SysVolume volumes = volumeService.createVolumes(null, VolumeTypeEnum.SERVICE);
 
                 Mount.Builder mountBuilder = Mount.builder();
-                mountBuilder.type("volume");
+                //mountBuilder.type("volume");
                 mountBuilder.source(volumes.getSource());
                 mountBuilder.target(d);
-                mountBuilder.volumeOptions(VolumeOptions.builder().build());
+                //mountBuilder.volumeOptions(VolumeOptions.builder().build());
 
                 mounts.add(mountBuilder.build());
             }

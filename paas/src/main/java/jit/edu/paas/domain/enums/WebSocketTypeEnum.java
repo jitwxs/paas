@@ -13,7 +13,8 @@ public enum WebSocketTypeEnum {
     SYS_IMAGE("系统镜像操作", 1),
     HUB_IMAGE("Hub镜像操作", 2),
     SERVICE("服务操作", 3),
-    NOTICE("通知操作", 4);
+    NOTICE("通知操作", 4),
+    VOLUME("数据卷操作", 5);
 
     private String message;
     private int code;

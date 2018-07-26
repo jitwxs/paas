@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.service.impl.ServiceImpl;
 import com.google.common.collect.ImmutableList;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.ContainerNotFoundException;
+import com.spotify.docker.client.exceptions.DockerRequestException;
 import com.spotify.docker.client.exceptions.DockerTimeoutException;
 import com.spotify.docker.client.messages.*;
 import jit.edu.paas.commons.activemq.MQProducer;
@@ -293,8 +294,13 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
             noticeService.sendUserTask("创建容器", "创建容器【" + containerName + "】成功", 2, false, receiverList, null);
 
             sendMQ(userId, null, ResultVOUtils.successWithMsg("容器【"+containerName+"】创建成功"));
+        } catch (DockerRequestException requestException){
+            log.error("创建容器出现异常，错误位置：{}，错误原因：{}",
+                    "UserContainerServiceImpl.createContainerTask()", requestException.getMessage());
+            sendMQ(userId, null, ResultVOUtils.error(
+                    ResultEnum.CREATE_CONTAINER_ERROR.getCode(),HttpClientUtils.getErrorMessage(requestException.getMessage())));
         } catch (Exception e) {
-            log.error("创建容器出现异常，异常位置：{}，错误栈：{}",
+            log.error("创建容器出现异常，错误位置：{}，错误栈：{}",
                     "UserContainerServiceImpl.createContainerTask()", HttpClientUtils.getStackTraceAsString(e));
 
             // 写入日志

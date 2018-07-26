@@ -1,17 +1,23 @@
 package jit.edu.paas.controller;
 
 import com.baomidou.mybatisplus.plugins.Page;
+import jit.edu.paas.commons.activemq.MQProducer;
+import jit.edu.paas.commons.activemq.Task;
 import jit.edu.paas.commons.socket.FileTransferClient;
 import jit.edu.paas.commons.util.HttpClientUtils;
+import jit.edu.paas.commons.util.JsonUtils;
 import jit.edu.paas.commons.util.ResultVOUtils;
 import jit.edu.paas.commons.util.StringUtils;
 import jit.edu.paas.domain.entity.SysVolume;
 import jit.edu.paas.domain.enums.ResultEnum;
 import jit.edu.paas.domain.enums.VolumeTypeEnum;
+import jit.edu.paas.domain.enums.WebSocketTypeEnum;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.domain.vo.SysVolumeVO;
+import jit.edu.paas.exception.CustomException;
 import jit.edu.paas.service.SysVolumeService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.activemq.command.ActiveMQQueue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,12 +25,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
+import javax.jms.Destination;
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.net.ConnectException;
+import java.util.*;
 
 /**
  * 数据卷Controller
@@ -37,6 +42,8 @@ import java.util.Map;
 public class VolumesController {
     @Autowired
     private SysVolumeService sysVolumeService;
+    @Autowired
+    private MQProducer mqProducer;
 
     @Value("${file.socket.port}")
     private Integer socketPort;
@@ -119,49 +126,32 @@ public class VolumesController {
     }
 
     /**
-     * 上传文件到数据卷
-     * @param request 包含ID（数据卷ID）、File对象（文件）
+     * 上传文件到数据卷【WebSocket】
+     * @param id 数据卷ID
+     * @param file 文件
      * @author jitwxs
      * @since 2018/7/11 14:21
      */
     @PostMapping("/upload")
     @PreAuthorize("hasRole('ROLE_USER') or hasRole('ROLE_SYSTEM')")
-    public ResultVO uploadToVolumes(@RequestAttribute String uid, HttpServletRequest request) {
-        StandardMultipartHttpServletRequest req;
-        try {
-            req = (StandardMultipartHttpServletRequest) request;
-        } catch (Exception e) {
-            return ResultVOUtils.error(ResultEnum.IMPORT_ERROR);
-        }
-
+    public ResultVO uploadToVolumes(@RequestAttribute String uid,
+                                    String id, MultipartFile file) {
         // 1、校验参数
-        String id = null;
-        Iterator<String> iterator = req.getFileNames();
-        Enumeration<String> names = req.getParameterNames();
-
-        while (names.hasMoreElements()) {
-            String key = names.nextElement();
-            if("id".equals(key)) {
-                id = req.getParameter(key);
-                break;
-            }
-        }
-        if(StringUtils.isEmpty(id) || !iterator.hasNext()) {
+        if (StringUtils.isBlank(id) || file == null) {
             ResultVOUtils.error(ResultEnum.PARAM_ERROR);
         }
 
         // 2、鉴权
         SysVolume volume = sysVolumeService.getById(id);
         ResultVO resultVO = sysVolumeService.checkPermission(uid, volume);
-        if(ResultEnum.OK.getCode() != resultVO.getCode()) {
+        if (ResultEnum.OK.getCode() != resultVO.getCode()) {
             return resultVO;
         }
 
-        // 3、上传
-        int successCount = 0, errorCount = 0,times = 0;
         try {
+            // 初始化上传参数
             FileTransferClient transferClient;
-            if(volume.getType() == VolumeTypeEnum.CONTAINER.getCode()) {
+            if (volume.getType() == VolumeTypeEnum.CONTAINER.getCode()) {
                 transferClient = new FileTransferClient(dockerServerAddress, socketPort);
             } else if (volume.getType() == VolumeTypeEnum.SERVICE.getCode()) {
                 transferClient = new FileTransferClient(dockerSwarmAddress, socketPort);
@@ -169,28 +159,60 @@ public class VolumesController {
                 return ResultVOUtils.error(ResultEnum.OTHER_ERROR.getCode(), "数据卷类型错误");
             }
 
-            while (iterator.hasNext()) {
-                MultipartFile file = req.getFile(iterator.next());
-                int i = transferClient.sendFile(volume.getSource(), file);
-                if(i != -1) {
-                    successCount++;
-                    times += i;
-                } else {
-                     errorCount++;
-                }
-            }
-            transferClient.closeClient();
-        } catch (IOException e) {
-            log.error("上传数据卷出现错误，错误位置：{}，错误栈：{}",
+            // 上传
+            uploadVolumeTask(file, volume, transferClient, uid);
+            return ResultVOUtils.success("开始上传文件");
+        } catch (ConnectException connectException){
+            log.error("Socket连接建立失败，错误位置：{}","VolumesController.uploadToVolumes()");
+            return ResultVOUtils.error(ResultEnum.CONNECTION_REFUSED);
+        }catch (IOException e) {
+            log.error("创建FileTransferClient错误，错误位置：{}，错误栈：{}",
                     "VolumesController.uploadToVolumes()", HttpClientUtils.getStackTraceAsString(e));
             return ResultVOUtils.error(ResultEnum.VOLUME_UPLOAD_ERROR);
+        }
+    }
+
+    private void uploadVolumeTask(MultipartFile file, SysVolume volume, FileTransferClient transferClient, String userId) {
+        int successCount = 0, errorCount = 0,times = 0;
+        try {
+            int i = transferClient.sendFile(volume.getSource(), file);
+            if(i == -1) {
+                throw new CustomException(ResultEnum.UPLOAD_ERROR);
+            }
+            transferClient.closeClient();
+        } catch (Exception e) {
+            log.error("上传数据卷出现错误，错误位置：{}，错误栈：{}",
+                    "VolumesController.uploadToVolumes()", HttpClientUtils.getStackTraceAsString(e));
+            sendMQ(userId, volume.getId(), ResultVOUtils.error(ResultEnum.VOLUME_UPLOAD_ERROR));
         }
 
         Map<String, Integer> map = new HashMap<>(16);
         map.put("success", successCount);
         map.put("error", errorCount);
         map.put("times", times);
-        return ResultVOUtils.success(map);
+        sendMQ(userId, volume.getId(), ResultVOUtils.success("文件上传成功", map));
+    }
+
+    /**
+     * 发送数据卷消息
+     * @author jitwxs
+     * @since 2018/7/9 18:34
+     */
+    private void sendMQ(String userId, String volumeId, ResultVO resultVO) {
+        Destination destination = new ActiveMQQueue("MQ_QUEUE_VOLUME");
+        Task task = new Task();
+
+        Map<String, Object> data = new HashMap<>(16);
+        data.put("type", WebSocketTypeEnum.VOLUME.getCode());
+        data.put("volumeId", volumeId);
+        resultVO.setData(data);
+
+        Map<String,String> map = new HashMap<>(16);
+        map.put("uid",userId);
+        map.put("data", JsonUtils.objectToJson(resultVO));
+        task.setData(map);
+
+        mqProducer.send(destination, JsonUtils.objectToJson(task));
     }
 }
 
