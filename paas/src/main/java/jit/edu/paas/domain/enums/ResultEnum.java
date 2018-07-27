@@ -57,6 +57,8 @@ public enum ResultEnum {
     IMAGE_EXCEPTION("镜像异常",53),
     IMAGE_NAME_CONTAIN_UPPER("镜像名包含大写字符",54),
     IMAGE_UPLOAD_ERROR_BY_SUFFIX("镜像文件后缀名错误，只能为tar.gz文件",55),
+    IMAGE_NAME_AND_TAG_EXIST("镜像名和tag已存在",56),
+    IMAGE_COMMIT_ERROR("打包镜像错误",57),
     CREATE_CONTAINER_ERROR("容器创建错误",59),
     INPUT_PORT_ERROR("输入端口错误，请检查端口是否合法、是否可用，暴露端口是否均设置",60),
     CONTAINER_NOT_FOUND("容器不存在",61),

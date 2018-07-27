@@ -26,13 +26,6 @@ public interface SysImageMapper extends BaseMapper<SysImage> {
     List<SysImageDTO> listLocalPublicImage(Pagination page, @Param("name") String name);
 
     /**
-     * 获取本地公开用户镜像
-     * @author jitwxs
-     * @since 2018/6/28 16:19
-     */
-    List<SysImageDTO> listLocalOpenUserImage(Pagination page, @Param("name") String name);
-
-    /**
      * 获取本地用户镜像
      * @author jitwxs
      * @since 2018/6/28 16:19

@@ -15,10 +15,7 @@ import jit.edu.paas.commons.convert.UserContainerDTOConvert;
 import jit.edu.paas.commons.util.*;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.dto.UserContainerDTO;
-import jit.edu.paas.domain.entity.SysImage;
-import jit.edu.paas.domain.entity.SysVolume;
-import jit.edu.paas.domain.entity.UserContainer;
-import jit.edu.paas.domain.entity.UserProject;
+import jit.edu.paas.domain.entity.*;
 import jit.edu.paas.domain.enums.*;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.exception.CustomException;
@@ -32,6 +29,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -641,6 +639,51 @@ public class UserContainerServiceImpl extends ServiceImpl<UserContainerMapper, U
         cleanCache(containerId);
 
         return ResultVOUtils.success();
+    }
+
+    @Override
+    public ResultVO commitContainerCheck(String containerId, String name, String tag, String userId) {
+        // 鉴权
+        ResultVO resultVO = checkPermission(userId, containerId);
+        if(ResultEnum.OK.getCode() != resultVO.getCode()) {
+            return resultVO;
+        }
+
+        String fullName = "local/" + userId + "/" + name + ":" + tag;
+        // 判断是否存在
+        if(imageService.getByFullName(fullName) != null) {
+            return ResultVOUtils.error(ResultEnum.IMAGE_NAME_AND_TAG_EXIST);
+        }
+
+        return ResultVOUtils.success();
+    }
+
+
+    @Async("taskExecutor")
+    @Transactional(rollbackFor = CustomException.class)
+    @Override
+    public void commitContainerTask(String containerId, String name, String tag, String userId) {
+        try {
+            ContainerConfig config = ContainerConfig.builder().build();
+
+            String repo = "local/" + userId + "/" + name;
+            String fullName = repo + ":" + tag;
+
+            // 2、导入镜像
+            dockerClient.commitContainer(containerId, repo, tag, config, "", loginService.getById(userId).getUsername());
+
+            // 3、保存数据库
+            if(!imageService.saveImage(fullName)) {
+                throw new CustomException(ResultEnum.OTHER_ERROR.getCode(), "保存镜像数据错误");
+            }
+            // 发送成功消息
+            sendMQ(userId, containerId, ResultVOUtils.successWithMsg("镜像" + name + "打包成功"));
+        } catch (Exception e) {
+            log.error("打包镜像错误，错误位置：{}，错误栈：{}",
+                    "UserContainerServiceImpl.commitContainer", HttpClientUtils.getStackTraceAsString(e));
+            // 发送异常消息
+            sendMQ(userId, containerId, ResultVOUtils.error(ResultEnum.IMAGE_COMMIT_ERROR));
+        }
     }
 
     @Override

@@ -58,11 +58,11 @@ public class ImageController {
             // 本地公共镜像
             return ResultVOUtils.success(imageService.listLocalPublicImage(name, page));
         } else if (type == ImageTypeEnum.LOCAL_USER_IMAGE.getCode()) {
-            // 系统管理员查看所有本地用户镜像，普通用户只能查看公开的本地用户镜像
+            // 系统管理员查看所有本地用户镜像，普通用户只能查看公开的本地用户镜像和自己镜像
             if(RoleEnum.ROLE_USER.getMessage().equals(roleName)) {
-                return ResultVOUtils.success(imageService.listLocalUserImage(name, true, page));
+                return ResultVOUtils.success(imageService.listLocalUserImage(name, true, uid, page));
             } else {
-                return ResultVOUtils.success(imageService.listLocalUserImage(name, false, page));
+                return ResultVOUtils.success(imageService.listLocalUserImage(name, false, uid, page));
             }
 
         } else {

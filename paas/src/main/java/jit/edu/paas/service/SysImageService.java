@@ -33,7 +33,7 @@ public interface SysImageService extends IService<SysImage> {
      * @author jitwxs
      * @since 2018/6/28 16:15
      */
-    Page<SysImageDTO> listLocalUserImage(String name, boolean filterOpen, Page<SysImageDTO> page);
+    Page<SysImageDTO> listLocalUserImage(String name, boolean filterOpen, String userId, Page<SysImageDTO> page);
 
     /**
      * 获取Docker Hub镜像列表
@@ -150,4 +150,11 @@ public interface SysImageService extends IService<SysImage> {
      * 清理无效镜像
      */
     ResultVO cleanImage();
+
+    /**
+     * 根据完整名保存数据
+     * @author jitwxs
+     * @since 2018/7/26 20:27
+     */
+    boolean saveImage(String fullName);
 }

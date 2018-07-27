@@ -17,6 +17,7 @@ import jit.edu.paas.commons.util.*;
 import jit.edu.paas.commons.util.jedis.JedisClient;
 import jit.edu.paas.domain.dto.SysImageDTO;
 import jit.edu.paas.domain.entity.SysImage;
+import jit.edu.paas.domain.entity.SysLogin;
 import jit.edu.paas.domain.enums.*;
 import jit.edu.paas.domain.vo.ResultVO;
 import jit.edu.paas.exception.CustomException;
@@ -27,6 +28,7 @@ import jit.edu.paas.service.SysLogService;
 import jit.edu.paas.service.SysLoginService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.activemq.command.ActiveMQQueue;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
@@ -38,6 +40,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -79,8 +82,17 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
     }
 
     @Override
-    public Page<SysImageDTO> listLocalUserImage(String name, boolean filterOpen, Page<SysImageDTO> page) {
-        List<SysImageDTO> images = filterOpen ? imageMapper.listLocalOpenUserImage(page, name) : imageMapper.listLocalUserImage(page, name);
+    public Page<SysImageDTO> listLocalUserImage(String name, boolean filterOpen, String userId, Page<SysImageDTO> page) {
+        List<SysImageDTO> images;
+        if(filterOpen) {
+            List<SysImage> imageList = imageMapper.selectList(new EntityWrapper<SysImage>()
+                    .eq("type", 2)
+                    .and().eq("user_id", userId).or().eq("has_open", true));
+            images = sysImage2DTO(imageList);
+
+        } else {
+            images = imageMapper.listLocalUserImage(page, name);
+        }
 
         return page.setRecords(images);
     }
@@ -665,7 +677,7 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
             // 形如：["80/tcp"]
             ImmutableSet<String> exposedPorts = info.containerConfig().exposedPorts();
 
-            List<String> res = new ArrayList<>();
+            Set<String> res = new HashSet<>();
 
             // 取出端口号信息
             if(exposedPorts != null && exposedPorts.size() > 0) {
@@ -674,7 +686,7 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
                 });
             }
 
-            return ResultVOUtils.success(res);
+            return ResultVOUtils.success(new ArrayList<>(res));
         } catch (DockerRequestException requestException){
             return ResultVOUtils.error(ResultEnum.DOCKER_EXCEPTION.getCode(), HttpClientUtils.getErrorMessage(requestException.getMessage()));
         }catch (Exception e) {
@@ -738,6 +750,43 @@ public class SysImageServiceImpl extends ServiceImpl<SysImageMapper, SysImage> i
         map.put("success", success);
         map.put("error", error);
         return ResultVOUtils.success(map);
+    }
+
+    @Override
+    public boolean saveImage(String fullName) {
+        // 如果数据已存在，不再保存
+        if(getByFullName(fullName) != null) {
+            return true;
+        }
+
+        try {
+            List<Image> list = dockerClient.listImages(DockerClient.ListImagesParam.byName(fullName));
+            Image image = CollectionUtils.getListFirst(list);
+
+            SysImage sysImage = imageToSysImage(image, image.repoTags().get(0));
+            // 插入数据
+            imageMapper.insert(sysImage);
+            return true;
+        } catch (Exception e) {
+            log.error("保存镜像数据错误，错误位置：{}，错误栈：{}",
+                    "SysImageServiceImpl.saveImage()", HttpClientUtils.getStackTraceAsString(e));
+            return false;
+        }
+    }
+
+    private List<SysImageDTO> sysImage2DTO(List<SysImage> list) {
+        return list.stream().map(this::sysImage2DTO).collect(Collectors.toList());
+    }
+
+    private SysImageDTO sysImage2DTO(SysImage sysImage){
+        SysImageDTO dto = new SysImageDTO();
+        BeanUtils.copyProperties(sysImage, dto);
+
+        SysLogin login = loginService.getById(sysImage.getId());
+        if(login != null) {
+            dto.setUsername(login.getUsername());
+        }
+        return dto;
     }
 
     /**

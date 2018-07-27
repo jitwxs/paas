@@ -9,20 +9,6 @@
             AND `name` like "%"#{name}"%"
         </if>
     </select>
-    <select id="listLocalOpenUserImage" resultType="jit.edu.paas.domain.dto.SysImageDTO">
-        SELECT
-        `s`.*,
-        `l`.username
-        FROM
-        `sys_image` AS `s`,
-        `sys_login` AS `l`
-        WHERE `type` = 2
-        AND `has_open` = 1
-        AND `s`.user_id = `l`.id
-        <if test="name != null" >
-            AND `name` like "%"#{name}"%"
-        </if>
-    </select>
     <select id="listLocalUserImage" resultType="jit.edu.paas.domain.dto.SysImageDTO">
         SELECT
         `s`.*,

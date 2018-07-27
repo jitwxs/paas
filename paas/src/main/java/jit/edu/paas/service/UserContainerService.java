@@ -162,4 +162,13 @@ public interface UserContainerService extends IService<UserContainer> {
      * @since 2018/7/14 8:36
      */
     ResultVO changeBelongProject(String containerId, String projectId, String uid);
+
+    ResultVO commitContainerCheck(String containerId, String name, String tag, String userId);
+
+    /**
+     * 打包容器
+     * @author jitwxs
+     * @since 2018/7/26 19:45
+     */
+    void commitContainerTask(String containerId, String name, String tag, String userId);
 }

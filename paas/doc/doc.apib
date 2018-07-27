@@ -1053,6 +1053,41 @@
 			    }
 			}
 
+## 打包容器 - WebSocket [POST /container/commit]
+
++ Request
+
+	+ Headers
+	
+			Content-Type: application/x-www-form-urlencoded
+			Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJ1aWQiOiIxIiwicmlkIjoyLCJleHAiOjE1MzAzMjYyNjgsImlhdCI6MTUzMDMyMjY2OH0.n859Es5KcUsiXyKNS9KMbaKa549EI5Hpb3jDv0QV7Q-Q1weDkRiv6yqOlpbqBLNJYC3yPNEp2ben8SOXvIcvzA
+
+	+ Body
+
+	    	{
+			  "containerId": "容器ID，字符串，必填",
+			  "name": "镜像名，字符串，必填",
+			  "tag": "标签，字符串，选填，默认为latest"
+			}
+
++ Response 200 (application/json)
+    
+    + Body
+
+	    	{
+			  "code": 0,
+			  "message": "成功",
+			  "data": "开始打包容器"
+			}
+
+			{
+			    "info":null,
+			    "data":{
+			        "uid":"f4f4bb152cf54fec94eb0d2b22d25f71",
+			        "data":"{\"code\":0,\"message\":\"容器打包成功\",\"data\":{\"type\":0,\"containerId\":\"fba35fda5b0f274ef5132a5ace51406871d18e4111a7755cb1d78c8c9a4fd6f2\"}}"
+			    }
+			}
+
 ## 容器进程  [GET /container/top/{containerId}]
 
 + Parameters
