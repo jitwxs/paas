@@ -37,6 +37,8 @@ public class CorsFilter implements Filter {
         response.setHeader("Access-Control-Max-Age", "3600");
         // 明确许可客户端发送Cookie，不允许删除字段即可
         response.setHeader("Access-Control-Allow-Credentials", "true");
+
+        chain.doFilter(request, response);
     }
 
     @Override
